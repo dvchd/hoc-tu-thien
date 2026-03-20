@@ -65,7 +65,7 @@ export class UserEntity extends AuditableEntity {
         name: props.name ?? null,
         image: props.image ?? null,
         role: props.role ?? UserRole.MENTEE,
-        status: props.status ?? UserStatus.ACTIVE,
+        status: props.status ?? UserStatus.PENDING_ACTIVATION,
         bio: props.bio ?? null,
         phone: props.phone ?? null,
       },
