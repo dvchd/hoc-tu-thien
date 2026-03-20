@@ -1,0 +1,294 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MENTOR
+  MENTEE
+}
+
+enum UserStatus {
+  PENDING_ACTIVATION
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum PaymentType {
+  ACTIVATION
+  SESSION_FEE
+}
+
+enum PaymentStatus {
+  PENDING
+  VERIFIED
+  FAILED
+  REFUNDED
+}
+
+enum SessionStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  PAYMENT_PENDING
+}
+
+enum MentorApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier, token])
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  role          UserRole   @default(MENTEE)
+  status        UserStatus @default(PENDING_ACTIVATION)
+  bio           String?
+  phone         String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  createdBy     String?
+  updatedBy     String?
+  deletedAt     DateTime?
+  deletedBy     String?
+  isDeleted     Boolean    @default(false)
+  version       Int        @default(1)
+
+  accounts           Account[]
+  sessions           Session[]
+  mentorProfile      MentorProfile?
+  menteeProfile      MenteeProfile?
+  payments           Payment[]
+  mentorApplication  MentorApplication?
+  bookedSessions     LearningSession[]  @relation("MenteeSession")
+  taughtSessions     LearningSession[]  @relation("MentorSession")
+  userAuditLogs      UserAuditLog[]
+}
+
+model MenteeProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  learningGoals String?
+  currentLevel  String?
+  totalSessions Int      @default(0)
+  totalPaid     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdBy     String?
+  updatedBy     String?
+  deletedAt     DateTime?
+  deletedBy     String?
+  isDeleted     Boolean  @default(false)
+  version       Int      @default(1)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MentorProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  headline          String?
+  expertise         String?
+  experience        Int?
+  hourlyRate        Int?
+  isAvailable       Boolean  @default(true)
+  totalSessions     Int      @default(0)
+  totalEarned       Int      @default(0)
+  rating            Float    @default(0)
+  ratingCount       Int      @default(0)
+  tnAccountNo       String?
+  tnAccountName     String?
+  tnCampaignKeyword String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         String?
+  updatedBy         String?
+  deletedAt         DateTime?
+  deletedBy         String?
+  isDeleted         Boolean  @default(false)
+  version           Int      @default(1)
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teachingFields    MentorTeachingField[]
+  availabilitySlots AvailabilitySlot[]
+}
+
+model TeachingField {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isDeleted   Boolean  @default(false)
+  mentors     MentorTeachingField[]
+}
+
+model MentorTeachingField {
+  id              String        @id @default(cuid())
+  mentorProfileId String
+  teachingFieldId String
+  level           String?
+  createdAt       DateTime      @default(now())
+  mentorProfile   MentorProfile @relation(fields: [mentorProfileId], references: [id], onDelete: Cascade)
+  teachingField   TeachingField @relation(fields: [teachingFieldId], references: [id])
+  @@unique([mentorProfileId, teachingFieldId])
+}
+
+model AvailabilitySlot {
+  id              String        @id @default(cuid())
+  mentorProfileId String
+  dayOfWeek       Int
+  startTime       String
+  endTime         String
+  isRecurring     Boolean       @default(true)
+  validFrom       DateTime?
+  validUntil      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  mentorProfile   MentorProfile @relation(fields: [mentorProfileId], references: [id], onDelete: Cascade)
+}
+
+model LearningSession {
+  id              String        @id @default(cuid())
+  menteeId        String
+  mentorId        String
+  teachingFieldId String?
+  title           String
+  description     String?
+  status          SessionStatus @default(PENDING)
+  scheduledAt     DateTime
+  durationMinutes Int           @default(60)
+  endAt           DateTime?
+  meetLink        String?
+  meetId          String?
+  fee             Int           @default(0)
+  notes           String?
+  mentorNotes     String?
+  rating          Int?
+  ratingComment   String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  createdBy       String?
+  updatedBy       String?
+  cancelledAt     DateTime?
+  cancelledBy     String?
+  cancelReason    String?
+  isDeleted       Boolean       @default(false)
+  version         Int           @default(1)
+  mentee          User          @relation("MenteeSession", fields: [menteeId], references: [id])
+  mentor          User          @relation("MentorSession", fields: [mentorId], references: [id])
+  payments        Payment[]
+}
+
+model Payment {
+  id               String        @id @default(cuid())
+  userId           String
+  sessionId        String?
+  type             PaymentType
+  status           PaymentStatus @default(PENDING)
+  amount           Int
+  transactionCode  String        @unique
+  shortCode        String
+  tnAccountNo      String
+  tnAccountName    String?
+  tnTransactionId  String?
+  tnRefId          String?
+  verifiedAt       DateTime?
+  verifiedAmount   Int?
+  verifiedBy       String?
+  expiresAt        DateTime
+  lastCheckedAt    DateTime?
+  checkCount       Int           @default(0)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  isDeleted        Boolean       @default(false)
+  version          Int           @default(1)
+  user             User          @relation(fields: [userId], references: [id])
+  session          LearningSession? @relation(fields: [sessionId], references: [id])
+  verificationLogs PaymentVerificationLog[]
+}
+
+model PaymentVerificationLog {
+  id          String   @id @default(cuid())
+  paymentId   String
+  checkedAt   DateTime @default(now())
+  found       Boolean
+  apiResponse String?
+  error       String?
+  payment     Payment  @relation(fields: [paymentId], references: [id])
+}
+
+model MentorApplication {
+  id          String                  @id @default(cuid())
+  userId      String                  @unique
+  motivation  String
+  experience  String
+  linkedinUrl String?
+  status      MentorApplicationStatus @default(PENDING)
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  reviewNote  String?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  version     Int                     @default(1)
+  user        User                    @relation(fields: [userId], references: [id])
+}
+
+model UserAuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  action      String
+  oldValues   String?
+  newValues   String?
+  performedBy String?
+  performedAt DateTime @default(now())
+  ipAddress   String?
+  userAgent   String?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

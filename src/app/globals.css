@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Brand palette */
+    --color-jade: 141 65% 38%;
+    --color-jade-light: 141 45% 92%;
+    --color-jade-dark: 141 65% 25%;
+    --color-amber: 38 92% 50%;
+    --color-amber-light: 38 92% 94%;
+    --color-crimson: 0 72% 51%;
+    --color-crimson-light: 0 72% 95%;
+
+    /* Neutral */
+    --color-stone-50: 60 9% 97%;
+    --color-stone-100: 60 4% 94%;
+    --color-stone-800: 20 6% 20%;
+    --color-stone-900: 20 6% 10%;
+
+    /* Fonts */
+    --font-body: "Be Vietnam Pro", sans-serif;
+    --font-display: "Playfair Display", serif;
+  }
+
+  * {
+    @apply border-stone-200;
+  }
+
+  body {
+    @apply bg-stone-50 text-stone-900;
+  }
+
+  h1, h2, h3 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  /* ─── Gradient Backgrounds ──────────────────── */
+  .gradient-hero {
+    background: 
+      radial-gradient(ellipse 80% 60% at 50% -10%, hsl(141 45% 88% / 0.6) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 40% at 90% 80%, hsl(38 92% 90% / 0.4) 0%, transparent 60%),
+      hsl(60 9% 97%);
+  }
+
+  .gradient-card {
+    @apply bg-gradient-to-br from-white via-stone-50 to-stone-100;
+  }
+
+  /* ─── Glass Effect ──────────────────────────── */
+  .glass {
+    @apply backdrop-blur-md bg-white/70 border border-white/50;
+  }
+
+  .glass-dark {
+    @apply backdrop-blur-md bg-stone-900/80 border border-stone-700/50;
+  }
+
+  /* ─── Typography ────────────────────────────── */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* ─── Animations ────────────────────────────── */
+  .animate-in {
+    animation: fadeSlideIn 0.4s ease-out both;
+  }
+
+  .animate-in-delay-1 { animation-delay: 100ms; }
+  .animate-in-delay-2 { animation-delay: 200ms; }
+  .animate-in-delay-3 { animation-delay: 300ms; }
+  .animate-in-delay-4 { animation-delay: 400ms; }
+
+  @keyframes fadeSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  }
+
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(141 45% 92%) 0%,
+      hsl(141 55% 85%) 50%,
+      hsl(141 45% 92%) 100%
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
+  }
+
+  /* ─── Scroll ────────────────────────────────── */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-stone-300 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-stone-400;
+  }
+}
+
+@layer utilities {
+  .font-body { font-family: var(--font-body); }
+  .font-display { font-family: var(--font-display); }
+}
