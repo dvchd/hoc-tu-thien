@@ -12,6 +12,7 @@ import { UserStatus } from "@/domain/value-objects/UserStatus";
  */
 export const authConfig: NextAuthConfig = {
   secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+  trustHost: true,
   providers: [],
   session: { strategy: "jwt" },
   pages: { signIn: "/login", error: "/login" },

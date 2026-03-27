@@ -47,6 +47,7 @@ function GoogleProviderWithHardcodedEndpoints(): OAuthConfig<Record<string, unkn
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+  trustHost: true,
   adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProviderWithHardcodedEndpoints(),
