@@ -7,8 +7,8 @@ import {
   MentorProfileFee,
   MenteeStats,
   MentorStats,
-} from "../../../domain/repositories/ISessionRepository";
-import { SessionStatus } from "../../../domain/value-objects/Payment";
+} from "../../../../domain/repositories/ISessionRepository";
+import { SessionStatus } from "../../../../domain/value-objects/Payment";
 
 type PrismaTransactionClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
 

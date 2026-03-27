@@ -4,9 +4,9 @@
 import { UserEntity } from "@/domain/entities/User";
 import { UserRole } from "@/domain/value-objects/UserRole";
 import { UserStatus } from "@/domain/value-objects/UserStatus";
-import { IUserRepository, FindUsersOptions, UserCount } from "@/domain/repositories/IUserRepository";
-import { IPaymentRepository, CreatePaymentInput, PaymentRecord } from "@/domain/repositories/IPaymentRepository";
-import { ISessionRepository, ITeachingFieldRepository, BookSessionInput, SessionRecord, TeachingFieldRecord, LeaderboardEntry } from "@/domain/repositories/ISessionRepository";
+import { IUserRepository } from "@/domain/repositories/IUserRepository";
+import { IPaymentRepository, PaymentRecord } from "@/domain/repositories/IPaymentRepository";
+import { ISessionRepository, ITeachingFieldRepository, SessionRecord } from "@/domain/repositories/ISessionRepository";
 import { IUnitOfWork } from "@/application/interfaces/IUnitOfWork";
 import { ISystemConfigRepository } from "@/domain/repositories/ISystemConfigRepository";
 import { IMentorApplicationRepository } from "@/domain/repositories/IMentorApplicationRepository";
@@ -24,7 +24,7 @@ export const buildUser = (overrides: Partial<Parameters<typeof UserEntity.create
     name: "Test User",
     image: null,
     role: UserRole.MENTEE,
-    status: UserStatus.ACTIVE, // tests override this as needed
+    status: UserStatus.ACTIVE,
     createdBy: "system",
     ...overrides,
   });
@@ -106,6 +106,8 @@ export function createMockUserRepository(): jest.Mocked<IUserRepository> {
     softDelete: jest.fn(),
     hardDelete: jest.fn(),
     createAuditLog: jest.fn(),
+    incrementLateCancellation: jest.fn(),
+    incrementNoShow: jest.fn(),
   };
 }
 

@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import {
   ITeachingFieldRepository,
   TeachingFieldRecord,
-} from "../../../domain/repositories/ISessionRepository";
+} from "../../../../domain/repositories/ISessionRepository";
 
 type PrismaTransactionClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
 

@@ -16,14 +16,11 @@ import {
   createMockUnitOfWork,
 } from "@/__tests__/helpers";
 
-// ─── Mock Google Meet Service ─────────────────────────────────────────────────
+// ─── Mock Services ──────────────────────────────────────────────────────────
 
-jest.mock("@/infrastructure/external/GoogleMeetService", () => ({
-  meetService: {
-    createMeetLink: jest.fn().mockResolvedValue({
-      meetLink: "https://meet.google.com/abc-defg-hij",
-      meetId: "abc-defg-hij",
-    }),
+jest.mock("@/infrastructure/external/ThienNguyenAppClient", () => ({
+  tnAppClient: {
+    findTransactionByCode: jest.fn(),
   },
 }));
 

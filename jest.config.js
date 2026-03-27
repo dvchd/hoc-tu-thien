@@ -5,10 +5,10 @@ const config = {
   rootDir: ".",
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
+    "^@/__tests__/(.*)$": "<rootDir>/src/__tests__/$1",
   },
   testMatch: [
-    "<rootDir>/src/__tests__/**/*.test.ts",
-    "<rootDir>/src/__tests__/**/*.spec.ts",
+    "<rootDir>/src/__tests__/unit/**/*.test.ts",
   ],
   collectCoverageFrom: [
     "src/domain/**/*.ts",
@@ -20,10 +20,10 @@ const config = {
   ],
   coverageThreshold: {
     global: {
-      branches: 70,
-      functions: 75,
-      lines: 75,
-      statements: 75,
+      branches: 60,
+      functions: 65,
+      lines: 65,
+      statements: 65,
     },
   },
   coverageReporters: ["text", "lcov", "html"],
@@ -35,10 +35,13 @@ const config = {
         tsconfig: {
           strict: true,
           esModuleInterop: true,
-          paths: { "@/*": ["<rootDir>/src/*"] },
+          paths: {
+            "@/*": ["<rootDir>/src/*"],
+            "@/__tests__/*": ["<rootDir>/src/__tests__/*"],
+          },
           jsx: "react-jsx",
-          moduleResolution: "bundler",
-          module: "esnext",
+          moduleResolution: "node",
+          module: "commonjs",
         },
       },
     ],

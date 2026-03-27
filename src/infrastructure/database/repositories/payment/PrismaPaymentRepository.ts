@@ -3,8 +3,8 @@ import {
   IPaymentRepository,
   CreatePaymentInput,
   PaymentRecord,
-} from "../../../domain/repositories/IPaymentRepository";
-import { PaymentStatus, PaymentType } from "../../../domain/value-objects/Payment";
+} from "../../../../domain/repositories/IPaymentRepository";
+import { PaymentStatus, PaymentType } from "../../../../domain/value-objects/Payment";
 
 type PrismaTransactionClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
 
