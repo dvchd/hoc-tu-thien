@@ -26,56 +26,56 @@ export class SubmitMentorApplicationUseCase {
   constructor(private readonly uow: IUnitOfWork) {}
 
   async execute(input: SubmitMentorApplicationDTO): Promise<MentorApplicationRecord> {
-    const user = await this.uow.users.findById(input.userId);
-    if (!user) throw new Error("Không tìm thấy người dùng");
+    return this.uow.execute(async (uow) => {
+      const user = await uow.users.findById(input.userId);
+      if (!user) throw new Error("Không tìm thấy người dùng");
 
-    if (user.status !== UserStatus.ACTIVE) {
-      throw new Error("Tài khoản chưa được kích hoạt. Vui lòng kích hoạt trước khi đăng ký làm Mentor.");
-    }
-
-    if (user.isMentor()) {
-      throw new Error("Bạn đã là Mentor rồi");
-    }
-
-    if (user.isAdmin()) {
-      throw new Error("Admin không thể đăng ký làm Mentor");
-    }
-
-    // Kiểm tra đã có application pending/approved chưa
-    const existing = await this.uow.mentorApplications.findByUserId(input.userId);
-    if (existing) {
-      if (existing.status === "PENDING") {
-        throw new Error("Bạn đã có đơn đăng ký đang chờ xét duyệt. Vui lòng đợi Admin xem xét.");
+      if (user.status !== UserStatus.ACTIVE) {
+        throw new Error("Tài khoản chưa được kích hoạt. Vui lòng kích hoạt trước khi đăng ký làm Mentor.");
       }
-      if (existing.status === "APPROVED") {
-        throw new Error("Đơn đăng ký của bạn đã được phê duyệt trước đó.");
+
+      if (user.isMentor()) {
+        throw new Error("Bạn đã là Mentor rồi");
       }
-      // Nếu REJECTED -> cho phép nộp lại (tạo bản ghi mới không được vì unique constraint)
-      // Xử lý bằng cách không cho nộp lại khi REJECTED - yêu cầu contact admin
-      throw new Error("Đơn đăng ký trước đây của bạn đã bị từ chối. Vui lòng liên hệ Admin để được hỗ trợ.");
-    }
 
-    const contactInfoStr = input.contactInfo
-      ? JSON.stringify(input.contactInfo)
-      : null;
+      if (user.isAdmin()) {
+        throw new Error("Admin không thể đăng ký làm Mentor");
+      }
 
-    const application = await this.uow.mentorApplications.create({
-      id: createId(),
-      userId: input.userId,
-      motivation: input.motivation,
-      experience: input.experience,
-      linkedinUrl: input.linkedinUrl,
-      contactInfo: contactInfoStr ?? undefined,
+      // Kiểm tra đã có application pending/approved chưa
+      const existing = await uow.mentorApplications.findByUserId(input.userId);
+      if (existing) {
+        if (existing.status === "PENDING") {
+          throw new Error("Bạn đã có đơn đăng ký đang chờ xét duyệt. Vui lòng đợi Admin xem xét.");
+        }
+        if (existing.status === "APPROVED") {
+          throw new Error("Đơn đăng ký của bạn đã được phê duyệt trước đó.");
+        }
+        throw new Error("Đơn đăng ký trước đây của bạn đã bị từ chối. Vui lòng liên hệ Admin để được hỗ trợ.");
+      }
+
+      const contactInfoStr = input.contactInfo
+        ? JSON.stringify(input.contactInfo)
+        : null;
+
+      const application = await uow.mentorApplications.create({
+        id: createId(),
+        userId: input.userId,
+        motivation: input.motivation,
+        experience: input.experience,
+        linkedinUrl: input.linkedinUrl,
+        contactInfo: contactInfoStr ?? undefined,
+      });
+
+      await uow.users.createAuditLog({
+        userId: input.userId,
+        action: "MENTOR_APPLICATION_SUBMITTED",
+        newValues: { applicationId: application.id, motivation: input.motivation.slice(0, 100) },
+        performedBy: input.userId,
+      });
+
+      return application;
     });
-
-    await this.uow.users.createAuditLog({
-      userId: input.userId,
-      action: "MENTOR_APPLICATION_SUBMITTED",
-      newValues: { applicationId: application.id, motivation: input.motivation.slice(0, 100) },
-      performedBy: input.userId,
-    });
-
-    return application;
   }
 }
 
@@ -170,26 +170,28 @@ export class RejectMentorApplicationUseCase {
       throw new Error("Vui lòng nhập lý do từ chối");
     }
 
-    const application = await this.uow.mentorApplications.findById(applicationId);
-    if (!application) throw new Error("Không tìm thấy đơn đăng ký");
-    if (application.status !== "PENDING") {
-      throw new Error(`Đơn đăng ký đã ở trạng thái: ${application.status}`);
-    }
+    return this.uow.execute(async (uow) => {
+      const application = await uow.mentorApplications.findById(applicationId);
+      if (!application) throw new Error("Không tìm thấy đơn đăng ký");
+      if (application.status !== "PENDING") {
+        throw new Error(`Đơn đăng ký đã ở trạng thái: ${application.status}`);
+      }
 
-    const updated = await this.uow.mentorApplications.updateStatus(
-      applicationId,
-      "REJECTED",
-      reviewedBy,
-      reviewNote
-    );
+      const updated = await uow.mentorApplications.updateStatus(
+        applicationId,
+        "REJECTED",
+        reviewedBy,
+        reviewNote
+      );
 
-    await this.uow.users.createAuditLog({
-      userId: application.userId,
-      action: "MENTOR_APPLICATION_REJECTED",
-      newValues: { applicationId, reviewedBy, reviewNote },
-      performedBy: reviewedBy,
+      await uow.users.createAuditLog({
+        userId: application.userId,
+        action: "MENTOR_APPLICATION_REJECTED",
+        newValues: { applicationId, reviewedBy, reviewNote },
+        performedBy: reviewedBy,
+      });
+
+      return updated;
     });
-
-    return updated;
   }
 }

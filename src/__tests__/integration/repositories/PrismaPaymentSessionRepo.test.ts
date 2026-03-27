@@ -1,12 +1,11 @@
 /**
  * Integration tests for PrismaPaymentRepository and PrismaSessionRepository
  *
- * Uses a separate test SQLite database.
+ * Uses real PostgreSQL (DATABASE_URL from .env).
  * All tests run sequentially (--runInBand) to avoid DB conflicts.
  */
 
 import { PrismaClient } from "@prisma/client";
-import { execSync } from "child_process";
 import {
   PrismaPaymentRepository,
   PrismaSessionRepository,
@@ -14,41 +13,44 @@ import {
 import { PaymentType, PaymentStatus, SessionStatus } from "@/domain/value-objects/Payment";
 
 let prisma: PrismaClient;
-const TEST_DB = "file:./test_payment_session.db";
+
+const TEST_PREFIX = `inttest_ps_${Date.now()}_`;
+const MENTEE_ID = `${TEST_PREFIX}mentee`;
+const MENTOR_ID = `${TEST_PREFIX}mentor`;
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
 
 beforeAll(async () => {
-  prisma = new PrismaClient({ datasources: { db: { url: TEST_DB } } });
-
-  execSync("npx prisma db push --schema=./prisma/schema.prisma --force-reset", {
-    env: { ...process.env, DATABASE_URL: TEST_DB.replace("file:", "file:") },
-    stdio: "ignore",
-  });
-
+  prisma = new PrismaClient();
   await prisma.$connect();
 
-  // Seed base users needed for FK constraints
+  // Seed base users needed for FK constraints (unique per test run)
   await prisma.user.createMany({
     data: [
-      { id: "mentee_test", email: "mentee@test.com", role: "MENTEE", status: "ACTIVE", version: 1 },
-      { id: "mentor_test", email: "mentor@test.com", role: "MENTOR", status: "ACTIVE", version: 1 },
+      { id: MENTEE_ID, email: `${TEST_PREFIX}mentee@test.com`, role: "MENTEE", status: "ACTIVE", version: 1 },
+      { id: MENTOR_ID, email: `${TEST_PREFIX}mentor@test.com`, role: "MENTOR", status: "ACTIVE", version: 1 },
     ],
   });
 });
 
 afterAll(async () => {
+  // Cleanup tất cả data được tạo bởi test suite này
+  await prisma.paymentVerificationLog.deleteMany({
+    where: { payment: { userId: { startsWith: TEST_PREFIX } } },
+  });
+  await prisma.payment.deleteMany({ where: { userId: { startsWith: TEST_PREFIX } } });
+  await prisma.learningSession.deleteMany({ where: { menteeId: { startsWith: TEST_PREFIX } } });
+  await prisma.user.deleteMany({ where: { id: { startsWith: TEST_PREFIX } } });
   await prisma.$disconnect();
-  try {
-    const fs = await import("fs");
-    fs.unlinkSync(TEST_DB.replace("file:./", "./"));
-  } catch {}
 });
 
 beforeEach(async () => {
-  await prisma.paymentVerificationLog.deleteMany();
-  await prisma.payment.deleteMany();
-  await prisma.learningSession.deleteMany();
+  // Cleanup chỉ data của test run này
+  await prisma.paymentVerificationLog.deleteMany({
+    where: { payment: { userId: { startsWith: TEST_PREFIX } } },
+  });
+  await prisma.payment.deleteMany({ where: { userId: { startsWith: TEST_PREFIX } } });
+  await prisma.learningSession.deleteMany({ where: { menteeId: { startsWith: TEST_PREFIX } } });
 });
 
 // ─── PrismaPaymentRepository ──────────────────────────────────────────────────
@@ -60,8 +62,8 @@ describe("PrismaPaymentRepository (integration)", () => {
 
   function makePaymentInput(overrides: Partial<any> = {}) {
     return {
-      id: `pay_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      userId: "mentee_test",
+      id: `${TEST_PREFIX}pay_${Math.random().toString(36).slice(2, 6)}`,
+      userId: MENTEE_ID,
       type: PaymentType.ACTIVATION,
       amount: 10000,
       transactionCode: `HOCTUTHIEN KICHHOAT ${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
@@ -122,7 +124,7 @@ describe("PrismaPaymentRepository (integration)", () => {
       await repo.create(makePaymentInput());
       await repo.create(makePaymentInput());
 
-      const pending = await repo.findPendingByUserId("mentee_test");
+      const pending = await repo.findPendingByUserId(MENTEE_ID);
       expect(pending.length).toBeGreaterThanOrEqual(2);
     });
 
@@ -132,7 +134,7 @@ describe("PrismaPaymentRepository (integration)", () => {
       await repo.create(makePaymentInput({ type: PaymentType.SESSION_FEE }));
 
       const activations = await repo.findPendingByUserId(
-        "mentee_test",
+        MENTEE_ID,
         PaymentType.ACTIVATION
       );
 
@@ -217,14 +219,14 @@ describe("PrismaSessionRepository (integration)", () => {
 
   function makeSessionInput(overrides: Partial<any> = {}) {
     return {
-      id: `sess_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      menteeId: "mentee_test",
-      mentorId: "mentor_test",
+      id: `${TEST_PREFIX}sess_${Math.random().toString(36).slice(2, 6)}`,
+      menteeId: MENTEE_ID,
+      mentorId: MENTOR_ID,
       title: "Học ReactJS",
       scheduledAt: new Date(Date.now() + 86400000),
       durationMinutes: 60,
       fee: 0,
-      createdBy: "mentee_test",
+      createdBy: MENTEE_ID,
       ...overrides,
     };
   }
@@ -251,7 +253,7 @@ describe("PrismaSessionRepository (integration)", () => {
 
       const found = await repo.findById(input.id);
       expect(found!.id).toBe(input.id);
-      expect(found!.menteeId).toBe("mentee_test");
+      expect(found!.menteeId).toBe(MENTEE_ID);
     });
   });
 
@@ -311,7 +313,7 @@ describe("PrismaSessionRepository (integration)", () => {
   describe("findPendingPaymentByMenteeId()", () => {
     it("returns null when no pending payment session", async () => {
       const repo = makeRepo();
-      const result = await repo.findPendingPaymentByMenteeId("mentee_test");
+      const result = await repo.findPendingPaymentByMenteeId(MENTEE_ID);
       expect(result).toBeNull();
     });
 
@@ -320,7 +322,7 @@ describe("PrismaSessionRepository (integration)", () => {
       const session = await repo.create(makeSessionInput({ fee: 100000 }));
       await repo.updateStatus(session.id, SessionStatus.PAYMENT_PENDING);
 
-      const found = await repo.findPendingPaymentByMenteeId("mentee_test");
+      const found = await repo.findPendingPaymentByMenteeId(MENTEE_ID);
       expect(found).not.toBeNull();
       expect(found!.status).toBe(SessionStatus.PAYMENT_PENDING);
     });
@@ -332,18 +334,18 @@ describe("PrismaSessionRepository (integration)", () => {
       await repo.create(makeSessionInput());
       await repo.create(makeSessionInput());
 
-      const sessions = await repo.findByMenteeId("mentee_test");
+      const sessions = await repo.findByMenteeId(MENTEE_ID);
       expect(sessions.length).toBeGreaterThanOrEqual(2);
-      expect(sessions.every((s) => s.menteeId === "mentee_test")).toBe(true);
+      expect(sessions.every((s) => s.menteeId === MENTEE_ID)).toBe(true);
     });
 
     it("returns sessions for a specific mentor", async () => {
       const repo = makeRepo();
       await repo.create(makeSessionInput());
 
-      const sessions = await repo.findByMentorId("mentor_test");
+      const sessions = await repo.findByMentorId(MENTOR_ID);
       expect(sessions.length).toBeGreaterThanOrEqual(1);
-      expect(sessions.every((s) => s.mentorId === "mentor_test")).toBe(true);
+      expect(sessions.every((s) => s.mentorId === MENTOR_ID)).toBe(true);
     });
   });
 
@@ -376,7 +378,7 @@ describe("PrismaSessionRepository (integration)", () => {
 
       expect(topMentors.length).toBeGreaterThanOrEqual(1);
       expect(topMentors[0].sessionCount).toBeGreaterThanOrEqual(3);
-      expect(topMentors[0].userId).toBe("mentor_test");
+      expect(topMentors[0].userId).toBe(MENTOR_ID);
     });
   });
 });

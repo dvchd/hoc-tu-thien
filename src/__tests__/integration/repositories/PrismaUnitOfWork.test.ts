@@ -5,10 +5,11 @@
  * 1. execute() wraps all work in a single transaction
  * 2. A thrown error inside execute() rolls back all changes
  * 3. Multiple repositories share the same transaction client
+ *
+ * Uses real PostgreSQL (DATABASE_URL from .env).
  */
 
 import { PrismaClient } from "@prisma/client";
-import { execSync } from "child_process";
 import { PrismaUnitOfWork } from "@/infrastructure/unit-of-work/PrismaUnitOfWork";
 import { UserEntity } from "@/domain/entities/User";
 import { UserRole } from "@/domain/value-objects/UserRole";
@@ -16,39 +17,25 @@ import { UserStatus } from "@/domain/value-objects/UserStatus";
 
 let prisma: PrismaClient;
 
+const TEST_PREFIX = `inttest_uow_${Date.now()}_`;
+
 beforeAll(async () => {
-  process.env.DATABASE_URL = "file:./test_uow.db";
-
-  prisma = new PrismaClient({
-    datasources: { db: { url: "file:./test_uow.db" } },
-  });
-
-  execSync("npx prisma db push --schema=./prisma/schema.prisma --force-reset", {
-    env: { ...process.env, DATABASE_URL: "file:./test_uow.db" },
-    stdio: "ignore",
-  });
-
+  prisma = new PrismaClient();
   await prisma.$connect();
 });
 
 afterAll(async () => {
+  // Cleanup data tạo bởi test suite này
+  await prisma.userAuditLog.deleteMany({ where: { userId: { startsWith: TEST_PREFIX } } });
+  await prisma.user.deleteMany({ where: { id: { startsWith: TEST_PREFIX } } });
   await prisma.$disconnect();
-  try {
-    const fs = await import("fs");
-    fs.unlinkSync("./test_uow.db");
-  } catch {}
 });
 
-beforeEach(async () => {
-  await prisma.userAuditLog.deleteMany();
-  await prisma.payment.deleteMany();
-  await prisma.user.deleteMany();
-});
-
-function makeUser(email: string, role = UserRole.MENTEE) {
+function makeUser(suffix: string, role = UserRole.MENTEE) {
+  const rand = Math.random().toString(36).slice(2, 6);
   return UserEntity.create({
-    id: `u_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    email,
+    id: `${TEST_PREFIX}${rand}`,
+    email: `${TEST_PREFIX}${suffix}_${rand}@test.com`,
     status: UserStatus.ACTIVE,
     role,
   });
@@ -58,7 +45,7 @@ describe("PrismaUnitOfWork", () => {
   describe("execute() - happy path", () => {
     it("commits all changes when work succeeds", async () => {
       const uow = new PrismaUnitOfWork(prisma);
-      const user = makeUser("commit@test.com");
+      const user = makeUser("commit");
 
       await uow.execute(async (u) => {
         await u.users.save(user);
@@ -78,7 +65,7 @@ describe("PrismaUnitOfWork", () => {
 
     it("all repositories within execute() see the same transaction", async () => {
       const uow = new PrismaUnitOfWork(prisma);
-      const user = makeUser("shared-tx@test.com");
+      const user = makeUser("sharedtx");
 
       await uow.execute(async (u) => {
         await u.users.save(user);
@@ -92,7 +79,7 @@ describe("PrismaUnitOfWork", () => {
   describe("execute() - rollback on error", () => {
     it("rolls back user save when an error is thrown", async () => {
       const uow = new PrismaUnitOfWork(prisma);
-      const user = makeUser("rollback@test.com");
+      const user = makeUser("rollback");
 
       await expect(
         uow.execute(async (u) => {
@@ -108,7 +95,7 @@ describe("PrismaUnitOfWork", () => {
 
     it("rolls back partial work (save + audit log) on error", async () => {
       const uow = new PrismaUnitOfWork(prisma);
-      const user = makeUser("partial@test.com");
+      const user = makeUser("partial");
 
       await expect(
         uow.execute(async (u) => {
@@ -129,7 +116,7 @@ describe("PrismaUnitOfWork", () => {
   describe("nested execute() calls", () => {
     it("treats nested execute as the same transaction", async () => {
       const uow = new PrismaUnitOfWork(prisma);
-      const user = makeUser("nested@test.com");
+      const user = makeUser("nested");
 
       await uow.execute(async (u) => {
         await u.execute(async (inner) => {
@@ -148,7 +135,7 @@ describe("PrismaUnitOfWork", () => {
   describe("optimistic concurrency via update()", () => {
     it("prevents stale update when version is wrong", async () => {
       const uow = new PrismaUnitOfWork(prisma);
-      const user = makeUser("opt-lock@test.com");
+      const user = makeUser("optlock");
       await uow.users.save(user);
 
       // Simulate another process updating the user

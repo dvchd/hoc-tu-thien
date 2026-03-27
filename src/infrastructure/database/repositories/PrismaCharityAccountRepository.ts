@@ -9,8 +9,10 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { createId } = require("@paralleldrive/cuid2");
 
+type PrismaTransactionClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
+
 export class PrismaCharityAccountRepository implements ICharityAccountRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaClient | PrismaTransactionClient) {}
 
   private toRecord(a: any): CharityAccountRecord {
     return {
@@ -32,36 +34,36 @@ export class PrismaCharityAccountRepository implements ICharityAccountRepository
   }
 
   async findById(id: string): Promise<CharityAccountRecord | null> {
-    const a = await (this.prisma as any).charityAccount.findUnique({ where: { id } });
+    const a = await this.prisma.charityAccount.findUnique({ where: { id } });
     return a ? this.toRecord(a) : null;
   }
 
   async findByAccountNo(accountNo: string): Promise<CharityAccountRecord | null> {
-    const a = await (this.prisma as any).charityAccount.findUnique({ where: { accountNo } });
+    const a = await this.prisma.charityAccount.findUnique({ where: { accountNo } });
     return a ? this.toRecord(a) : null;
   }
 
   async findAll(options?: { isActive?: boolean; includeDeleted?: boolean }): Promise<CharityAccountRecord[]> {
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     if (!options?.includeDeleted) where.isDeleted = false;
     if (options?.isActive !== undefined) where.isActive = options.isActive;
 
-    const results = await (this.prisma as any).charityAccount.findMany({
+    const results = await this.prisma.charityAccount.findMany({
       where,
       orderBy: [{ isDefault: "desc" }, { name: "asc" }],
     });
-    return results.map((a: any) => this.toRecord(a));
+    return results.map((a) => this.toRecord(a));
   }
 
   async findDefault(): Promise<CharityAccountRecord | null> {
-    const a = await (this.prisma as any).charityAccount.findFirst({
+    const a = await this.prisma.charityAccount.findFirst({
       where: { isDefault: true, isActive: true, isDeleted: false },
     });
     return a ? this.toRecord(a) : null;
   }
 
   async create(input: CreateCharityAccountInput): Promise<CharityAccountRecord> {
-    const created = await (this.prisma as any).charityAccount.create({
+    const created = await this.prisma.charityAccount.create({
       data: {
         id: createId(),
         name: input.name,
@@ -79,7 +81,7 @@ export class PrismaCharityAccountRepository implements ICharityAccountRepository
   }
 
   async update(id: string, input: UpdateCharityAccountInput): Promise<CharityAccountRecord> {
-    const data: any = { updatedAt: new Date() };
+    const data: Record<string, unknown> = { updatedAt: new Date() };
     if (input.name !== undefined) data.name = input.name;
     if (input.bankName !== undefined) data.bankName = input.bankName;
     if (input.campaignKeyword !== undefined) data.campaignKeyword = input.campaignKeyword;
@@ -87,12 +89,12 @@ export class PrismaCharityAccountRepository implements ICharityAccountRepository
     if (input.isActive !== undefined) data.isActive = input.isActive;
     if (input.isDefault !== undefined) data.isDefault = input.isDefault;
 
-    const updated = await (this.prisma as any).charityAccount.update({ where: { id }, data });
+    const updated = await this.prisma.charityAccount.update({ where: { id }, data });
     return this.toRecord(updated);
   }
 
   async deactivate(id: string): Promise<void> {
-    await (this.prisma as any).charityAccount.update({
+    await this.prisma.charityAccount.update({
       where: { id },
       data: { isActive: false, updatedAt: new Date() },
     });
@@ -105,11 +107,10 @@ export class PrismaCharityAccountRepository implements ICharityAccountRepository
         `Không thể xóa tài khoản này vì đang được sử dụng (${count} mentor/giao dịch). Hãy vô hiệu hóa thay vì xóa.`
       );
     }
-    await (this.prisma as any).charityAccount.delete({ where: { id } });
+    await this.prisma.charityAccount.delete({ where: { id } });
   }
 
   async getUsageCount(id: string): Promise<number> {
-    // Kiểm tra qua accountNo vì payment lưu accountNo, không lưu ID
     const account = await this.findById(id);
     if (!account) return 0;
 
@@ -121,7 +122,7 @@ export class PrismaCharityAccountRepository implements ICharityAccountRepository
   }
 
   async clearDefault(): Promise<void> {
-    await (this.prisma as any).charityAccount.updateMany({
+    await this.prisma.charityAccount.updateMany({
       where: { isDefault: true },
       data: { isDefault: false },
     });

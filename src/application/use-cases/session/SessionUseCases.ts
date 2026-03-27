@@ -236,8 +236,15 @@ export class CompleteSessionUseCase {
       }
 
       const newStatus = session.fee > 0 ? SessionStatus.PAYMENT_PENDING : SessionStatus.COMPLETED;
-      
-      return uow.sessions.updateStatus(sessionId, newStatus, {});
+      const updated = await uow.sessions.updateStatus(sessionId, newStatus, {});
+
+      // Cập nhật totalSessions trên MentorProfile khi buổi học hoàn toàn miễn phí
+      // (có phí thì đợi sau khi payment verified để tránh count sớm)
+      if (newStatus === SessionStatus.COMPLETED) {
+        await uow.mentorProfiles.incrementTotalSessions(mentorId);
+      }
+
+      return updated;
     });
   }
 }
@@ -345,17 +352,24 @@ export class RateSessionUseCase {
   async execute(sessionId: string, menteeId: string, rating: number, comment?: string): Promise<SessionRecord> {
     if (rating < 1 || rating > 5) throw new Error("Đánh giá phải từ 1-5 sao");
 
-    const session = await this.uow.sessions.findById(sessionId);
-    if (!session) throw new Error("Không tìm thấy buổi học");
-    if (session.menteeId !== menteeId) throw new Error("Không có quyền đánh giá");
-    if (session.status !== SessionStatus.COMPLETED) {
-      throw new Error("Chỉ có thể đánh giá buổi học đã hoàn thành");
-    }
-    if (session.rating !== null) {
-      throw new Error("Buổi học này đã được đánh giá");
-    }
+    return this.uow.execute(async (uow) => {
+      const session = await uow.sessions.findById(sessionId);
+      if (!session) throw new Error("Không tìm thấy buổi học");
+      if (session.menteeId !== menteeId) throw new Error("Không có quyền đánh giá");
+      if (session.status !== SessionStatus.COMPLETED) {
+        throw new Error("Chỉ có thể đánh giá buổi học đã hoàn thành");
+      }
+      if (session.rating !== null) {
+        throw new Error("Buổi học này đã được đánh giá");
+      }
 
-    return this.uow.sessions.addRating(sessionId, rating, comment);
+      const rated = await uow.sessions.addRating(sessionId, rating, comment);
+
+      // Cập nhật rating stats trên MentorProfile
+      await uow.mentorProfiles.updateRatingStats(session.mentorId, rating);
+
+      return rated;
+    });
   }
 }
 
@@ -377,44 +391,46 @@ export class ApplyForMentorUseCase {
   constructor(private readonly uow: IUnitOfWork) {}
 
   async execute(input: ApplyForMentorDTO): Promise<{ applicationId: string }> {
-    const user = await this.uow.users.findById(input.userId);
-    if (!user) throw new Error("Không tìm thấy người dùng");
+    return this.uow.execute(async (uow) => {
+      const user = await uow.users.findById(input.userId);
+      if (!user) throw new Error("Không tìm thấy người dùng");
 
-    if (user.status !== UserStatus.ACTIVE) {
-      throw new Error("Tài khoản chưa được kích hoạt");
-    }
-
-    if (user.isMentor()) throw new Error("Bạn đã là Mentor rồi");
-
-    const existing = await this.uow.mentorApplications.findByUserId(input.userId);
-    if (existing) {
-      if (existing.status === "PENDING") {
-        return { applicationId: existing.id };
+      if (user.status !== UserStatus.ACTIVE) {
+        throw new Error("Tài khoản chưa được kích hoạt");
       }
-      if (existing.status === "APPROVED") {
-        throw new Error("Bạn đã là Mentor rồi");
+
+      if (user.isMentor()) throw new Error("Bạn đã là Mentor rồi");
+
+      const existing = await uow.mentorApplications.findByUserId(input.userId);
+      if (existing) {
+        if (existing.status === "PENDING") {
+          return { applicationId: existing.id };
+        }
+        if (existing.status === "APPROVED") {
+          throw new Error("Bạn đã là Mentor rồi");
+        }
+        throw new Error("Đơn đăng ký trước đây của bạn đã bị từ chối. Vui lòng liên hệ Admin.");
       }
-      throw new Error("Đơn đăng ký trước đây của bạn đã bị từ chối. Vui lòng liên hệ Admin.");
-    }
 
-    const contactInfoStr = input.contactInfo ? JSON.stringify(input.contactInfo) : undefined;
-    const newApplication = await this.uow.mentorApplications.create({
-      id: createId(),
-      userId: input.userId,
-      motivation: input.motivation,
-      experience: input.experience,
-      linkedinUrl: input.linkedinUrl,
-      contactInfo: contactInfoStr,
+      const contactInfoStr = input.contactInfo ? JSON.stringify(input.contactInfo) : undefined;
+      const newApplication = await uow.mentorApplications.create({
+        id: createId(),
+        userId: input.userId,
+        motivation: input.motivation,
+        experience: input.experience,
+        linkedinUrl: input.linkedinUrl,
+        contactInfo: contactInfoStr,
+      });
+
+      await uow.users.createAuditLog({
+        userId: input.userId,
+        action: "MENTOR_APPLICATION_SUBMITTED",
+        newValues: { applicationId: newApplication.id },
+        performedBy: input.userId,
+      });
+
+      return { applicationId: newApplication.id };
     });
-
-    await this.uow.users.createAuditLog({
-      userId: input.userId,
-      action: "MENTOR_APPLICATION_SUBMITTED",
-      newValues: { applicationId: newApplication.id },
-      performedBy: input.userId,
-    });
-
-    return { applicationId: newApplication.id };
   }
 }
 

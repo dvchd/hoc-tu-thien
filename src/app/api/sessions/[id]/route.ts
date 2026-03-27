@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { createUseCases } from "@/lib/container";
-import { prisma } from "@/infrastructure/database/prisma/client";
 import { z } from "zod";
 
 const actionSchema = z.object({
@@ -23,18 +22,16 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { getMentorSessions } = createUseCases();
-    // Find session by ID - return all sessions for the user and filter
-    const sessions = await getMentorSessions.byMenteeId(session.user.id);
-    const found = sessions.find((s) => s.id === params.id);
+    const { uow } = createUseCases();
+    // Lấy trực tiếp bằng ID — O(1) thay vì scan toàn bộ sessions
+    const found = await uow.sessions.findById(params.id);
     if (!found) {
-      // Try as mentor
-      const mentorSessions = await getMentorSessions.byMentorId(session.user.id);
-      const foundAsMentor = mentorSessions.find((s) => s.id === params.id);
-      if (!foundAsMentor) {
-        return NextResponse.json({ error: "Not found" }, { status: 404 });
-      }
-      return NextResponse.json(foundAsMentor);
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    // Kiểm tra quyền: chỉ mentee hoặc mentor của session mới được xem
+    if (found.menteeId !== session.user.id && found.mentorId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     return NextResponse.json(found);

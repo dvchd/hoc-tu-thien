@@ -1,55 +1,39 @@
 /**
  * Integration tests for PrismaUserRepository
  *
- * Uses a real SQLite in-memory database via Prisma.
- * Each test suite resets data to ensure isolation.
+ * Uses the real PostgreSQL database (DATABASE_URL from .env).
+ * Each test cleans up its own data using unique IDs.
  *
  * Run: npm run test:integration
  */
 
 import { PrismaClient } from "@prisma/client";
-import { execSync } from "child_process";
 import { PrismaUserRepository } from "@/infrastructure/database/repositories/PrismaUserRepository";
 import { UserEntity } from "@/domain/entities/User";
 import { UserRole } from "@/domain/value-objects/UserRole";
 import { UserStatus } from "@/domain/value-objects/UserStatus";
 
-// ─── Setup: isolated test DB ──────────────────────────────────────────────────
+// ─── Setup: use real PostgreSQL DB ────────────────────────────────────────────
 
 let prisma: PrismaClient;
 
+// Prefix dùng để tag dữ liệu test — dễ cleanup và không xung đột với data thật
+const TEST_PREFIX = `inttest_user_${Date.now()}_`;
+
 beforeAll(async () => {
-  // Use a separate in-memory SQLite DB for testing
-  process.env.DATABASE_URL = "file:./test.db";
-
-  prisma = new PrismaClient({
-    datasources: { db: { url: "file:./test.db" } },
-  });
-
-  // Apply migrations to test DB
-  execSync("npx prisma db push --schema=./prisma/schema.prisma --force-reset", {
-    env: { ...process.env, DATABASE_URL: "file:./test.db" },
-    stdio: "ignore",
-  });
-
+  prisma = new PrismaClient();
   await prisma.$connect();
 });
 
 afterAll(async () => {
+  // Cleanup tất cả data được tạo bởi test suite này
+  await prisma.userAuditLog.deleteMany({ where: { userId: { startsWith: TEST_PREFIX } } });
+  await prisma.payment.deleteMany({ where: { userId: { startsWith: TEST_PREFIX } } });
+  await prisma.user.deleteMany({ where: { id: { startsWith: TEST_PREFIX } } });
   await prisma.$disconnect();
-  // Clean up test DB file
-  try {
-    const fs = await import("fs");
-    fs.unlinkSync("./test.db");
-  } catch {}
 });
 
-beforeEach(async () => {
-  // Clean tables before each test
-  await prisma.userAuditLog.deleteMany();
-  await prisma.payment.deleteMany();
-  await prisma.user.deleteMany();
-});
+// Không cần beforeEach cleanup — mỗi test dùng ID riêng với TEST_PREFIX
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -58,9 +42,10 @@ function makeRepo() {
 }
 
 function makeUser(overrides: Partial<Parameters<typeof UserEntity.create>[0]> = {}): UserEntity {
+  const rand = Math.random().toString(36).slice(2, 8);
   return UserEntity.create({
-    id: `user_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-    email: `test_${Date.now()}@example.com`,
+    id: `${TEST_PREFIX}${rand}`,
+    email: `${TEST_PREFIX}${rand}@example.com`,
     name: "Test User",
     status: UserStatus.ACTIVE,
     ...overrides,

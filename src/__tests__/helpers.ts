@@ -162,9 +162,9 @@ export function createMockSystemConfigRepository(): jest.Mocked<ISystemConfigRep
   return {
     get: jest.fn(),
     getNumber: jest.fn(),
-    getValue: jest.fn(),
+    getAll: jest.fn(),
     set: jest.fn(),
-    findAll: jest.fn(),
+    setMultiple: jest.fn(),
   };
 }
 
@@ -181,12 +181,15 @@ export function createMockMentorApplicationRepository(): jest.Mocked<IMentorAppl
 export function createMockCharityAccountRepository(): jest.Mocked<ICharityAccountRepository> {
   return {
     findById: jest.fn(),
+    findByAccountNo: jest.fn(),
     findAll: jest.fn(),
     findDefault: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
-    softDelete: jest.fn(),
-    incrementUsage: jest.fn(),
+    deactivate: jest.fn(),
+    delete: jest.fn(),
+    getUsageCount: jest.fn(),
+    clearDefault: jest.fn(),
   };
 }
 
@@ -206,6 +209,8 @@ export function createMockMentorProfileRepository(): jest.Mocked<IMentorProfileR
     findAll: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    incrementTotalSessions: jest.fn(),
+    updateRatingStats: jest.fn(),
   };
 }
 

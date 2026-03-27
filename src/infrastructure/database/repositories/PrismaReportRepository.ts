@@ -6,8 +6,10 @@ import {
   FindReportsOptions,
 } from "../../../domain/repositories/IReportRepository";
 
+type PrismaTransactionClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
+
 export class PrismaReportRepository implements IReportRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaClient | PrismaTransactionClient) {}
 
   private toRecord(r: any): ReportRecord {
     return {
@@ -32,7 +34,7 @@ export class PrismaReportRepository implements IReportRepository {
   }
 
   async findById(id: string): Promise<ReportRecord | null> {
-    const r = await (this.prisma as any).report.findUnique({
+    const r = await this.prisma.report.findUnique({
       where: { id },
       include: {
         reporter: { select: { id: true, name: true, email: true, image: true } },
@@ -44,11 +46,11 @@ export class PrismaReportRepository implements IReportRepository {
 
   async findAll(options?: FindReportsOptions): Promise<{ reports: ReportRecord[]; total: number }> {
     const { status, page = 1, pageSize = 20 } = options ?? {};
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     if (status) where.status = status;
 
     const [results, total] = await Promise.all([
-      (this.prisma as any).report.findMany({
+      this.prisma.report.findMany({
         where,
         include: {
           reporter: { select: { id: true, name: true, email: true, image: true } },
@@ -58,14 +60,14 @@ export class PrismaReportRepository implements IReportRepository {
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      (this.prisma as any).report.count({ where }),
+      this.prisma.report.count({ where }),
     ]);
 
-    return { reports: results.map((r: any) => this.toRecord(r)), total };
+    return { reports: results.map((r) => this.toRecord(r)), total };
   }
 
   async create(input: CreateReportInput): Promise<ReportRecord> {
-    const created = await (this.prisma as any).report.create({
+    const created = await this.prisma.report.create({
       data: {
         id: input.id,
         reporterId: input.reporterId,
@@ -89,7 +91,7 @@ export class PrismaReportRepository implements IReportRepository {
     reviewedBy: string,
     reviewNote?: string
   ): Promise<ReportRecord> {
-    const updated = await (this.prisma as any).report.update({
+    const updated = await this.prisma.report.update({
       where: { id },
       data: {
         status,

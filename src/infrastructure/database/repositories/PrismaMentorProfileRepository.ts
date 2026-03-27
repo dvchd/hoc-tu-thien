@@ -1,8 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import { IMentorProfileRepository, MentorProfileRecord, AvailabilitySlotRecord } from "../../../domain/repositories/IMentorProfileRepository";
 
+type PrismaTransactionClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
+
 export class PrismaMentorProfileRepository implements IMentorProfileRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaClient | PrismaTransactionClient) {}
 
   private mapToRecord(profile: any): MentorProfileRecord {
     return {
@@ -109,5 +111,34 @@ export class PrismaMentorProfileRepository implements IMentorProfileRepository {
       include: this.includeAll,
     });
     return this.mapToRecord(profile);
+  }
+
+  async incrementTotalSessions(mentorUserId: string): Promise<void> {
+    await this.prisma.mentorProfile.updateMany({
+      where: { userId: mentorUserId },
+      data: { totalSessions: { increment: 1 } },
+    });
+  }
+
+  async updateRatingStats(mentorUserId: string, newRating: number): Promise<void> {
+    const profile = await this.prisma.mentorProfile.findUnique({
+      where: { userId: mentorUserId },
+      select: { id: true, rating: true, ratingCount: true },
+    });
+    if (!profile) return;
+
+    const currentCount = profile.ratingCount ?? 0;
+    const currentRating = Number(profile.rating ?? 0);
+    const newCount = currentCount + 1;
+    // Tính lại trung bình cộng dồn
+    const newAverage = (currentRating * currentCount + newRating) / newCount;
+
+    await this.prisma.mentorProfile.update({
+      where: { id: profile.id },
+      data: {
+        rating: newAverage,
+        ratingCount: newCount,
+      },
+    });
   }
 }

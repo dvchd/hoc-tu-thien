@@ -9,8 +9,10 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { createId } = require("@paralleldrive/cuid2");
 
+type PrismaTransactionClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
+
 export class PrismaMentorApplicationRepository implements IMentorApplicationRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaClient | PrismaTransactionClient) {}
 
   private toRecord(a: any): MentorApplicationRecord {
     return {

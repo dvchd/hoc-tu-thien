@@ -126,79 +126,81 @@ export class UpdateMentorProfileUseCase {
   constructor(private readonly uow: IUnitOfWork) {}
 
   async execute(input: UpdateMentorProfileDTO): Promise<UpdateMentorProfileResult> {
-    const user = await this.uow.users.findById(input.userId);
-    if (!user) throw new Error("Không tìm thấy người dùng");
-    if (!user.isMentor() && !user.isAdmin()) {
-      throw new Error("Chỉ Mentor mới có thể cập nhật hồ sơ này");
-    }
-
-    // Validate charityAccountId nếu được cung cấp (BR08)
-    if (input.charityAccountId) {
-      const account = await this.uow.charityAccounts.findById(input.charityAccountId);
-      if (!account || !account.isActive) {
-        throw new Error("Tài khoản thiện nguyện không hợp lệ hoặc đã bị vô hiệu hóa");
+    return this.uow.execute(async (uow) => {
+      const user = await uow.users.findById(input.userId);
+      if (!user) throw new Error("Không tìm thấy người dùng");
+      if (!user.isMentor() && !user.isAdmin()) {
+        throw new Error("Chỉ Mentor mới có thể cập nhật hồ sơ này");
       }
-    }
 
-    // Lấy old values để audit
-    const existing = await this.uow.mentorProfiles.findByUserId(input.userId);
+      // Validate charityAccountId nếu được cung cấp (BR08)
+      if (input.charityAccountId) {
+        const account = await uow.charityAccounts.findById(input.charityAccountId);
+        if (!account || !account.isActive) {
+          throw new Error("Tài khoản thiện nguyện không hợp lệ hoặc đã bị vô hiệu hóa");
+        }
+      }
 
-    let profileId: string;
-    let created = false;
+      // Lấy old values để audit
+      const existing = await uow.mentorProfiles.findByUserId(input.userId);
 
-    if (!existing) {
-      // Tạo mới MentorProfile
-      const newProfile = await this.uow.mentorProfiles.create({
+      let profileId: string;
+      let created = false;
+
+      if (!existing) {
+        // Tạo mới MentorProfile
+        const newProfile = await uow.mentorProfiles.create({
+          userId: input.userId,
+          bio: input.expertise ?? null,
+          experience: input.experience != null ? String(input.experience) : null,
+          headline: input.headline ?? null,
+          hourlyRate: input.hourlyRate ?? 0,
+          charityAccountId: input.charityAccountId ?? null,
+          onlyActivatedMentee: input.onlyActivatedMentee ?? false,
+          isActive: input.isAvailable ?? true,
+        });
+        profileId = newProfile.id;
+        created = true;
+      } else {
+        // Cập nhật profile hiện có
+        const updateData: Record<string, unknown> = {};
+        if (input.headline !== undefined) updateData.headline = input.headline;
+        if (input.expertise !== undefined) updateData.bio = input.expertise;
+        if (input.experience !== undefined) updateData.experience = String(input.experience);
+        if (input.hourlyRate !== undefined) updateData.hourlyRate = input.hourlyRate;
+        if (input.charityAccountId !== undefined) updateData.charityAccountId = input.charityAccountId;
+        if (input.onlyActivatedMentee !== undefined) updateData.onlyActivatedMentee = input.onlyActivatedMentee;
+        if (input.isAvailable !== undefined) updateData.isActive = input.isAvailable;
+        // Legacy TN fields (backward compat)
+        if (input.tnAccountNo !== undefined) updateData.tnAccountNo = input.tnAccountNo;
+        if (input.tnAccountName !== undefined) updateData.tnAccountName = input.tnAccountName;
+        if (input.tnCampaignKeyword !== undefined) updateData.tnCampaignKeyword = input.tnCampaignKeyword;
+
+        await uow.mentorProfiles.update(existing.id, updateData as any);
+        profileId = existing.id;
+      }
+
+      await uow.users.createAuditLog({
         userId: input.userId,
-        bio: input.expertise ?? null,
-        experience: input.experience != null ? String(input.experience) : null,
-        headline: input.headline ?? null,
-        hourlyRate: input.hourlyRate ?? 0,
-        charityAccountId: input.charityAccountId ?? null,
-        onlyActivatedMentee: input.onlyActivatedMentee ?? false,
-        isActive: input.isAvailable ?? true,
+        action: created ? "MENTOR_PROFILE_CREATED" : "MENTOR_PROFILE_UPDATED",
+        oldValues: existing
+          ? {
+              headline: existing.headline,
+              hourlyRate: existing.hourlyRate,
+              charityAccountId: existing.charityAccountId,
+            }
+          : undefined,
+        newValues: {
+          headline: input.headline,
+          expertise: input.expertise,
+          hourlyRate: input.hourlyRate,
+          charityAccountId: input.charityAccountId,
+        },
+        performedBy: input.updatedBy ?? input.userId,
       });
-      profileId = newProfile.id;
-      created = true;
-    } else {
-      // Cập nhật profile hiện có
-      const updateData: Record<string, unknown> = {};
-      if (input.headline !== undefined) updateData.headline = input.headline;
-      if (input.expertise !== undefined) updateData.bio = input.expertise;
-      if (input.experience !== undefined) updateData.experience = String(input.experience);
-      if (input.hourlyRate !== undefined) updateData.hourlyRate = input.hourlyRate;
-      if (input.charityAccountId !== undefined) updateData.charityAccountId = input.charityAccountId;
-      if (input.onlyActivatedMentee !== undefined) updateData.onlyActivatedMentee = input.onlyActivatedMentee;
-      if (input.isAvailable !== undefined) updateData.isActive = input.isAvailable;
-      // Legacy TN fields (backward compat)
-      if (input.tnAccountNo !== undefined) updateData.tnAccountNo = input.tnAccountNo;
-      if (input.tnAccountName !== undefined) updateData.tnAccountName = input.tnAccountName;
-      if (input.tnCampaignKeyword !== undefined) updateData.tnCampaignKeyword = input.tnCampaignKeyword;
 
-      await this.uow.mentorProfiles.update(existing.id, updateData as any);
-      profileId = existing.id;
-    }
-
-    await this.uow.users.createAuditLog({
-      userId: input.userId,
-      action: created ? "MENTOR_PROFILE_CREATED" : "MENTOR_PROFILE_UPDATED",
-      oldValues: existing
-        ? {
-            headline: existing.headline,
-            hourlyRate: existing.hourlyRate,
-            charityAccountId: existing.charityAccountId,
-          }
-        : undefined,
-      newValues: {
-        headline: input.headline,
-        expertise: input.expertise,
-        hourlyRate: input.hourlyRate,
-        charityAccountId: input.charityAccountId,
-      },
-      performedBy: input.updatedBy ?? input.userId,
+      return { profileId, created };
     });
-
-    return { profileId, created };
   }
 }
 
@@ -208,31 +210,33 @@ export class SetTeachingFieldsUseCase {
   constructor(private readonly uow: IUnitOfWork) {}
 
   async execute(input: SetTeachingFieldsDTO): Promise<void> {
-    const user = await this.uow.users.findById(input.userId);
-    if (!user) throw new Error("Không tìm thấy người dùng");
-    if (!user.isMentor() && !user.isAdmin()) {
-      throw new Error("Chỉ Mentor mới có thể cập nhật môn học");
-    }
-
-    const profile = await this.uow.mentorProfiles.findByUserId(input.userId);
-    if (!profile) throw new Error("Mentor chưa thiết lập hồ sơ");
-
-    // Validate all field IDs exist và active
-    for (const fieldId of input.fieldIds) {
-      const field = await this.uow.teachingFields.findById(fieldId);
-      if (!field || !field.isActive) {
-        throw new Error(`Môn học không hợp lệ hoặc đã bị ẩn: ${fieldId}`);
+    return this.uow.execute(async (uow) => {
+      const user = await uow.users.findById(input.userId);
+      if (!user) throw new Error("Không tìm thấy người dùng");
+      if (!user.isMentor() && !user.isAdmin()) {
+        throw new Error("Chỉ Mentor mới có thể cập nhật môn học");
       }
-    }
 
-    // Set teaching fields (replace existing)
-    await this.uow.teachingFields.setMentorFields(profile.id, input.fieldIds);
+      const profile = await uow.mentorProfiles.findByUserId(input.userId);
+      if (!profile) throw new Error("Mentor chưa thiết lập hồ sơ");
 
-    await this.uow.users.createAuditLog({
-      userId: input.userId,
-      action: "MENTOR_TEACHING_FIELDS_UPDATED",
-      newValues: { fieldIds: input.fieldIds, profileId: profile.id },
-      performedBy: input.updatedBy ?? input.userId,
+      // Validate all field IDs exist và active
+      for (const fieldId of input.fieldIds) {
+        const field = await uow.teachingFields.findById(fieldId);
+        if (!field || !field.isActive) {
+          throw new Error(`Môn học không hợp lệ hoặc đã bị ẩn: ${fieldId}`);
+        }
+      }
+
+      // Set teaching fields (replace existing) — atomic delete+insert trong transaction
+      await uow.teachingFields.setMentorFields(profile.id, input.fieldIds);
+
+      await uow.users.createAuditLog({
+        userId: input.userId,
+        action: "MENTOR_TEACHING_FIELDS_UPDATED",
+        newValues: { fieldIds: input.fieldIds, profileId: profile.id },
+        performedBy: input.updatedBy ?? input.userId,
+      });
     });
   }
 }

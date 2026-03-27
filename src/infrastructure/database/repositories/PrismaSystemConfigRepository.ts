@@ -7,8 +7,10 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { createId } = require("@paralleldrive/cuid2");
 
+type PrismaTransactionClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
+
 export class PrismaSystemConfigRepository implements ISystemConfigRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaClient | PrismaTransactionClient) {}
 
   private toRecord(c: any): SystemConfigRecord {
     return {
@@ -22,7 +24,7 @@ export class PrismaSystemConfigRepository implements ISystemConfigRepository {
   }
 
   async get(key: string): Promise<string | null> {
-    const config = await (this.prisma as any).systemConfig.findUnique({ where: { key } });
+    const config = await this.prisma.systemConfig.findUnique({ where: { key } });
     return config?.value ?? null;
   }
 
@@ -34,14 +36,14 @@ export class PrismaSystemConfigRepository implements ISystemConfigRepository {
   }
 
   async getAll(): Promise<SystemConfigRecord[]> {
-    const results = await (this.prisma as any).systemConfig.findMany({
+    const results = await this.prisma.systemConfig.findMany({
       orderBy: { key: "asc" },
     });
-    return results.map((c: any) => this.toRecord(c));
+    return results.map((c) => this.toRecord(c));
   }
 
   async set(key: string, value: string, updatedBy?: string): Promise<void> {
-    await (this.prisma as any).systemConfig.upsert({
+    await this.prisma.systemConfig.upsert({
       where: { key },
       update: { value, updatedBy: updatedBy ?? null },
       create: { id: createId(), key, value, updatedBy: updatedBy ?? null },
@@ -54,7 +56,7 @@ export class PrismaSystemConfigRepository implements ISystemConfigRepository {
   ): Promise<void> {
     await Promise.all(
       configs.map((c) =>
-        (this.prisma as any).systemConfig.upsert({
+        this.prisma.systemConfig.upsert({
           where: { key: c.key },
           update: { value: c.value, updatedBy: updatedBy ?? null },
           create: { id: createId(), key: c.key, value: c.value, updatedBy: updatedBy ?? null },

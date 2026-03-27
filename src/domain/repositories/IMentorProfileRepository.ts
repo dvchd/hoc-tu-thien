@@ -49,4 +49,8 @@ export interface IMentorProfileRepository {
   findAll(filters?: { isActive?: boolean }): Promise<MentorProfileRecord[]>;
   create(data: Omit<MentorProfileRecord, "id" | "createdAt" | "updatedAt" | "user" | "charityAccount" | "teachingFields" | "totalSessions" | "averageRating">): Promise<MentorProfileRecord>;
   update(id: string, data: Partial<MentorProfileRecord>): Promise<MentorProfileRecord>;
+  /** Tăng totalSessions lên 1 sau khi session hoàn thành */
+  incrementTotalSessions(mentorUserId: string): Promise<void>;
+  /** Cập nhật averageRating và ratingCount sau khi mentee đánh giá */
+  updateRatingStats(mentorUserId: string, newRating: number): Promise<void>;
 }

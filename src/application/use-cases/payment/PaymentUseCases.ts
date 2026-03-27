@@ -151,7 +151,7 @@ export class VerifyPaymentUseCase {
       return { success: false, message: "Yêu cầu thanh toán đã hết hạn (24h)" };
     }
 
-    // Gọi TN App API
+    // Gọi TN App API — bên ngoài transaction (network call có thể chậm)
     const result = await tnAppClient.findTransactionByCode(
       payment.tnAccountNo,
       payment.shortCode,
@@ -159,16 +159,16 @@ export class VerifyPaymentUseCase {
       payment.amount
     );
 
-    await this.uow.payments.logVerification({
-      paymentId: payment.id,
-      found: result.found,
-      apiResponse: result.rawResponse,
-      error: result.error,
-    });
-
-    await this.uow.payments.incrementCheckCount(payment.id, new Date());
-
     if (!result.found) {
+      // Ghi log và cập nhật checkCount cho lần thử thất bại — không cần transaction
+      await this.uow.payments.logVerification({
+        paymentId: payment.id,
+        found: false,
+        apiResponse: result.rawResponse,
+        error: result.error,
+      });
+      await this.uow.payments.incrementCheckCount(payment.id, new Date());
+
       return {
         success: false,
         message: result.error
@@ -178,8 +178,18 @@ export class VerifyPaymentUseCase {
       };
     }
 
+    // Tìm thấy giao dịch: log + cập nhật trạng thái trong cùng transaction để nhất quán
     const tx = result.transaction!;
     const updatedPayment = await this.uow.execute(async (uow) => {
+      // Ghi log xác minh thành công
+      await uow.payments.logVerification({
+        paymentId: payment.id,
+        found: true,
+        apiResponse: result.rawResponse,
+        error: undefined,
+      });
+      await uow.payments.incrementCheckCount(payment.id, new Date());
+
       const updated = await uow.payments.updateStatus(payment.id, PaymentStatus.VERIFIED, {
         tnTransactionId: tx.id,
         tnRefId: tx.refId,
@@ -195,6 +205,8 @@ export class VerifyPaymentUseCase {
         const session = await uow.sessions.findById(payment.sessionId);
         if (session?.status === SessionStatus.PAYMENT_PENDING) {
           await uow.sessions.updateStatus(payment.sessionId, SessionStatus.COMPLETED);
+          // Cập nhật totalSessions trên MentorProfile sau khi thanh toán xong
+          await uow.mentorProfiles.incrementTotalSessions(session.mentorId);
         }
       }
 
