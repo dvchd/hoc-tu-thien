@@ -28,5 +28,6 @@ declare module "next-auth/jwt" {
     status?: string;
     bio?: string | null;
     phone?: string | null;
+    fetchedAt?: number;
   }
 }

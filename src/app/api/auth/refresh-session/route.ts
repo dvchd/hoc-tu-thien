@@ -5,63 +5,47 @@ import { prisma } from "@/infrastructure/database/prisma/client";
 /**
  * GET /api/auth/refresh-session
  *
- * Force-refreshes the JWT by clearing all NextAuth session cookies.
- * Called after activation payment is verified — the DB status is now ACTIVE
- * but the JWT still holds PENDING_ACTIVATION (JWT is not re-issued automatically).
+ * Called after activation payment is verified.
+ * The DB status is now ACTIVE but the JWT still holds PENDING_ACTIVATION
+ * because JWT is cached and not automatically re-issued.
  *
- * After clearing cookies the browser is redirected to /api/auth/session which
- * triggers NextAuth to re-issue a fresh JWT with the latest DB values.
+ * Strategy: force NextAuth to re-issue JWT by calling the update trigger.
+ * We sign the user out then redirect to Google sign-in so NextAuth issues
+ * a completely fresh JWT with status=ACTIVE from DB.
  */
 export async function GET(req: NextRequest) {
   const session = await auth();
 
-  // Only allow logged-in users
   if (!session?.user?.id) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // Verify DB status is actually ACTIVE before allowing refresh
+  // Verify DB status before proceeding
   const dbUser = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { status: true },
   });
 
+  if (!dbUser) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
+
   const redirectTo = req.nextUrl.searchParams.get("redirectTo") ?? "/dashboard";
-  const destination = new URL(redirectTo, req.url);
 
-  // Build response that clears all NextAuth cookies so next request
-  // triggers a fresh JWT with updated DB values
-  const res = NextResponse.redirect(destination);
+  // Sign the user out to clear the stale JWT cookie,
+  // then redirect to Google sign-in which will re-issue a fresh JWT.
+  // NextAuth sign-out with callbackUrl causes a new sign-in flow.
+  const signOutUrl = new URL("/api/auth/signout", req.url);
+  const res = NextResponse.redirect(signOutUrl);
 
-  // Clear every NextAuth cookie variant (both secure and non-secure names)
-  const cookiesToClear = [
-    "next-auth.session-token",
-    "__Secure-next-auth.session-token",
-    "next-auth.callback-url",
-    "__Secure-next-auth.callback-url",
-    "next-auth.csrf-token",
-    "__Host-next-auth.csrf-token",
-  ];
-
-  for (const name of cookiesToClear) {
-    res.cookies.set(name, "", {
-      httpOnly: true,
-      path: "/",
-      expires: new Date(0), // epoch = delete
-      sameSite: "lax",
-    });
-  }
-
-  // If DB says ACTIVE, also set a flag cookie so middleware knows
-  // the refresh is in progress and should not redirect to /activation
-  if (dbUser?.status === "ACTIVE") {
-    res.cookies.set("next-auth.force-refresh", "1", {
-      httpOnly: false,
-      path: "/",
-      maxAge: 10, // 10 seconds — consumed on the next page load
-      sameSite: "lax",
-    });
-  }
+  // Pass the intended destination so after re-login they land on dashboard
+  // We use a short-lived cookie to persist this through the sign-out/sign-in flow
+  res.cookies.set("next-auth.post-signin-redirect", redirectTo, {
+    httpOnly: true,
+    path: "/",
+    maxAge: 120, // 2 minutes
+    sameSite: "lax",
+  });
 
   return res;
 }

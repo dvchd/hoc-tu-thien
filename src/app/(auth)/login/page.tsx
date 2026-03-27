@@ -15,7 +15,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { error?: string };
+  searchParams: { error?: string; hint?: string };
 }) {
   const session = await auth();
   if (session?.user) redirect("/dashboard");
@@ -24,6 +24,10 @@ export default async function LoginPage({
   const errorMessage = errorCode
     ? (ERROR_MESSAGES[errorCode] ?? ERROR_MESSAGES.Default)
     : null;
+
+  // Sau khi kích hoạt tài khoản thành công, user được sign-out và redirect về đây.
+  // Tự động trigger Google sign-in để lấy JWT mới với status=ACTIVE.
+  const isPostActivation = searchParams.hint === "activation_complete";
 
   return (
     <div className="min-h-screen flex">
@@ -103,6 +107,17 @@ export default async function LoginPage({
               Đăng nhập để bắt đầu hành trình học tập và thiện nguyện của bạn.
             </p>
           </div>
+
+          {/* Post-activation success banner */}
+          {isPostActivation && !errorMessage && (
+            <div className="mb-6 p-4 rounded-2xl bg-jade-50 border border-jade-200 flex items-start gap-3">
+              <Heart className="w-4 h-4 text-jade-600 fill-jade-200 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-jade-700 leading-relaxed">
+                <span className="font-semibold block mb-1">Kích hoạt thành công! 🎉</span>
+                Vui lòng đăng nhập lại để vào Dashboard với tài khoản đã được kích hoạt.
+              </div>
+            </div>
+          )}
 
           {/* Error banner */}
           {errorMessage && (

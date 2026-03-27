@@ -26,7 +26,8 @@ export function MentorApplicationsTable() {
       const res = await fetch("/api/admin/mentor-applications");
       if (res.ok) {
         const data = await res.json();
-        setApplications(data);
+        // API trả về { applications: [], total: n } hoặc array trực tiếp
+        setApplications(data.applications ?? data);
       }
     } catch (error) {
       toast.error("Lỗi khi tải danh sách đơn đăng ký");
@@ -52,7 +53,8 @@ export function MentorApplicationsTable() {
       const res = await fetch(`/api/admin/mentor-applications/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: action === "APPROVE" ? "APPROVED" : "REJECTED", reviewNote }),
+        // API expect { action: "approve"|"reject", reviewNote }
+        body: JSON.stringify({ action: action === "APPROVE" ? "approve" : "reject", reviewNote }),
       });
 
       if (res.ok) {

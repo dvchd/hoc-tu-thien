@@ -31,7 +31,8 @@ export function CharityAccountManager() {
       const res = await fetch("/api/admin/charity-accounts");
       if (res.ok) {
         const data = await res.json();
-        setAccounts(data);
+        // API trả về { accounts: [] }
+        setAccounts(data.accounts ?? data);
       }
     } catch (error) {
       toast.error("Lỗi khi tải danh sách tài khoản");

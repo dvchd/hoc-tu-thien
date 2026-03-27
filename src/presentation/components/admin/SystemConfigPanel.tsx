@@ -19,7 +19,8 @@ export function SystemConfigPanel() {
       const res = await fetch("/api/admin/config");
       if (res.ok) {
         const data = await res.json();
-        setConfigs(data);
+        // API trả về { configs: [] }
+        setConfigs(data.configs ?? data);
       }
     } catch (error) {
       toast.error("Lỗi khi tải cấu hình");
@@ -38,7 +39,8 @@ export function SystemConfigPanel() {
       const res = await fetch("/api/admin/config", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key, value }),
+        // API expect { configs: [{key, value}] }
+        body: JSON.stringify({ configs: [{ key, value }] }),
       });
 
       if (res.ok) {

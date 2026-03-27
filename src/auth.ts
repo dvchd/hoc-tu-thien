@@ -87,8 +87,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return false;
       }
     },
-    async jwt({ token, user }) {
-      // On initial sign-in, populate token from DB
+    async jwt({ token, user, trigger }) {
+      // On initial sign-in: populate token from DB
       if (user?.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email },
@@ -100,10 +100,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.status = dbUser.status;
           token.bio = dbUser.bio;
           token.phone = dbUser.phone;
+          token.fetchedAt = Date.now();
         }
-      } else if (token.id) {
-        // On subsequent requests, always re-read status/role from DB
-        // so changes (e.g. activation, role change) are reflected immediately
+        return token;
+      }
+
+      // On explicit update trigger (e.g. after activation): re-read from DB
+      if (trigger === "update" && token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
           select: { role: true, status: true, bio: true, phone: true },
@@ -113,8 +116,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.status = dbUser.status;
           token.bio = dbUser.bio;
           token.phone = dbUser.phone;
+          token.fetchedAt = Date.now();
+        }
+        return token;
+      }
+
+      // On subsequent requests: re-read DB only every 5 minutes
+      // This keeps role/status fresh without hammering DB on every request.
+      const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+      const fetchedAt = (token.fetchedAt as number) ?? 0;
+      if (token.id && Date.now() - fetchedAt > REFRESH_INTERVAL_MS) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { role: true, status: true, bio: true, phone: true },
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+          token.status = dbUser.status;
+          token.bio = dbUser.bio;
+          token.phone = dbUser.phone;
+          token.fetchedAt = Date.now();
         }
       }
+
       return token;
     },
     async session({ session, token }) {

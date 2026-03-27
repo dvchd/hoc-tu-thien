@@ -89,12 +89,10 @@ export function ActivationQRPanel({ paymentInfo, userId, sessionId, onSuccess }:
           if (onSuccess) {
             onSuccess();
           } else {
-            // Must clear stale JWT before redirecting to dashboard.
-            // The JWT still holds status=PENDING_ACTIVATION after DB update.
-            // Middleware reads the JWT (Edge Runtime, no DB access) → redirect loop.
-            // /api/auth/refresh-session clears all NextAuth cookies so NextAuth
-            // re-issues a fresh JWT with status=ACTIVE on the next page load.
-            window.location.href = "/api/auth/refresh-session?redirectTo=/dashboard";
+            // JWT vẫn chứa status=PENDING_ACTIVATION sau khi DB đã update ACTIVE.
+            // Cần force NextAuth re-issue JWT mới. Cách chắc chắn nhất:
+            // sign-out → sign-in lại với Google → JWT mới sẽ có status=ACTIVE từ DB.
+            window.location.href = "/api/auth/signout?callbackUrl=" + encodeURIComponent("/login?hint=activation_complete");
           }
         }, 1500);
       } else {
