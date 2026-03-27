@@ -27,11 +27,14 @@ export default auth((req) => {
   }
 
   // Force activation for PENDING_ACTIVATION users
+  // Skip if force-refresh cookie is set (activation just completed, JWT being refreshed)
+  const isForceRefresh = req.cookies.get("next-auth.force-refresh")?.value === "1";
   if (
     isLoggedIn &&
     session.user.status === UserStatus.PENDING_ACTIVATION &&
     !isActivationRoute &&
-    !isPublicRoute
+    !isPublicRoute &&
+    !isForceRefresh
   ) {
     return NextResponse.redirect(new URL("/activation", req.url));
   }
