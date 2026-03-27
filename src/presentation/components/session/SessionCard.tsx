@@ -227,7 +227,7 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
               paymentInfo={paymentInfo}
               userId={currentUserId}
               sessionId={session.id}
-              onSuccess={() => { setShowPayment(false); setLocalStatus("COMPLETED"); }}
+              onSuccess={() => { setShowPayment(false); setLocalStatus(SessionStatus.COMPLETED); }}
             />
           </div>
         </div>

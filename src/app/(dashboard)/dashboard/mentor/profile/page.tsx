@@ -27,7 +27,7 @@ export default async function MentorProfilePage() {
   ]);
 
   const selectedFieldIds =
-    mentorProfile?.teachingFields.map((tf) => tf.teachingFieldId) ?? [];
+    mentorProfile?.teachingFields.map((tf: { teachingFieldId: string }) => tf.teachingFieldId) ?? [];
 
   return (
     <div className="max-w-3xl space-y-8">

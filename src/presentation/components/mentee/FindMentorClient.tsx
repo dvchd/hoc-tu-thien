@@ -207,9 +207,9 @@ export function FindMentorClient({
                   {mentor.profile?.experience && (
                     <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{mentor.profile.experience}n KN</span>
                   )}
-                  {mentor.profile?.ratingCount > 0 && (
+                  {(mentor.profile?.ratingCount ?? 0) > 0 && (
                     <span className="flex items-center gap-1 text-amber-500">
-                      <Star className="w-3 h-3 fill-amber-400" />{mentor.profile.rating.toFixed(1)}
+                      <Star className="w-3 h-3 fill-amber-400" />{mentor.profile?.rating.toFixed(1)}
                     </span>
                   )}
                 </div>

@@ -28,7 +28,7 @@ export default async function FindMentorPage() {
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
 
-  const serialized = mentors.map((m) => ({
+  const serialized = mentors.map((m: typeof mentors[number]) => ({
     id: m.id,
     name: m.name,
     image: m.image,
@@ -44,12 +44,12 @@ export default async function FindMentorPage() {
           ratingCount: m.mentorProfile.ratingCount,
           totalSessions: m.mentorProfile.totalSessions,
           tnAccountNo: m.mentorProfile.tnAccountNo,
-          fields: m.mentorProfile.teachingFields.map((tf) => ({
+          fields: m.mentorProfile.teachingFields.map((tf: typeof m.mentorProfile.teachingFields[number]) => ({
             id: tf.teachingField.id,
             name: tf.teachingField.name,
             icon: tf.teachingField.icon,
           })),
-          slots: m.mentorProfile.availabilitySlots.map((s) => ({
+          slots: m.mentorProfile.availabilitySlots.map((s: typeof m.mentorProfile.availabilitySlots[number]) => ({
             dayOfWeek: s.dayOfWeek,
             startTime: s.startTime,
             endTime: s.endTime,

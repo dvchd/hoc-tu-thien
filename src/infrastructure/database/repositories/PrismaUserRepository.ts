@@ -1,4 +1,4 @@
-import { PrismaClient, User as PrismaUser, UserRole as PrismaUserRole, UserStatus as PrismaUserStatus } from "@prisma/client";
+import { PrismaClient, User as PrismaUser } from "@prisma/client";
 
 type PrismaTransactionClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
 import { IUserRepository, FindUsersOptions, UserCount } from "../../../domain/repositories/IUserRepository";
@@ -40,12 +40,12 @@ export class PrismaUserRepository implements IUserRepository {
     );
   }
 
-  private toPrismaRole(role: UserRole): PrismaUserRole {
-    return role as PrismaUserRole;
+  private toPrismaRole(role: UserRole): string {
+    return role as string;
   }
 
-  private toPrismaStatus(status: UserStatus): PrismaUserStatus {
-    return status as PrismaUserStatus;
+  private toPrismaStatus(status: UserStatus): string {
+    return status as string;
   }
 
   // ─── Queries ──────────────────────────────────────────────────────────────
