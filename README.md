@@ -1,149 +1,370 @@
-# Học Từ Thiện 💚
+# 🎓 Học Từ Thiện — Nền tảng Kết nối Mentor & Mentee
 
-> Nền tảng kết nối 1-1 Mentor và Mentee. Học phí được chuyển thẳng vào **Quỹ Thiện Nguyện App MBBank**.
-
----
-
-## Mục lục
-
-- [Tổng quan](#tổng-quan)
-- [Kiến trúc](#kiến-trúc)
-- [Cấu trúc thư mục](#cấu-trúc-thư-mục)
-- [Cài đặt & Chạy](#cài-đặt--chạy)
-- [Cấu hình Google OAuth](#cấu-hình-google-oauth)
-- [Vai trò người dùng](#vai-trò-người-dùng)
-- [API Routes](#api-routes)
-- [Design Patterns](#design-patterns)
+> **"Học Từ Thiện"** là nền tảng học tập phi lợi nhuận, kết nối Mentor (người hướng dẫn) với Mentee (người học) thông qua các buổi học trực tuyến có phí tượng trưng. Toàn bộ học phí được chuyển thẳng đến Mentor, hệ thống không thu phí trung gian.
 
 ---
 
-## Tổng quan
+## 📋 Mục lục
 
-**Học Từ Thiện** là một nền tảng EdTech + Thiện nguyện:
-
-- 🎓 Kết nối 1-1 giữa **Mentor** (người hướng dẫn) và **Mentee** (người học)
-- 💳 Học phí chuyển khoản **100% trực tiếp** vào Quỹ Thiện Nguyện App MBBank
-- 🔐 Đăng nhập **chỉ qua Google OAuth** — không mật khẩu
-- 👥 Ba vai trò: **Admin**, **Mentor**, **Mentee** (mặc định khi tạo mới)
+- [Tổng quan dự án](#-tổng-quan-dự-án)
+- [Tính năng chính](#-tính-năng-chính)
+- [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)
+- [Cấu trúc thư mục](#-cấu-trúc-thư-mục)
+- [Cơ sở dữ liệu](#-cơ-sở-dữ-liệu)
+- [Luồng nghiệp vụ](#-luồng-nghiệp-vụ)
+- [API Routes](#-api-routes)
+- [Cài đặt & Chạy dự án](#-cài-đặt--chạy-dự-án)
+- [Biến môi trường](#-biến-môi-trường)
+- [Kiểm thử](#-kiểm-thử)
+- [Công nghệ sử dụng](#-công-nghệ-sử-dụng)
+- [Đóng góp](#-đóng-góp)
 
 ---
 
-## Kiến trúc
+## 🌟 Tổng quan dự án
 
-Dự án áp dụng **Domain-Driven Design (DDD)** kết hợp **Clean Architecture**:
+**Học Từ Thiện** là ứng dụng web được xây dựng bằng **Next.js 14** theo kiến trúc **Clean Architecture / Domain-Driven Design (DDD)**. Hệ thống hỗ trợ ba vai trò người dùng:
+
+| Vai trò | Mô tả |
+|---------|-------|
+| **ADMIN** | Quản trị viên — quản lý người dùng, lĩnh vực giảng dạy, phê duyệt Mentor |
+| **MENTOR** | Người hướng dẫn — tạo hồ sơ, đặt lịch rảnh, nhận buổi học, nhận học phí |
+| **MENTEE** | Người học — kích hoạt tài khoản, tìm Mentor, đặt lịch học, thanh toán học phí |
+
+### Điểm đặc biệt
+
+- 🔐 **Xác thực qua Google OAuth** — đăng nhập bằng tài khoản Google
+- 💳 **Thanh toán qua Thiện Nguyện App** — xác minh giao dịch chuyển khoản tự động qua API `thiennguyen.app`
+- 📹 **Tích hợp Google Meet** — tự động tạo link họp khi buổi học được xác nhận
+- 🏆 **Bảng xếp hạng** — hiển thị Mentor nổi bật theo số buổi dạy và đánh giá
+- 🧪 **~247 test cases** — Unit, Integration và E2E tests
+
+---
+
+## ✨ Tính năng chính
+
+### Dành cho Mentee
+- Đăng nhập bằng Google, tài khoản mặc định ở trạng thái `PENDING_ACTIVATION`
+- **Kích hoạt tài khoản** bằng cách chuyển khoản 10.000 VNĐ qua QR VietQR
+- Tìm kiếm và lọc Mentor theo lĩnh vực giảng dạy
+- Đặt lịch học với Mentor (chọn ngày giờ, tiêu đề, mô tả)
+- Thanh toán học phí sau buổi học qua QR VietQR
+- Đánh giá Mentor sau khi hoàn thành buổi học
+- Xem lịch sử các buổi học
+
+### Dành cho Mentor
+- Đăng ký trở thành Mentor (gửi đơn xin, chờ Admin phê duyệt)
+- Cập nhật hồ sơ: tiêu đề, chuyên môn, kinh nghiệm, học phí/giờ
+- Thiết lập lịch rảnh theo ngày trong tuần
+- Xác nhận / Hủy buổi học từ Mentee
+- Đánh dấu buổi học hoàn thành
+- Nhận học phí trực tiếp qua tài khoản TN App
+- Xem thống kê: tổng buổi dạy, tổng thu nhập, đánh giá
+
+### Dành cho Admin
+- Quản lý toàn bộ người dùng (xem, đổi vai trò, xóa mềm)
+- Quản lý lĩnh vực giảng dạy (thêm, sửa, xóa, sắp xếp)
+- Xem thống kê tổng quan hệ thống
+
+---
+
+## 🏗️ Kiến trúc hệ thống
+
+Dự án tuân theo **Clean Architecture** với 4 tầng rõ ràng:
 
 ```
-┌──────────────────────────────────────────────────────────┐
+┌─────────────────────────────────────────────────────────┐
 │                   Presentation Layer                     │
 │         (Next.js Pages, React Components, API Routes)    │
-├──────────────────────────────────────────────────────────┤
+├─────────────────────────────────────────────────────────┤
 │                   Application Layer                      │
-│      (Use Cases, DTOs, Mappers, IUnitOfWork interface)   │
-├──────────────────────────────────────────────────────────┤
+│              (Use Cases, DTOs, Interfaces)               │
+├─────────────────────────────────────────────────────────┤
 │                     Domain Layer                         │
-│   (Entities, Value Objects, Repository Interfaces,       │
-│    Domain Events, Business Rules)                        │
-├──────────────────────────────────────────────────────────┤
+│         (Entities, Value Objects, Domain Events,         │
+│                  Repository Interfaces)                  │
+├─────────────────────────────────────────────────────────┤
 │                 Infrastructure Layer                     │
-│   (Prisma Repositories, Unit of Work, DB Client,         │
-│    NextAuth Adapter)                                     │
-└──────────────────────────────────────────────────────────┘
+│      (Prisma Repositories, External APIs, UoW)           │
+└─────────────────────────────────────────────────────────┘
 ```
 
-### Các pattern được sử dụng
+### Các nguyên tắc thiết kế áp dụng
 
-| Pattern | Mô tả | File |
-|---|---|---|
-| **Repository Pattern** | Tách biệt logic data access | `IUserRepository`, `PrismaUserRepository` |
-| **Unit of Work** | Đảm bảo tính nguyên tử của transaction | `IUnitOfWork`, `PrismaUnitOfWork` |
-| **Audit Entity** | Tự động ghi log createdAt/updatedAt/By | `AuditableEntity` |
-| **Versioning** | Optimistic concurrency control | `version` field + `updateMany` check |
-| **Soft Delete** | Xoá mềm, giữ dữ liệu | `isDeleted`, `deletedAt`, `deletedBy` |
-| **Value Objects** | Email, UserRole, UserStatus | `src/domain/value-objects/` |
-| **Domain Events** | Sự kiện trong domain | `DomainEvents.ts` |
-| **Use Cases** | Application layer orchestration | `UserUseCases.ts` |
-| **DTO + Mapper** | Chuyển đổi qua các layer | `UserDTO.ts`, `UserMapper` |
-| **Factory Method** | Tạo entity đúng cách | `UserEntity.create()`, `UserEntity.reconstitute()` |
+| Nguyên tắc | Mô tả |
+|-----------|-------|
+| **DDD** | Domain Entities, Value Objects, Domain Events, Repository Pattern |
+| **Clean Architecture** | Dependency Inversion — tầng trong không phụ thuộc tầng ngoài |
+| **Unit of Work** | `PrismaUnitOfWork` đảm bảo tính nhất quán giao dịch |
+| **CQRS-lite** | Use Cases tách biệt Command và Query |
+| **Soft Delete** | Dữ liệu không bị xóa vĩnh viễn, dùng `isDeleted` + `deletedAt` |
+| **Audit Log** | Mọi thay đổi quan trọng đều được ghi vào `UserAuditLog` |
+| **Optimistic Locking** | Trường `version` trên các entity để tránh xung đột |
 
 ---
 
-## Cấu trúc thư mục
+## 📁 Cấu trúc thư mục
 
 ```
-src/
-├── app/                          # Next.js App Router
-│   ├── (auth)/login/             # Login page (Google OAuth)
-│   ├── (dashboard)/              # Protected routes
-│   │   ├── dashboard/
-│   │   │   ├── page.tsx          # Redirect theo role
-│   │   │   ├── admin/            # Admin dashboard
-│   │   │   ├── mentor/           # Mentor dashboard  
-│   │   │   ├── mentee/           # Mentee dashboard
-│   │   │   └── settings/         # Profile settings
-│   │   └── layout.tsx            # Dashboard layout (Sidebar + TopBar)
-│   ├── api/
-│   │   ├── auth/[...nextauth]/   # NextAuth handler
-│   │   ├── admin/users/          # Admin user management API
-│   │   └── users/profile/        # User profile API
-│   ├── layout.tsx                # Root layout
-│   └── page.tsx                  # Landing page
+hoc-tu-thien/
+├── prisma/
+│   ├── schema.prisma          # Định nghĩa schema database
+│   └── seed.ts                # Dữ liệu mẫu ban đầu
 │
-├── domain/                       # ♻️ Domain Layer (không import infra)
-│   ├── entities/
-│   │   ├── base/AuditableEntity.ts   # Base entity with audit + soft delete
-│   │   └── User.ts                   # User aggregate root
-│   ├── value-objects/
-│   │   ├── Email.ts
-│   │   ├── UserRole.ts
-│   │   └── UserStatus.ts
-│   ├── repositories/
-│   │   └── IUserRepository.ts        # Repository contract (interface)
-│   └── events/
-│       └── DomainEvents.ts           # Domain events + EventBus
+├── src/
+│   ├── app/                   # Next.js App Router
+│   │   ├── (auth)/            # Route group: Login, Activation
+│   │   ├── (dashboard)/       # Route group: Dashboard các vai trò
+│   │   │   └── dashboard/
+│   │   │       ├── admin/     # Trang Admin
+│   │   │       ├── mentor/    # Trang Mentor
+│   │   │       ├── mentee/    # Trang Mentee
+│   │   │       ├── leaderboard/
+│   │   │       └── settings/
+│   │   └── api/               # API Routes (REST)
+│   │       ├── auth/          # NextAuth handlers
+│   │       ├── admin/         # Admin APIs
+│   │       ├── mentor/        # Mentor APIs
+│   │       ├── sessions/      # Session APIs
+│   │       ├── payments/      # Payment APIs
+│   │       ├── leaderboard/
+│   │       ├── teaching-fields/
+│   │       └── users/
+│   │
+│   ├── domain/                # 🔴 Domain Layer (core business logic)
+│   │   ├── entities/
+│   │   │   ├── User.ts        # UserEntity (aggregate root)
+│   │   │   └── base/
+│   │   │       └── AuditableEntity.ts
+│   │   ├── value-objects/
+│   │   │   ├── Email.ts
+│   │   │   ├── Payment.ts     # PaymentType, PaymentStatus, helpers
+│   │   │   ├── UserRole.ts
+│   │   │   └── UserStatus.ts
+│   │   ├── events/
+│   │   │   └── DomainEvents.ts
+│   │   └── repositories/      # Repository interfaces (contracts)
+│   │       ├── IUserRepository.ts
+│   │       ├── ISessionRepository.ts
+│   │       └── IPaymentRepository.ts
+│   │
+│   ├── application/           # 🟡 Application Layer
+│   │   ├── dtos/
+│   │   │   └── UserDTO.ts
+│   │   ├── interfaces/
+│   │   │   └── IUnitOfWork.ts
+│   │   └── use-cases/
+│   │       ├── user/
+│   │       │   └── UserUseCases.ts    # FindOrCreate, Get, List, ChangeRole, etc.
+│   │       ├── payment/
+│   │       │   └── PaymentUseCases.ts # InitiateActivation, VerifyPayment, etc.
+│   │       └── session/
+│   │           └── SessionUseCases.ts # Book, Confirm, Cancel, Complete, Rate, etc.
+│   │
+│   ├── infrastructure/        # 🟢 Infrastructure Layer
+│   │   ├── database/
+│   │   │   ├── prisma/
+│   │   │   │   └── client.ts  # Prisma singleton
+│   │   │   └── repositories/
+│   │   │       ├── PrismaUserRepository.ts
+│   │   │       └── PrismaPaymentSessionRepositories.ts
+│   │   ├── external/
+│   │   │   ├── ThienNguyenAppClient.ts  # API client TN App
+│   │   │   └── GoogleMeetService.ts     # Tạo Google Meet link
+│   │   └── unit-of-work/
+│   │       └── PrismaUnitOfWork.ts
+│   │
+│   ├── presentation/          # 🔵 Presentation Layer
+│   │   └── components/
+│   │       ├── activation/    # QR kích hoạt tài khoản
+│   │       ├── admin/         # Bảng quản lý users, fields
+│   │       ├── layout/        # Sidebar, TopBar
+│   │       ├── mentee/        # Tìm Mentor
+│   │       ├── mentor/        # Hồ sơ, lịch rảnh
+│   │       ├── payment/       # Modal thanh toán
+│   │       ├── session/       # Card buổi học
+│   │       └── settings/      # Form cài đặt
+│   │
+│   ├── lib/
+│   │   ├── container.ts       # Dependency Injection container
+│   │   └── utils.ts           # Tiện ích chung (cn, formatDate, ...)
+│   │
+│   ├── auth.ts                # NextAuth v5 config
+│   ├── middleware.ts           # Route protection middleware
+│   └── types/
+│       └── next-auth.d.ts     # Mở rộng kiểu Session
 │
-├── application/                  # 🎯 Application Layer
-│   ├── use-cases/user/
-│   │   └── UserUseCases.ts       # FindOrCreate, GetUser, ListUsers, ChangeRole...
-│   ├── dtos/
-│   │   └── UserDTO.ts            # DTOs + Mapper
-│   └── interfaces/
-│       └── IUnitOfWork.ts        # UoW contract
-│
-├── infrastructure/               # 🏗️ Infrastructure Layer
-│   ├── database/
-│   │   ├── prisma/client.ts      # Prisma singleton
-│   │   └── repositories/
-│   │       └── PrismaUserRepository.ts
-│   └── unit-of-work/
-│       └── PrismaUnitOfWork.ts   # Transaction management
-│
-├── presentation/                 # 🖥️ UI Components
-│   └── components/
-│       ├── layout/               # Sidebar, TopBar
-│       ├── admin/                # AdminStatsCards, AdminUserTable
-│       └── settings/             # SettingsForm
-│
-├── auth.ts                       # NextAuth v5 config
-├── middleware.ts                  # Route protection + RBAC
-├── lib/
-│   ├── container.ts              # Dependency injection
-│   └── utils.ts                  # cn(), formatVND()
-└── types/
-    └── next-auth.d.ts            # Session type augmentation
+└── src/__tests__/             # Test suite
+    ├── unit/                  # Unit tests (không cần DB)
+    ├── integration/           # Integration tests (cần Prisma + SQLite)
+    └── e2e/                   # End-to-end scenario tests
 ```
 
 ---
 
-## Cài đặt & Chạy
+## 🗄️ Cơ sở dữ liệu
 
-### Yêu cầu
-- Node.js >= 18
-- npm hoặc pnpm
+Dự án dùng **SQLite** (development) và hỗ trợ **PostgreSQL** (production) thông qua Prisma ORM.
 
-### Bước 1: Clone & cài đặt
+### Sơ đồ quan hệ (ERD tóm tắt)
+
+```
+User
+ ├── MentorProfile (1-1)
+ │    ├── MentorTeachingField (n-n) ── TeachingField
+ │    └── AvailabilitySlot (1-n)
+ ├── MenteeProfile (1-1)
+ ├── MentorApplication (1-1)
+ ├── LearningSession (1-n, as mentee)
+ ├── LearningSession (1-n, as mentor)
+ ├── Payment (1-n)
+ │    └── PaymentVerificationLog (1-n)
+ └── UserAuditLog (1-n)
+```
+
+### Các model chính
+
+| Model | Mô tả |
+|-------|-------|
+| `User` | Người dùng, có `role` (ADMIN/MENTOR/MENTEE) và `status` (PENDING_ACTIVATION/ACTIVE/INACTIVE/SUSPENDED) |
+| `MentorProfile` | Hồ sơ Mentor: tiêu đề, chuyên môn, học phí/giờ, tài khoản TN App |
+| `MenteeProfile` | Hồ sơ Mentee: mục tiêu học tập, cấp độ hiện tại |
+| `TeachingField` | Lĩnh vực giảng dạy (do Admin quản lý) |
+| `AvailabilitySlot` | Lịch rảnh của Mentor theo ngày trong tuần |
+| `LearningSession` | Buổi học: trạng thái, thời gian, link Meet, học phí, đánh giá |
+| `Payment` | Giao dịch thanh toán: mã giao dịch, trạng thái, tài khoản TN App |
+| `PaymentVerificationLog` | Lịch sử kiểm tra giao dịch với TN App API |
+| `MentorApplication` | Đơn xin trở thành Mentor |
+| `UserAuditLog` | Nhật ký thay đổi của người dùng |
+
+### Trạng thái buổi học (`SessionStatus`)
+
+```
+PENDING → CONFIRMED → IN_PROGRESS → COMPLETED
+    ↓           ↓
+CANCELLED   CANCELLED
+                         ↓ (sau COMPLETED)
+                   PAYMENT_PENDING → (sau khi thanh toán) → COMPLETED
+```
+
+---
+
+## 🔄 Luồng nghiệp vụ
+
+### 1. Đăng ký & Kích hoạt tài khoản
+
+```
+1. Người dùng đăng nhập bằng Google OAuth
+2. Hệ thống tạo User với status = PENDING_ACTIVATION
+3. Người dùng vào trang /activation
+4. Hệ thống tạo Payment (type=ACTIVATION, amount=10.000 VNĐ)
+   → Sinh mã giao dịch: "HOCTUTHIEN KICHHOAT ABCXYZ"
+   → Tạo QR VietQR để quét chuyển khoản
+5. Người dùng chuyển khoản và bấm "Tôi đã chuyển khoản"
+6. Hệ thống gọi API TN App để xác minh giao dịch
+7. Nếu tìm thấy → Payment.status = VERIFIED, User.status = ACTIVE
+```
+
+### 2. Đặt lịch học
+
+```
+1. Mentee (đã ACTIVE) vào trang "Tìm Mentor"
+2. Lọc theo lĩnh vực, xem hồ sơ Mentor
+3. Đặt lịch: chọn ngày giờ, tiêu đề, mô tả
+4. Hệ thống kiểm tra:
+   - Mentee đã ACTIVE chưa?
+   - Mentee có buổi học chưa thanh toán không?
+   - Mentor có tồn tại và đúng vai trò không?
+5. Tạo LearningSession với status = PENDING
+6. Mentor nhận thông báo, xác nhận → status = CONFIRMED
+   → Hệ thống tạo Google Meet link tự động
+```
+
+### 3. Thanh toán học phí
+
+```
+1. Sau khi buổi học COMPLETED, status → PAYMENT_PENDING
+2. Mentee vào trang Sessions, bấm "Thanh toán học phí"
+3. Hệ thống tạo Payment (type=SESSION_FEE)
+   → Mã giao dịch: "HOCTUTHIEN HOCPHI ABCXYZ"
+   → QR VietQR chuyển thẳng đến tài khoản TN App của Mentor
+4. Mentee chuyển khoản và bấm xác nhận
+5. Hệ thống xác minh qua TN App API
+6. Nếu thành công → Session.status = COMPLETED (hoàn tất)
+```
+
+### 4. Đăng ký Mentor
+
+```
+1. Mentee gửi đơn xin (motivation, experience, LinkedIn)
+2. Admin xem xét và phê duyệt/từ chối
+3. Nếu phê duyệt → User.role = MENTOR
+4. Mentor cập nhật hồ sơ và lịch rảnh
+```
+
+---
+
+## 🌐 API Routes
+
+### Authentication
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| `GET/POST` | `/api/auth/[...nextauth]` | NextAuth handlers (Google OAuth) |
+
+### Users
+| Method | Endpoint | Mô tả | Quyền |
+|--------|----------|-------|-------|
+| `GET/PATCH` | `/api/users/profile` | Xem/cập nhật hồ sơ cá nhân | Đã đăng nhập |
+
+### Admin
+| Method | Endpoint | Mô tả | Quyền |
+|--------|----------|-------|-------|
+| `GET` | `/api/admin/users/role` | Danh sách người dùng | ADMIN |
+| `PATCH` | `/api/admin/users/[id]` | Cập nhật thông tin user | ADMIN |
+| `DELETE` | `/api/admin/users/[id]` | Xóa mềm user | ADMIN |
+| `GET/POST` | `/api/admin/fields` | Danh sách / Tạo lĩnh vực | ADMIN |
+| `PATCH/DELETE` | `/api/admin/fields/[id]` | Sửa / Xóa lĩnh vực | ADMIN |
+
+### Mentor
+| Method | Endpoint | Mô tả | Quyền |
+|--------|----------|-------|-------|
+| `GET/PUT` | `/api/mentor/profile` | Xem/cập nhật hồ sơ Mentor | MENTOR |
+| `GET/POST` | `/api/mentor/availability` | Xem/cập nhật lịch rảnh | MENTOR |
+| `POST` | `/api/mentor/apply` | Gửi đơn xin trở thành Mentor | MENTEE |
+
+### Sessions
+| Method | Endpoint | Mô tả | Quyền |
+|--------|----------|-------|-------|
+| `GET/POST` | `/api/sessions` | Danh sách / Tạo buổi học | Đã đăng nhập |
+| `GET/PATCH` | `/api/sessions/[id]` | Chi tiết / Cập nhật buổi học | Đã đăng nhập |
+| `POST` | `/api/sessions/[id]/payment` | Khởi tạo thanh toán học phí | MENTEE |
+
+### Payments
+| Method | Endpoint | Mô tả | Quyền |
+|--------|----------|-------|-------|
+| `POST` | `/api/payments/session-fee` | Khởi tạo thanh toán học phí | MENTEE |
+| `POST` | `/api/payments/verify` | Xác minh giao dịch | Đã đăng nhập |
+
+### Khác
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| `GET` | `/api/leaderboard` | Bảng xếp hạng Mentor |
+| `GET` | `/api/teaching-fields` | Danh sách lĩnh vực giảng dạy |
+
+---
+
+## 🚀 Cài đặt & Chạy dự án
+
+### Yêu cầu hệ thống
+
+- **Node.js** >= 18.x
+- **npm** >= 9.x
+- Tài khoản **Google Cloud** (để tạo OAuth credentials)
+
+### Bước 1: Clone và cài đặt dependencies
 
 ```bash
-git clone <repo-url> hoc-tu-thien
+git clone <repository-url>
 cd hoc-tu-thien
 npm install
 ```
@@ -154,165 +375,305 @@ npm install
 cp .env.example .env
 ```
 
-Cập nhật `.env`:
-
-```env
-DATABASE_URL="file:./dev.db"
-NEXTAUTH_SECRET="your-secret-32-chars"
-NEXTAUTH_URL="http://localhost:3000"
-GOOGLE_CLIENT_ID="your-google-client-id"
-GOOGLE_CLIENT_SECRET="your-google-client-secret"
-```
+Chỉnh sửa file `.env` với các giá trị thực (xem phần [Biến môi trường](#-biến-môi-trường)).
 
 ### Bước 3: Khởi tạo database
 
 ```bash
-npx prisma migrate dev --name init
-npx prisma generate
+# Tạo database và chạy migrations
+npm run prisma:migrate
+
+# Tạo Prisma Client
+npm run prisma:generate
+
+# Seed dữ liệu mẫu (tạo Admin, Mentor demo, Mentee demo)
+npm run prisma:seed
 ```
 
-### Bước 4: Seed dữ liệu (tùy chọn)
+### Bước 4: Chạy ứng dụng
 
 ```bash
-ADMIN_EMAIL=your@gmail.com npm run prisma:seed
-```
-
-### Bước 5: Chạy dev server
-
-```bash
+# Development mode
 npm run dev
 ```
 
-Mở [http://localhost:3000](http://localhost:3000)
+Mở trình duyệt tại [http://localhost:3000](http://localhost:3000)
+
+### Các lệnh hữu ích khác
+
+```bash
+# Build production
+npm run build
+
+# Chạy production
+npm start
+
+# Mở Prisma Studio (GUI quản lý DB)
+npm run prisma:studio
+
+# Reset database và seed lại
+npm run db:reset
+
+# Lint code
+npm run lint
+```
 
 ---
 
-## Cấu hình Google OAuth
+## ⚙️ Biến môi trường
+
+Tạo file `.env` từ `.env.example` và điền các giá trị:
+
+```env
+# ─── Database ─────────────────────────────────────────────────────────────────
+# SQLite (development)
+DATABASE_URL="file:./dev.db"
+
+# PostgreSQL (production) — cần đổi provider trong prisma/schema.prisma
+# DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/hoc_tu_thien?schema=public"
+
+# ─── NextAuth ──────────────────────────────────────────────────────────────────
+# Tạo bằng: openssl rand -base64 32
+NEXTAUTH_SECRET="your-strong-random-secret-32-chars"
+NEXTAUTH_URL="http://localhost:3000"
+
+# ─── Google OAuth ──────────────────────────────────────────────────────────────
+# Tạo tại: https://console.cloud.google.com/
+# Authorized redirect URI: http://localhost:3000/api/auth/callback/google
+GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your-client-secret"
+
+# ─── App Config ────────────────────────────────────────────────────────────────
+NEXT_PUBLIC_APP_NAME="Học Từ Thiện"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+# ─── Thiện Nguyện App ──────────────────────────────────────────────────────────
+# Số tài khoản TN App dùng cho kích hoạt (nhận 10k activation fee)
+TN_ACTIVATION_ACCOUNT_NO="2000"
+TN_ACTIVATION_ACCOUNT_NAME="QUY THIEN NGUYEN"
+
+# ─── Seed ─────────────────────────────────────────────────────────────────────
+ADMIN_EMAIL="your-admin@gmail.com"
+DEMO_MENTEE_EMAIL="mentee@demo.com"
+```
+
+### Hướng dẫn tạo Google OAuth Credentials
 
 1. Truy cập [Google Cloud Console](https://console.cloud.google.com/)
 2. Tạo project mới hoặc chọn project có sẵn
 3. Vào **APIs & Services → Credentials**
-4. Tạo **OAuth 2.0 Client ID** (Web Application)
-5. Thêm **Authorized redirect URIs**:
-   - Development: `http://localhost:3000/api/auth/callback/google`
-   - Production: `https://yourdomain.com/api/auth/callback/google`
-6. Copy **Client ID** và **Client Secret** vào `.env`
+4. Tạo **OAuth 2.0 Client ID** (loại: Web application)
+5. Thêm **Authorized redirect URI**: `http://localhost:3000/api/auth/callback/google`
+6. Copy `Client ID` và `Client Secret` vào `.env`
 
 ---
 
-## Vai trò người dùng
+## 🧪 Kiểm thử
 
-| Role | Mô tả | Mặc định |
-|---|---|---|
-| `MENTEE` | Người học. Tìm Mentor, đặt lịch học | ✅ Khi đăng ký |
-| `MENTOR` | Người hướng dẫn. Dạy Mentee | Admin thăng cấp |
-| `ADMIN` | Quản trị viên. Quản lý toàn bộ hệ thống | Seed hoặc DB |
+Dự án có ~**247 test cases** được tổ chức theo 3 tầng:
 
-### Phân quyền route
+### Chạy tests
+
+```bash
+# Toàn bộ test suite
+npm test
+
+# Chỉ Unit Tests (không cần DB, nhanh ~3–5s)
+npm run test:unit
+
+# Chỉ Integration Tests (cần Prisma + SQLite, ~10–20s)
+npm run test:integration
+
+# E2E Scenario Tests
+npm test -- --testPathPattern=e2e
+
+# Xem coverage report
+npm run test:coverage
+# → Mở file: coverage/index.html
+
+# Watch mode (development)
+npm run test:watch
+
+# CI mode
+npm run test:ci
+```
+
+### Cấu trúc tests
 
 ```
-/                     → Public (landing page)
-/login                → Public (Google OAuth)
-/dashboard            → Auth required → redirect theo role
-/dashboard/admin/*    → ADMIN only
-/dashboard/mentor/*   → MENTOR + ADMIN
-/dashboard/mentee/*   → MENTEE (+ admin xem được)
-/dashboard/settings   → Tất cả (đã đăng nhập)
+src/__tests__/
+├── helpers.ts                  ← Builders & mock factories dùng chung
+│
+├── unit/                       ← Không cần DB, không cần network
+│   ├── domain/
+│   │   ├── entities/
+│   │   │   ├── AuditableEntity.test.ts        (9 tests)
+│   │   │   ├── UserEntity.test.ts             (23 tests)
+│   │   │   ├── UserEntityEdgeCases.test.ts    (13 tests)
+│   │   │   └── DomainEvents.test.ts           (9 tests)
+│   │   └── value-objects/
+│   │       ├── ValueObjects.test.ts           (21 tests)
+│   │       └── Payment.test.ts                (29 tests)
+│   └── application/
+│       ├── dtos/
+│       │   └── UserDTO.test.ts                (9 tests)
+│       └── use-cases/
+│           ├── UserUseCases.test.ts           (16 tests)
+│           ├── PaymentUseCases.test.ts        (14 tests)
+│           ├── SessionUseCases.test.ts        (22 tests)
+│           ├── MentorUseCases.test.ts         (8 tests)
+│           └── ThienNguyenAppClient.test.ts   (12 tests)
+│
+├── integration/                ← Cần Prisma + SQLite test DB
+│   ├── repositories/
+│   │   ├── PrismaUserRepository.test.ts       (17 tests)
+│   │   ├── PrismaUnitOfWork.test.ts           (7 tests)
+│   │   └── PrismaPaymentSessionRepo.test.ts   (21 tests)
+│   └── api/
+│       └── ApiRoutes.test.ts                  (17 tests)
+│
+└── e2e/
+    └── UserJourney.test.ts                    (9 tests)
+                                          ──────────
+                                     Total: ~247 tests
 ```
 
 ---
 
-## API Routes
+## 🛠️ Công nghệ sử dụng
 
-### Auth
-| Method | Route | Mô tả |
-|---|---|---|
-| GET/POST | `/api/auth/[...nextauth]` | NextAuth handler |
+### Frontend & Framework
+| Công nghệ | Phiên bản | Mục đích |
+|-----------|-----------|---------|
+| [Next.js](https://nextjs.org/) | 14.2.5 | React framework với App Router |
+| [React](https://react.dev/) | 18 | UI library |
+| [TypeScript](https://www.typescriptlang.org/) | 5 | Type safety |
+| [Tailwind CSS](https://tailwindcss.com/) | 3.4 | Utility-first CSS |
+| [Radix UI](https://www.radix-ui.com/) | latest | Headless UI components |
+| [Lucide React](https://lucide.dev/) | 0.395 | Icon library |
+| [next-themes](https://github.com/pacocoursey/next-themes) | 0.3 | Dark/Light mode |
+| [Sonner](https://sonner.emilkowal.ski/) | 1.5 | Toast notifications |
+| [date-fns](https://date-fns.org/) | 3.6 | Date utilities |
 
-### User
-| Method | Route | Auth | Mô tả |
-|---|---|---|---|
-| GET | `/api/users/profile` | Required | Lấy profile hiện tại |
-| PATCH | `/api/users/profile` | Required | Cập nhật profile |
+### Backend & Database
+| Công nghệ | Phiên bản | Mục đích |
+|-----------|-----------|---------|
+| [Prisma](https://www.prisma.io/) | 5.16 | ORM + Database migrations |
+| [SQLite](https://www.sqlite.org/) | — | Database (development) |
+| [PostgreSQL](https://www.postgresql.org/) | — | Database (production) |
+| [NextAuth.js v5](https://authjs.dev/) | 5.0.0-beta | Authentication |
+| [Zod](https://zod.dev/) | 3.23 | Schema validation |
+| [@paralleldrive/cuid2](https://github.com/paralleldrive/cuid2) | 2.2 | ID generation |
 
-### Admin
-| Method | Route | Auth | Mô tả |
-|---|---|---|---|
-| PATCH | `/api/admin/users/role` | ADMIN | Đổi role user |
-| DELETE | `/api/admin/users/[id]` | ADMIN | Soft delete user |
+### Testing
+| Công nghệ | Phiên bản | Mục đích |
+|-----------|-----------|---------|
+| [Jest](https://jestjs.io/) | 29.7 | Test runner |
+| [ts-jest](https://kulshekhar.github.io/ts-jest/) | 29.2 | TypeScript support cho Jest |
+| [prisma-mock](https://github.com/demonsters/prisma-mock) | 0.13 | Mock Prisma client |
+| [MSW](https://mswjs.io/) | 2.3 | Mock Service Worker (API mocking) |
+| [Supertest](https://github.com/ladjs/supertest) | 7.0 | HTTP integration testing |
+
+### External Services
+| Dịch vụ | Mục đích |
+|---------|---------|
+| [Google OAuth 2.0](https://developers.google.com/identity) | Xác thực người dùng |
+| [Google Meet API](https://developers.google.com/meet) | Tạo link họp trực tuyến |
+| [Thiện Nguyện App API](https://thiennguyen.app) | Xác minh giao dịch chuyển khoản |
+| [VietQR](https://vietqr.io/) | Tạo QR code thanh toán |
 
 ---
 
-## Design Patterns chi tiết
+## 🔐 Bảo mật & Middleware
 
-### Audit Entity
+File [`src/middleware.ts`](src/middleware.ts) bảo vệ các routes:
 
-Mọi entity đều có các trường:
+- `/dashboard/*` — yêu cầu đăng nhập
+- `/dashboard/admin/*` — yêu cầu role `ADMIN`
+- `/dashboard/mentor/*` — yêu cầu role `MENTOR` hoặc `ADMIN`
+- `/activation` — yêu cầu đăng nhập, chỉ dành cho `PENDING_ACTIVATION`
+
+Session được lưu trong database (strategy: `database`) và bao gồm `role`, `status`, `bio`, `phone` của người dùng.
+
+---
+
+## 📊 Domain Model chi tiết
+
+### UserEntity
+
 ```typescript
-createdAt, updatedAt    // Timestamps
-createdBy, updatedBy    // Actor IDs
-deletedAt, deletedBy    // Soft delete timestamps
-isDeleted               // Soft delete flag
-version                 // Optimistic locking version
+class UserEntity extends AuditableEntity {
+  // Properties
+  email: Email          // Value Object — validate format
+  name: string | null
+  image: string | null
+  role: UserRole        // ADMIN | MENTOR | MENTEE
+  status: UserStatus    // PENDING_ACTIVATION | ACTIVE | INACTIVE | SUSPENDED
+
+  // Methods
+  activate()            // PENDING_ACTIVATION → ACTIVE
+  deactivate()          // ACTIVE → INACTIVE
+  suspend()             // → SUSPENDED
+  promoteToMentor()     // MENTEE → MENTOR
+  demoteToMentee()      // MENTOR → MENTEE
+  updateProfile()       // Cập nhật name, bio, phone
+  isMentor()            // boolean
+  isAdmin()             // boolean
+  isActive()            // boolean
+}
 ```
 
-### Versioning (Optimistic Concurrency)
+### AuditableEntity (base class)
+
+Mọi entity đều kế thừa từ `AuditableEntity` với các trường:
+- `createdAt`, `createdBy`
+- `updatedAt`, `updatedBy`
+- `deletedAt`, `deletedBy`, `isDeleted`
+- `version` (optimistic locking)
+
+### Payment Value Objects
 
 ```typescript
-// Repository update kiểm tra version trước khi ghi
-await prisma.user.updateMany({
-  where: { id, version: user.version - 1 }, // phải khớp version cũ
-  data: { ...updates, version: user.version }, // ghi version mới
-});
-// Nếu count === 0 → ConcurrencyException
-```
+// Mã giao dịch format
+"HOCTUTHIEN KICHHOAT ABCXYZ"  // Kích hoạt tài khoản
+"HOCTUTHIEN HOCPHI ABCXYZ"    // Học phí buổi học
 
-### Unit of Work
-
-```typescript
-const result = await uow.execute(async (uow) => {
-  const user = await uow.users.findById(id);
-  const updated = user.promoteToMentor(performedBy);
-  await uow.users.update(updated);
-  await uow.users.createAuditLog({ ... });
-  // Tất cả hoặc không gì cả (transaction)
-  return updated;
-});
-```
-
-### Soft Delete
-
-```typescript
-// Không xoá khỏi DB, chỉ đánh dấu
-user.softDelete(deletedBy)  // entity method
-await uow.users.softDelete(id, deletedBy)  // repository method
-
-// Mọi query mặc định lọc isDeleted = false
-findAll({ includeDeleted: false }) // default
+// Chỉ dùng chữ HOA, không dùng số
+// (TN App ẩn 3 số liên tiếp thành "xxx")
+const LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // bỏ I, O
 ```
 
 ---
 
-## Công nghệ
+## 🤝 Đóng góp
 
-- **Framework**: Next.js 14 (App Router)
-- **Auth**: NextAuth v5 + Google Provider
-- **Database**: SQLite (dev) / PostgreSQL (prod) via Prisma ORM
-- **Styling**: TailwindCSS + custom design system
-- **UI Library**: ShadCN UI (Radix UI primitives)
-- **Fonts**: Be Vietnam Pro (body) + Playfair Display (headings)
-- **Validation**: Zod
-- **Toast**: Sonner
+1. Fork repository
+2. Tạo branch mới: `git checkout -b feature/ten-tinh-nang`
+3. Commit changes: `git commit -m 'feat: thêm tính năng X'`
+4. Push branch: `git push origin feature/ten-tinh-nang`
+5. Tạo Pull Request
+
+### Quy ước commit message
+
+```
+feat:     Tính năng mới
+fix:      Sửa lỗi
+docs:     Cập nhật tài liệu
+style:    Thay đổi format/style (không ảnh hưởng logic)
+refactor: Tái cấu trúc code
+test:     Thêm/sửa tests
+chore:    Cập nhật build tools, dependencies
+```
 
 ---
 
-## Phát triển tiếp theo
+## 📄 License
 
-- [ ] Matching algorithm Mentor ↔ Mentee
-- [ ] Session booking & calendar integration
-- [ ] Payment flow (simulate) → MBBank Quỹ Thiện Nguyện API
-- [ ] Video call integration (Jitsi / Daily.co)
-- [ ] Rating & review system
-- [ ] Email notifications
-- [ ] Admin analytics dashboard
-- [ ] Mentor profile approval workflow
+Dự án này được phát triển cho mục đích phi lợi nhuận — **Học Từ Thiện**.
+
+---
+
+<div align="center">
+  <p>Made with ❤️ for the Vietnamese learning community</p>
+  <p><strong>Học Từ Thiện</strong> — Học để cho đi, cho đi để học</p>
+</div>
