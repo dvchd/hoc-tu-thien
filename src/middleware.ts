@@ -10,6 +10,17 @@ export default auth((req) => {
   const { nextUrl } = req;
   const session = req.auth;
   const isLoggedIn = !!session?.user;
+  const role = session?.user?.role as string | undefined;
+  const status = session?.user?.status as string | undefined;
+
+  // Debug log — xoá sau khi fix xong
+  console.log("[Middleware]", {
+    path: nextUrl.pathname,
+    isLoggedIn,
+    role,
+    status,
+    userId: session?.user?.id,
+  });
 
   const publicRoutes = ["/login", "/"];
   const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
@@ -31,7 +42,7 @@ export default auth((req) => {
   const isForceRefresh = req.cookies.get("next-auth.force-refresh")?.value === "1";
   if (
     isLoggedIn &&
-    session.user.status === UserStatus.PENDING_ACTIVATION &&
+    status === UserStatus.PENDING_ACTIVATION &&
     !isActivationRoute &&
     !isPublicRoute &&
     !isForceRefresh
@@ -39,14 +50,20 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/activation", req.url));
   }
 
-  const role = session?.user?.role;
+  // Chỉ chặn nếu đã login mà role không đúng
+  // Không chặn nếu role chưa load (undefined) — tránh false redirect
+  if (isLoggedIn && role) {
+    if (nextUrl.pathname.startsWith("/dashboard/admin") && role !== UserRole.ADMIN) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
 
-  if (nextUrl.pathname.startsWith("/dashboard/admin") && role !== UserRole.ADMIN) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
-  }
-
-  if (nextUrl.pathname.startsWith("/dashboard/mentor") && role !== UserRole.MENTOR && role !== UserRole.ADMIN) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+    if (
+      nextUrl.pathname.startsWith("/dashboard/mentor") &&
+      role !== UserRole.MENTOR &&
+      role !== UserRole.ADMIN
+    ) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
   }
 
   return NextResponse.next();

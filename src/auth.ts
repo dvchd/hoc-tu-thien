@@ -55,44 +55,19 @@ if (!secret) {
   console.error("[Auth] FATAL: AUTH_SECRET / NEXTAUTH_SECRET is not set. Authentication will fail.");
 }
 
-// Detect production HTTPS to configure secure cookies correctly
-const isProduction = process.env.NODE_ENV === "production";
-const appUrl = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? "";
-const useSecureCookies = isProduction && appUrl.startsWith("https://");
-
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret,
+  // trustHost allows NextAuth to work behind Coolify/Nginx reverse proxy
+  // without needing to explicitly whitelist hosts.
   trustHost: true,
   adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProviderWithHardcodedEndpoints(),
   ],
-  // Use JWT strategy so middleware (Edge Runtime) can read session without PrismaClient
+  // JWT strategy: middleware (Edge Runtime) can verify session without PrismaClient.
+  // Do NOT add custom cookies config — it causes cookie name mismatch between
+  // auth.ts (Node.js) and auth.config.ts (Edge/middleware), breaking session reads.
   session: { strategy: "jwt" },
-  // Explicit cookie config to survive Coolify/Nginx reverse proxy
-  // SameSite=lax allows cookie to be sent after redirect from Google OAuth
-  cookies: {
-    sessionToken: {
-      name: useSecureCookies ? "__Secure-next-auth.session-token" : "next-auth.session-token",
-      options: { httpOnly: true, sameSite: "lax", path: "/", secure: useSecureCookies },
-    },
-    callbackUrl: {
-      name: useSecureCookies ? "__Secure-next-auth.callback-url" : "next-auth.callback-url",
-      options: { httpOnly: true, sameSite: "lax", path: "/", secure: useSecureCookies },
-    },
-    csrfToken: {
-      name: useSecureCookies ? "__Host-next-auth.csrf-token" : "next-auth.csrf-token",
-      options: { httpOnly: true, sameSite: "lax", path: "/", secure: useSecureCookies },
-    },
-    state: {
-      name: useSecureCookies ? "__Secure-next-auth.state" : "next-auth.state",
-      options: { httpOnly: true, sameSite: "lax", path: "/", secure: useSecureCookies, maxAge: 900 },
-    },
-    pkceCodeVerifier: {
-      name: useSecureCookies ? "__Secure-next-auth.pkce.code_verifier" : "next-auth.pkce.code_verifier",
-      options: { httpOnly: true, sameSite: "lax", path: "/", secure: useSecureCookies, maxAge: 900 },
-    },
-  },
   callbacks: {
     async signIn({ user }) {
       if (!user.email) return false;
