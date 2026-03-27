@@ -1,10 +1,29 @@
 import { auth, signIn } from "@/auth";
 import { redirect } from "next/navigation";
-import { Heart, Shield, Users, BookOpen } from "lucide-react";
+import { Heart, Shield, Users, BookOpen, AlertTriangle } from "lucide-react";
 
-export default async function LoginPage() {
+const ERROR_MESSAGES: Record<string, string> = {
+  Configuration: "Lỗi cấu hình máy chủ (thiếu biến môi trường GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET hoặc AUTH_SECRET). Vui lòng liên hệ Admin.",
+  AccessDenied: "Quyền truy cập bị từ chối.",
+  Verification: "Link xác thực đã hết hạn hoặc đã được sử dụng.",
+  OAuthSignin: "Không thể khởi tạo đăng nhập Google. Vui lòng thử lại.",
+  OAuthCallback: "Lỗi callback từ Google. Vui lòng kiểm tra Authorized Redirect URI trong Google Console.",
+  OAuthCreateAccount: "Không thể tạo tài khoản. Vui lòng thử lại.",
+  Default: "Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại.",
+};
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: { error?: string };
+}) {
   const session = await auth();
   if (session?.user) redirect("/dashboard");
+
+  const errorCode = searchParams.error;
+  const errorMessage = errorCode
+    ? (ERROR_MESSAGES[errorCode] ?? ERROR_MESSAGES.Default)
+    : null;
 
   return (
     <div className="min-h-screen flex">
@@ -84,6 +103,19 @@ export default async function LoginPage() {
               Đăng nhập để bắt đầu hành trình học tập và thiện nguyện của bạn.
             </p>
           </div>
+
+          {/* Error banner */}
+          {errorMessage && (
+            <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-100 flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-red-700 leading-relaxed">
+                <span className="font-semibold block mb-1">
+                  Đăng nhập thất bại {errorCode && `(${errorCode})`}
+                </span>
+                {errorMessage}
+              </div>
+            </div>
+          )}
 
           {/* Google Sign In */}
           <form

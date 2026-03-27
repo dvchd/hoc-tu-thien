@@ -45,8 +45,13 @@ function GoogleProviderWithHardcodedEndpoints(): OAuthConfig<Record<string, unkn
   };
 }
 
+const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+if (!secret) {
+  console.error("[Auth] FATAL: AUTH_SECRET / NEXTAUTH_SECRET is not set. Authentication will fail.");
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+  secret,
   trustHost: true,
   adapter: PrismaAdapter(prisma),
   providers: [
