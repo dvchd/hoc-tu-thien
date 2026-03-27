@@ -17,6 +17,8 @@
     "test:coverage": "jest --coverage",
     "test:unit": "jest --testPathPattern=src/__tests__/unit --passWithNoTests",
     "test:integration": "jest --testPathPattern=integration --passWithNoTests --runInBand",
+    "test:e2e-ui": "E2E_TEST_MODE=true playwright test",
+    "test:e2e-ui:ui": "E2E_TEST_MODE=true playwright test --ui",
     "test:ci": "jest --ci --coverage --forceExit --runInBand"
   },
   "dependencies": {
@@ -39,6 +41,7 @@
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
+    "@playwright/test": "^1.58.2",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.19.37",
     "@types/react": "^18",
