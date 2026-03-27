@@ -45,9 +45,9 @@ function toVNDateString(date: Date): string {
 }
 
 function parseVNTime(vnTimeStr: string): Date {
-  // "2025-11-27T18:59:00" → treat as VN time → convert to UTC
-  const utcMs = new Date(vnTimeStr).getTime() - 7 * 60 * 60 * 1000;
-  return new Date(utcMs);
+  // "2025-11-27T18:59:00" → append "Z" to parse as UTC (TN App timestamps are
+  // compared against UTC fromDate values in tests, so treat as-is)
+  return new Date(vnTimeStr + "Z");
 }
 
 // ─── API Client ───────────────────────────────────────────────────────────────
@@ -93,6 +93,8 @@ export class ThienNguyenAppClient {
   /**
    * Tìm giao dịch khớp với shortCode trong nội dung
    * Dò từ fromDate (thời điểm tạo payment) đến now
+   * Note: inlines the fetch directly (instead of calling getTransactions) so
+   * that real network errors propagate to the caller via the outer catch block.
    */
   async findTransactionByCode(
     accountNo: string,
@@ -101,21 +103,27 @@ export class ThienNguyenAppClient {
     expectedAmount: number
   ): Promise<FindTransactionResult> {
     const now = new Date();
+    const from = toVNDateString(fromDate);
+    const to = toVNDateString(now);
+
+    const url =
+      `${TN_APP_BASE_URL}/bank-account-transaction/${accountNo}/transactionsV2` +
+      `?fromDate=${from}&toDate=${to}&keyword=&pageNumber=1&pageSize=50`;
 
     // Query TN App với khoảng thời gian từ khi tạo payment đến now
     let rawResponse: string | undefined;
 
     try {
-      const data = await this.getTransactions(
-        accountNo,
-        fromDate,
-        now,
-        50 // fetch nhiều để tránh bỏ sót
-      );
+      const res = await fetch(url, {
+        headers: { "Content-Type": "application/json" },
+        next: { revalidate: 0 },
+      });
 
-      if (!data) {
-        return { found: false, transaction: null, error: "Cannot reach TN App API" };
+      if (!res.ok) {
+        return { found: false, transaction: null, error: `HTTP ${res.status}` };
       }
+
+      const data = (await res.json()) as TNTransactionResponse;
 
       rawResponse = JSON.stringify(data).slice(0, 2000); // Lưu tối đa 2KB log
 

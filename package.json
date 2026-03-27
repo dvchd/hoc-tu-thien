@@ -15,7 +15,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:unit": "jest --testPathPattern=unit --passWithNoTests",
+    "test:unit": "jest --testPathPattern=src/__tests__/unit --passWithNoTests",
     "test:integration": "jest --testPathPattern=integration --passWithNoTests --runInBand",
     "test:ci": "jest --ci --coverage --forceExit --runInBand"
   },
@@ -64,7 +64,7 @@
     "ts-jest": "^29.2.5",
     "jest-environment-node": "^29.7.0",
     "@jest/globals": "^29.7.0",
-    "prisma-mock": "^0.13.0",
+    "prisma-mock": "^0.12.2",
     "msw": "^2.3.4",
     "supertest": "^7.0.0",
     "@types/supertest": "^6.0.2"

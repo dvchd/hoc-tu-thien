@@ -110,12 +110,11 @@ export function buildVietQRUrl({
   template = "compact2",
 }: VietQRParams): string {
   const base = `https://img.vietqr.io/image/${MB_BANK_BIN}-${accountNo}-${template}.png`;
-  const params = new URLSearchParams({
-    amount: amount.toString(),
-    addInfo,
-    accountName,
-  });
-  return `${base}?${params.toString()}`;
+  const query =
+    `amount=${encodeURIComponent(amount.toString())}` +
+    `&addInfo=${encodeURIComponent(addInfo)}` +
+    `&accountName=${encodeURIComponent(accountName)}`;
+  return `${base}?${query}`;
 }
 
 // ─── SessionStatus ────────────────────────────────────────────────────────────

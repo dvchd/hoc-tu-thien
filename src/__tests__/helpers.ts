@@ -124,6 +124,7 @@ export function createMockSessionRepository(): jest.Mocked<ISessionRepository> {
     findByMentorId: jest.fn(),
     findUpcomingByMentorId: jest.fn(),
     findPendingPaymentByMenteeId: jest.fn(),
+    getMentorProfileFee: jest.fn(),
     create: jest.fn(),
     updateStatus: jest.fn(),
     addRating: jest.fn(),
