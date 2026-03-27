@@ -13,15 +13,6 @@ export default auth((req) => {
   const role = session?.user?.role as string | undefined;
   const status = session?.user?.status as string | undefined;
 
-  // Debug log — xoá sau khi fix xong
-  console.log("[Middleware]", {
-    path: nextUrl.pathname,
-    isLoggedIn,
-    role,
-    status,
-    userId: session?.user?.id,
-  });
-
   const publicRoutes = ["/login", "/"];
   const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
   const isActivationRoute = nextUrl.pathname === "/activation";
