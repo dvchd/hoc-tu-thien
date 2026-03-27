@@ -9,16 +9,26 @@ export default async function ActivationPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  // Nếu đã active → redirect về dashboard
+  // Nếu đã active (theo JWT) → redirect về dashboard
   if (session.user.status === UserStatus.ACTIVE) {
     redirect("/dashboard");
   }
 
   // Khởi tạo payment activation
+  // Nếu DB đã active (JWT chưa refresh) → redirect về dashboard
   const { initiateActivation } = createUseCases();
-  const paymentInfo = await initiateActivation.execute({
-    userId: session.user.id,
-  });
+  let paymentInfo;
+  try {
+    paymentInfo = await initiateActivation.execute({
+      userId: session.user.id,
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "";
+    if (message === "Tài khoản đã được kích hoạt") {
+      redirect("/dashboard");
+    }
+    throw err;
+  }
 
   return (
     <div className="min-h-screen gradient-hero flex items-center justify-center px-4 py-12">

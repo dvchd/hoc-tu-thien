@@ -74,7 +74,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
     },
     async jwt({ token, user }) {
-      // On initial sign-in, user object is available - fetch role/status from DB
+      // On initial sign-in, populate token from DB
       if (user?.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email },
@@ -82,6 +82,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
         if (dbUser) {
           token.id = dbUser.id;
+          token.role = dbUser.role;
+          token.status = dbUser.status;
+          token.bio = dbUser.bio;
+          token.phone = dbUser.phone;
+        }
+      } else if (token.id) {
+        // On subsequent requests, always re-read status/role from DB
+        // so changes (e.g. activation, role change) are reflected immediately
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { role: true, status: true, bio: true, phone: true },
+        });
+        if (dbUser) {
           token.role = dbUser.role;
           token.status = dbUser.status;
           token.bio = dbUser.bio;
