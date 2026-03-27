@@ -204,7 +204,7 @@ hoc-tu-thien/
 
 ## 🗄️ Cơ sở dữ liệu
 
-Dự án dùng **SQLite** (development) và hỗ trợ **PostgreSQL** (production) thông qua Prisma ORM.
+Dự án dùng **PostgreSQL** cho cả môi trường development và production thông qua Prisma ORM.
 
 ### Sơ đồ quan hệ (ERD tóm tắt)
 
@@ -359,6 +359,7 @@ CANCELLED   CANCELLED
 
 - **Node.js** >= 18.x
 - **npm** >= 9.x
+- **PostgreSQL** >= 14 (local hoặc remote)
 - Tài khoản **Google Cloud** (để tạo OAuth credentials)
 
 ### Bước 1: Clone và cài đặt dependencies
@@ -379,9 +380,11 @@ Chỉnh sửa file `.env` với các giá trị thực (xem phần [Biến môi 
 
 ### Bước 3: Khởi tạo database
 
+Đảm bảo đã có PostgreSQL server và cấu hình `DATABASE_URL` trong `.env`.
+
 ```bash
-# Tạo database và chạy migrations
-npm run prisma:migrate
+# Đồng bộ schema lên database (tạo bảng)
+npx prisma db push
 
 # Tạo Prisma Client
 npm run prisma:generate
@@ -426,11 +429,8 @@ Tạo file `.env` từ `.env.example` và điền các giá trị:
 
 ```env
 # ─── Database ─────────────────────────────────────────────────────────────────
-# SQLite (development)
-DATABASE_URL="file:./dev.db"
-
-# PostgreSQL (production) — cần đổi provider trong prisma/schema.prisma
-# DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/hoc_tu_thien?schema=public"
+# PostgreSQL (bắt buộc — dùng cho cả development và production)
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/hoc_tu_thien"
 
 # ─── NextAuth ──────────────────────────────────────────────────────────────────
 # Tạo bằng: openssl rand -base64 32
@@ -481,7 +481,7 @@ npm test
 # Chỉ Unit Tests (không cần DB, nhanh ~3–5s)
 npm run test:unit
 
-# Chỉ Integration Tests (cần Prisma + SQLite, ~10–20s)
+# Chỉ Integration Tests (cần Prisma + PostgreSQL, ~10–20s)
 npm run test:integration
 
 # E2E Scenario Tests
@@ -524,7 +524,7 @@ src/__tests__/
 │           ├── MentorUseCases.test.ts         (8 tests)
 │           └── ThienNguyenAppClient.test.ts   (12 tests)
 │
-├── integration/                ← Cần Prisma + SQLite test DB
+├── integration/                ← Cần Prisma + PostgreSQL test DB
 │   ├── repositories/
 │   │   ├── PrismaUserRepository.test.ts       (17 tests)
 │   │   ├── PrismaUnitOfWork.test.ts           (7 tests)
@@ -559,8 +559,7 @@ src/__tests__/
 | Công nghệ | Phiên bản | Mục đích |
 |-----------|-----------|---------|
 | [Prisma](https://www.prisma.io/) | 5.16 | ORM + Database migrations |
-| [SQLite](https://www.sqlite.org/) | — | Database (development) |
-| [PostgreSQL](https://www.postgresql.org/) | — | Database (production) |
+| [PostgreSQL](https://www.postgresql.org/) | >= 14 | Database (development & production) |
 | [NextAuth.js v5](https://authjs.dev/) | 5.0.0-beta | Authentication |
 | [Zod](https://zod.dev/) | 3.23 | Schema validation |
 | [@paralleldrive/cuid2](https://github.com/paralleldrive/cuid2) | 2.2 | ID generation |
@@ -593,7 +592,7 @@ File [`src/middleware.ts`](src/middleware.ts) bảo vệ các routes:
 - `/dashboard/mentor/*` — yêu cầu role `MENTOR` hoặc `ADMIN`
 - `/activation` — yêu cầu đăng nhập, chỉ dành cho `PENDING_ACTIVATION`
 
-Session được lưu trong database (strategy: `database`) và bao gồm `role`, `status`, `bio`, `phone` của người dùng.
+Session được lưu dưới dạng JWT (strategy: `jwt`) và bao gồm `role`, `status`, `bio`, `phone` của người dùng.
 
 ---
 
