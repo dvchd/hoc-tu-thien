@@ -40,7 +40,7 @@ export const PaymentStatusColors: Record<PaymentStatus, string> = {
 
 const LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // bỏ I, O tránh nhầm 1, 0
 
-export function generateShortCode(length = 6): string {
+export function generateShortCode(length = 8): string {
   return Array.from(
     { length },
     () => LETTERS[Math.floor(Math.random() * LETTERS.length)]

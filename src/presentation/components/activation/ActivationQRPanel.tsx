@@ -180,7 +180,7 @@ export function ActivationQRPanel({ paymentInfo, userId, sessionId, onSuccess }:
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-stone-400 mb-0.5">Nội dung chuyển khoản</p>
-                    <p className="font-mono text-sm font-semibold text-stone-800 break-all">
+                    <p className="font-mono text-sm font-bold text-stone-800 whitespace-nowrap overflow-x-auto">
                       {paymentInfo.transactionCode}
                     </p>
                     <p className="text-xs text-amber-600 mt-1">

@@ -74,7 +74,7 @@ export class InitiateActivationUseCase {
     }
 
     // Tạo payment mới
-    const shortCode = generateShortCode(6);
+    const shortCode = generateShortCode(8);
     const transactionCode = buildTransactionContent(
       PaymentType.ACTIVATION,
       shortCode
@@ -270,7 +270,7 @@ export class InitiateSessionFeePaymentUseCase {
       return this.buildPaymentInfo(sessionPending);
     }
 
-    const shortCode = generateShortCode(6);
+    const shortCode = generateShortCode(8);
     const transactionCode = buildTransactionContent(
       PaymentType.SESSION_FEE,
       shortCode
