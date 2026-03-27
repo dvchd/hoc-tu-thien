@@ -202,7 +202,7 @@ export function ActivationQRPanel({ paymentInfo, userId, sessionId, onSuccess }:
                 <p className="text-xs text-stone-400 mb-0.5">Ngân hàng</p>
                 <div className="flex items-center gap-2">
                   <img
-                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Logo_MB_new.png/320px-Logo_MB_new.png"
+                    src="/mbbank-logo.svg"
                     alt="MB Bank"
                     className="h-5 object-contain"
                   />

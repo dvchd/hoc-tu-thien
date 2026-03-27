@@ -8,6 +8,11 @@ export const metadata: Metadata = {
   description:
     "Nền tảng kết nối 1-1 Mentor và Mentee. Học phí được chuyển thẳng vào Quỹ Thiện Nguyện MBBank.",
   keywords: ["mentor", "mentee", "học tập", "thiện nguyện", "từ thiện"],
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" fill="none">
+  <!-- MB Bank official colors: purple/violet -->
+  <!-- Left M shape -->
+  <rect x="2" y="4" width="36" height="32" rx="4" fill="#6B21A8"/>
+  <!-- M letter -->
+  <path d="M8 28 L8 12 L14 22 L20 12 L20 28" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M20 28 L20 12" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- B letter area -->
+  <path d="M26 12 L26 28 M26 12 L31 12 C33.2 12 35 13.8 35 16 C35 18.2 33.2 20 31 20 L26 20 M26 20 L32 20 C34.2 20 36 21.8 36 24 C36 26.2 34.2 28 32 28 L26 28" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- MB Bank text -->
+  <text x="44" y="26" font-family="Arial, sans-serif" font-weight="700" font-size="16" fill="#6B21A8">MB Bank</text>
+</svg>
