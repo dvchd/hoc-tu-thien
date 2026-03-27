@@ -214,6 +214,20 @@ export class PrismaUserRepository implements IUserRepository {
     await this.prisma.user.delete({ where: { id } });
   }
 
+  async incrementLateCancellation(id: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id },
+      data: { lateCancellationCount: { increment: 1 } },
+    });
+  }
+
+  async incrementNoShow(id: string): Promise<void> {
+    await this.prisma.menteeProfile.update({
+      where: { userId: id },
+      data: { noShowCount: { increment: 1 } },
+    });
+  }
+
   // ─── Audit ────────────────────────────────────────────────────────────────
 
   async createAuditLog(log: {

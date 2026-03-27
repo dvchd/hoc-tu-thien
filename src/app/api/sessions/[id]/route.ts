@@ -77,13 +77,6 @@ export async function PATCH(
 
       case "cancel":
         result = await cancelSession.execute(sessionId, userId, parsed.data.cancelReason);
-        // Nếu late cancellation, cập nhật counter
-        if (result.isLateCancellation) {
-          await prisma.user.update({
-            where: { id: userId },
-            data: { lateCancellationCount: { increment: 1 } },
-          }).catch(() => { /* ignore */ });
-        }
         break;
 
       case "rate":

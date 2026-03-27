@@ -16,12 +16,6 @@ export async function POST(
     const { markNoShow } = createUseCases();
     const result = await markNoShow.execute(params.id, session.user.id);
 
-    // Tăng noShowCount cho mentee
-    await prisma.menteeProfile.update({
-      where: { userId: result.menteeId },
-      data: { noShowCount: { increment: 1 } },
-    }).catch(() => { /* ignore if profile not found */ });
-
     return NextResponse.json({
       success: true,
       session: result,

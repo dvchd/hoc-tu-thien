@@ -37,6 +37,8 @@ export interface IUserRepository {
   update(user: UserEntity): Promise<UserEntity>;
   softDelete(id: string, deletedBy?: string): Promise<void>;
   hardDelete(id: string): Promise<void>;
+  incrementLateCancellation(id: string): Promise<void>;
+  incrementNoShow(id: string): Promise<void>;
 
   // Audit
   createAuditLog(log: {

@@ -8,13 +8,12 @@ import { ICharityAccountRepository } from "../../domain/repositories/ICharityAcc
 import { ISystemConfigRepository } from "../../domain/repositories/ISystemConfigRepository";
 import { IReportRepository } from "../../domain/repositories/IReportRepository";
 import { IMentorProfileRepository } from "../../domain/repositories/IMentorProfileRepository";
+
 import { PrismaUserRepository } from "../database/repositories/PrismaUserRepository";
 import { PrismaMentorProfileRepository } from "../database/repositories/PrismaMentorProfileRepository";
-import {
-  PrismaPaymentRepository,
-  PrismaSessionRepository,
-  PrismaTeachingFieldRepository,
-} from "../database/repositories/PrismaPaymentSessionRepositories";
+import { PrismaPaymentRepository } from "../database/repositories/payment/PrismaPaymentRepository";
+import { PrismaSessionRepository } from "../database/repositories/session/PrismaSessionRepository";
+import { PrismaTeachingFieldRepository } from "../database/repositories/teaching-field/PrismaTeachingFieldRepository";
 import { PrismaMentorApplicationRepository } from "../database/repositories/PrismaMentorApplicationRepository";
 import { PrismaCharityAccountRepository } from "../database/repositories/PrismaCharityAccountRepository";
 import { PrismaSystemConfigRepository } from "../database/repositories/PrismaSystemConfigRepository";

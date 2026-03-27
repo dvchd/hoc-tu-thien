@@ -198,15 +198,13 @@ export class CancelSessionUseCase {
       });
 
       if (isLateCancellation) {
-        const user = await uow.users.findById(cancelledBy);
-        if (user) {
-          await uow.users.createAuditLog({
-            userId: cancelledBy,
-            action: "LATE_CANCELLATION",
-            newValues: { sessionId, minutesBeforeStart: Math.round(minutesBeforeStart) },
-            performedBy: cancelledBy,
-          });
-        }
+        await uow.users.incrementLateCancellation(cancelledBy);
+        await uow.users.createAuditLog({
+          userId: cancelledBy,
+          action: "LATE_CANCELLATION",
+          newValues: { sessionId, minutesBeforeStart: Math.round(minutesBeforeStart) },
+          performedBy: cancelledBy,
+        });
       }
 
       return updated;
