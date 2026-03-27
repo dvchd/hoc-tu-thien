@@ -25,6 +25,7 @@ describe("ApplyForMentorUseCase", () => {
     const uow = createMockUnitOfWork();
     uow.users.findById.mockResolvedValue(mentee);
     uow.users.createAuditLog.mockResolvedValue(undefined);
+    uow.mentorApplications.create.mockResolvedValue({ id: "app1" } as any);
 
     const result = await new ApplyForMentorUseCase(uow).execute({
       userId: "m1",

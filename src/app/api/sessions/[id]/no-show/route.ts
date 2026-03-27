@@ -1,0 +1,36 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { createUseCases } from "@/lib/container";
+import { prisma } from "@/infrastructure/database/prisma/client";
+
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { markNoShow } = createUseCases();
+    const result = await markNoShow.execute(params.id, session.user.id);
+
+    // Tăng noShowCount cho mentee
+    await prisma.menteeProfile.update({
+      where: { userId: result.menteeId },
+      data: { noShowCount: { increment: 1 } },
+    }).catch(() => { /* ignore if profile not found */ });
+
+    return NextResponse.json({
+      success: true,
+      session: result,
+      message: result.fee > 0
+        ? "Đã đánh dấu Mentee vắng mặt. Mentee vẫn cần thanh toán học phí."
+        : "Đã đánh dấu Mentee vắng mặt.",
+    });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Lỗi hệ thống";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
+}

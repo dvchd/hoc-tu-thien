@@ -17,12 +17,42 @@ import {
   BookSessionUseCase,
   ConfirmSessionUseCase,
   CancelSessionUseCase,
-  CompleteSessionUseCase,
+  ConfirmCompletionUseCase,
+  MarkNoShowUseCase,
   RateSessionUseCase,
   ApplyForMentorUseCase,
   GetLeaderboardUseCase,
   GetMentorSessionsUseCase,
 } from "../application/use-cases/session/SessionUseCases";
+import {
+  SubmitMentorApplicationUseCase,
+  ListMentorApplicationsUseCase,
+  ApproveMentorApplicationUseCase,
+  RejectMentorApplicationUseCase,
+} from "../application/use-cases/mentor/MentorApplicationUseCases";
+import {
+  UpdateMentorProfileUseCase,
+  SetTeachingFieldsUseCase,
+} from "../application/use-cases/mentor/MentorProfileUseCases";
+import {
+  CreateCharityAccountUseCase,
+  ListCharityAccountsUseCase,
+  UpdateCharityAccountUseCase,
+  DeleteCharityAccountUseCase,
+} from "../application/use-cases/admin/CharityAccountUseCases";
+import {
+  GetSystemConfigUseCase,
+  UpdateSystemConfigUseCase,
+} from "../application/use-cases/admin/SystemConfigUseCases";
+import {
+  GetMenteeLearningStatsUseCase,
+  GetMentorTeachingStatsUseCase,
+} from "../application/use-cases/stats/StatsUseCases";
+import {
+  SubmitReportUseCase,
+  ListReportsUseCase,
+  ResolveReportUseCase,
+} from "../application/use-cases/report/ReportUseCases";
 
 function createUnitOfWork() {
   return new PrismaUnitOfWork(prisma);
@@ -48,11 +78,35 @@ export function createUseCases() {
     bookSession: new BookSessionUseCase(uow),
     confirmSession: new ConfirmSessionUseCase(uow),
     cancelSession: new CancelSessionUseCase(uow),
-    completeSession: new CompleteSessionUseCase(uow),
+    confirmCompletion: new ConfirmCompletionUseCase(uow),
+    markNoShow: new MarkNoShowUseCase(uow),
     rateSession: new RateSessionUseCase(uow),
     applyForMentor: new ApplyForMentorUseCase(uow),
     getLeaderboard: new GetLeaderboardUseCase(uow),
     getMentorSessions: new GetMentorSessionsUseCase(uow),
+    // Mentor Application
+    submitMentorApplication: new SubmitMentorApplicationUseCase(uow),
+    listMentorApplications: new ListMentorApplicationsUseCase(uow),
+    approveMentorApplication: new ApproveMentorApplicationUseCase(uow),
+    rejectMentorApplication: new RejectMentorApplicationUseCase(uow),
+    // Mentor Profile
+    updateMentorProfile: new UpdateMentorProfileUseCase(uow),
+    setTeachingFields: new SetTeachingFieldsUseCase(uow),
+    // Charity Accounts
+    createCharityAccount: new CreateCharityAccountUseCase(uow),
+    listCharityAccounts: new ListCharityAccountsUseCase(uow),
+    updateCharityAccount: new UpdateCharityAccountUseCase(uow),
+    deleteCharityAccount: new DeleteCharityAccountUseCase(uow),
+    // System Config
+    getSystemConfig: new GetSystemConfigUseCase(uow),
+    updateSystemConfig: new UpdateSystemConfigUseCase(uow),
+    // Stats
+    getMenteeLearningStats: new GetMenteeLearningStatsUseCase(uow),
+    getMentorTeachingStats: new GetMentorTeachingStatsUseCase(uow),
+    // Reports
+    submitReport: new SubmitReportUseCase(uow),
+    listReports: new ListReportsUseCase(uow),
+    resolveReport: new ResolveReportUseCase(uow),
   };
 }
 

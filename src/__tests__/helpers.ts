@@ -8,6 +8,11 @@ import { IUserRepository, FindUsersOptions, UserCount } from "@/domain/repositor
 import { IPaymentRepository, CreatePaymentInput, PaymentRecord } from "@/domain/repositories/IPaymentRepository";
 import { ISessionRepository, ITeachingFieldRepository, BookSessionInput, SessionRecord, TeachingFieldRecord, LeaderboardEntry } from "@/domain/repositories/ISessionRepository";
 import { IUnitOfWork } from "@/application/interfaces/IUnitOfWork";
+import { ISystemConfigRepository } from "@/domain/repositories/ISystemConfigRepository";
+import { IMentorApplicationRepository } from "@/domain/repositories/IMentorApplicationRepository";
+import { ICharityAccountRepository } from "@/domain/repositories/ICharityAccountRepository";
+import { IReportRepository } from "@/domain/repositories/IReportRepository";
+import { IMentorProfileRepository } from "@/domain/repositories/IMentorProfileRepository";
 import { PaymentType, PaymentStatus, SessionStatus } from "@/domain/value-objects/Payment";
 
 // ─── Entity Builders ──────────────────────────────────────────────────────────
@@ -124,12 +129,18 @@ export function createMockSessionRepository(): jest.Mocked<ISessionRepository> {
     findByMentorId: jest.fn(),
     findUpcomingByMentorId: jest.fn(),
     findPendingPaymentByMenteeId: jest.fn(),
+    findActiveByMenteeId: jest.fn(),
+    countActiveByMenteeId: jest.fn(),
+    findConflictingSession: jest.fn(),
     getMentorProfileFee: jest.fn(),
     create: jest.fn(),
     updateStatus: jest.fn(),
+    updateConfirmation: jest.fn(),
     addRating: jest.fn(),
     getTopMentors: jest.fn(),
     getTopMentees: jest.fn(),
+    getMenteeStats: jest.fn(),
+    getMentorStats: jest.fn(),
   };
 }
 
@@ -145,6 +156,57 @@ export function createMockTeachingFieldRepository(): jest.Mocked<ITeachingFieldR
   };
 }
 
+export function createMockSystemConfigRepository(): jest.Mocked<ISystemConfigRepository> {
+  return {
+    get: jest.fn(),
+    getNumber: jest.fn(),
+    getValue: jest.fn(),
+    set: jest.fn(),
+    findAll: jest.fn(),
+  };
+}
+
+export function createMockMentorApplicationRepository(): jest.Mocked<IMentorApplicationRepository> {
+  return {
+    findById: jest.fn(),
+    findByUserId: jest.fn(),
+    findAll: jest.fn(),
+    create: jest.fn(),
+    updateStatus: jest.fn(),
+  };
+}
+
+export function createMockCharityAccountRepository(): jest.Mocked<ICharityAccountRepository> {
+  return {
+    findById: jest.fn(),
+    findAll: jest.fn(),
+    findDefault: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    softDelete: jest.fn(),
+    incrementUsage: jest.fn(),
+  };
+}
+
+export function createMockReportRepository(): jest.Mocked<IReportRepository> {
+  return {
+    findById: jest.fn(),
+    findAll: jest.fn(),
+    create: jest.fn(),
+    updateStatus: jest.fn(),
+  };
+}
+
+export function createMockMentorProfileRepository(): jest.Mocked<IMentorProfileRepository> {
+  return {
+    findById: jest.fn(),
+    findByUserId: jest.fn(),
+    findAll: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+  };
+}
+
 // ─── Mock Unit of Work Factory ────────────────────────────────────────────────
 
 export function createMockUnitOfWork(overrides: Partial<{
@@ -152,17 +214,32 @@ export function createMockUnitOfWork(overrides: Partial<{
   payments: jest.Mocked<IPaymentRepository>;
   sessions: jest.Mocked<ISessionRepository>;
   teachingFields: jest.Mocked<ITeachingFieldRepository>;
+  systemConfig: jest.Mocked<ISystemConfigRepository>;
+  mentorApplications: jest.Mocked<IMentorApplicationRepository>;
+  charityAccounts: jest.Mocked<ICharityAccountRepository>;
+  reports: jest.Mocked<IReportRepository>;
+  mentorProfiles: jest.Mocked<IMentorProfileRepository>;
 }> = {}): jest.Mocked<IUnitOfWork> {
   const users = overrides.users ?? createMockUserRepository();
   const payments = overrides.payments ?? createMockPaymentRepository();
   const sessions = overrides.sessions ?? createMockSessionRepository();
   const teachingFields = overrides.teachingFields ?? createMockTeachingFieldRepository();
+  const systemConfig = overrides.systemConfig ?? createMockSystemConfigRepository();
+  const mentorApplications = overrides.mentorApplications ?? createMockMentorApplicationRepository();
+  const charityAccounts = overrides.charityAccounts ?? createMockCharityAccountRepository();
+  const reports = overrides.reports ?? createMockReportRepository();
+  const mentorProfiles = overrides.mentorProfiles ?? createMockMentorProfileRepository();
 
   const uow: jest.Mocked<IUnitOfWork> = {
     users,
     payments,
     sessions,
     teachingFields,
+    systemConfig,
+    mentorApplications,
+    charityAccounts,
+    reports,
+    mentorProfiles,
     begin: jest.fn().mockResolvedValue(undefined),
     commit: jest.fn().mockResolvedValue(undefined),
     rollback: jest.fn().mockResolvedValue(undefined),

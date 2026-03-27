@@ -95,10 +95,10 @@ export function parseTransactionContent(narrative: string): {
 export const MB_BANK_BIN = "970422";
 
 export interface VietQRParams {
-  accountNo: string;     // Số tài khoản TN App (4 số: "2000")
-  accountName: string;   // Tên tài khoản
-  amount: number;        // Số tiền VND
-  addInfo: string;       // Nội dung chuyển khoản (transaction content)
+  accountNo: string;
+  accountName: string;
+  amount: number;
+  addInfo: string;
   template?: "compact" | "compact2" | "print" | "qr_only";
 }
 
@@ -126,6 +126,7 @@ export enum SessionStatus {
   COMPLETED = "COMPLETED",
   CANCELLED = "CANCELLED",
   PAYMENT_PENDING = "PAYMENT_PENDING",
+  NO_SHOW = "NO_SHOW",
 }
 
 export const SessionStatusLabels: Record<SessionStatus, string> = {
@@ -135,6 +136,7 @@ export const SessionStatusLabels: Record<SessionStatus, string> = {
   [SessionStatus.COMPLETED]: "Hoàn thành",
   [SessionStatus.CANCELLED]: "Đã huỷ",
   [SessionStatus.PAYMENT_PENDING]: "Chờ thanh toán",
+  [SessionStatus.NO_SHOW]: "Vắng mặt",
 };
 
 export const SessionStatusColors: Record<SessionStatus, string> = {
@@ -144,6 +146,7 @@ export const SessionStatusColors: Record<SessionStatus, string> = {
   [SessionStatus.COMPLETED]: "bg-green-100 text-green-700",
   [SessionStatus.CANCELLED]: "bg-red-100 text-red-700",
   [SessionStatus.PAYMENT_PENDING]: "bg-orange-100 text-orange-700",
+  [SessionStatus.NO_SHOW]: "bg-gray-100 text-gray-600",
 };
 
 // ─── MentorApplicationStatus ──────────────────────────────────────────────────
@@ -160,11 +163,38 @@ export const MentorApplicationStatusLabels: Record<MentorApplicationStatus, stri
   [MentorApplicationStatus.REJECTED]: "Bị từ chối",
 };
 
+// ─── ReportStatus / ReportReason ─────────────────────────────────────────────
+
+export enum ReportStatus {
+  PENDING = "PENDING",
+  REVIEWED = "REVIEWED",
+  RESOLVED = "RESOLVED",
+  DISMISSED = "DISMISSED",
+}
+
+export enum ReportReason {
+  INAPPROPRIATE = "INAPPROPRIATE",
+  MISCONDUCT = "MISCONDUCT",
+  NO_SHOW_DISPUTE = "NO_SHOW_DISPUTE",
+  OTHER = "OTHER",
+}
+
+export const ReportReasonLabels: Record<ReportReason, string> = {
+  [ReportReason.INAPPROPRIATE]: "Nội dung không phù hợp",
+  [ReportReason.MISCONDUCT]: "Hành vi không đúng mực",
+  [ReportReason.NO_SHOW_DISPUTE]: "Tranh chấp vắng mặt",
+  [ReportReason.OTHER]: "Lý do khác",
+};
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-export const ACTIVATION_AMOUNT = 10000; // 10,000 VND
+export const ACTIVATION_AMOUNT = 10000; // fallback, real value from SystemConfig
 export const PAYMENT_EXPIRY_HOURS = 24;
+export const LATE_CANCEL_THRESHOLD_MINUTES = 30;
+export const MIN_ADVANCE_BOOKING_HOURS = 1;
+export const MAX_ACTIVE_BOOKINGS = 1;
+export const VALID_DURATION_HOURS = [1, 2, 3];
 
-// Default TN App account for activation (set by admin)
+// Default TN App account (fallback khi chưa có CharityAccount trong DB)
 export const DEFAULT_TN_ACTIVATION_ACCOUNT = process.env.TN_ACTIVATION_ACCOUNT_NO ?? "2000";
 export const DEFAULT_TN_ACTIVATION_ACCOUNT_NAME = process.env.TN_ACTIVATION_ACCOUNT_NAME ?? "QUY THIEN NGUYEN";

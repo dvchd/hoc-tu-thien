@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { UserRole, UserRoleLabels } from "@/domain/value-objects/UserRole";
-import { LayoutDashboard, Users, BookOpen, Heart, Settings, LogOut, Shield, UserCircle, Star, BarChart3, Trophy, Calendar, User, Wallet, Tag } from "lucide-react";
+import { LayoutDashboard, Users, BookOpen, Heart, Settings, LogOut, Shield, UserCircle, Star, BarChart3, Trophy, Calendar, User, Wallet, Tag, FileText, CreditCard, AlertTriangle, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SidebarUser { id: string; name?: string | null; email?: string | null; image?: string | null; role: UserRole; }
@@ -12,9 +12,12 @@ interface SidebarUser { id: string; name?: string | null; email?: string | null;
 const navByRole: Record<UserRole, { label: string; href: string; icon: React.ElementType }[]> = {
   [UserRole.ADMIN]: [
     { label: "Tổng quan", href: "/dashboard/admin", icon: LayoutDashboard },
-    { label: "Quản lý người dùng", href: "/dashboard/admin/users", icon: Users },
-    { label: "Thống kê", href: "/dashboard/admin/stats", icon: BarChart3 },
-    { label: "Lĩnh vực giảng dạy", href: "/dashboard/admin/fields", icon: Tag },
+    { label: "Người dùng", href: "/dashboard/admin/users", icon: Users },
+    { label: "Đơn Mentor", href: "/dashboard/admin/mentor-applications", icon: FileText },
+    { label: "TK Thiện nguyện", href: "/dashboard/admin/charity-accounts", icon: CreditCard },
+    { label: "Lĩnh vực học", href: "/dashboard/admin/fields", icon: Tag },
+    { label: "Cấu hình", href: "/dashboard/admin/config", icon: Settings },
+    { label: "Báo cáo", href: "/dashboard/admin/reports", icon: AlertTriangle },
     { label: "Bảng xếp hạng", href: "/dashboard/leaderboard", icon: Trophy },
   ],
   [UserRole.MENTOR]: [
@@ -26,6 +29,7 @@ const navByRole: Record<UserRole, { label: string; href: string; icon: React.Ele
   [UserRole.MENTEE]: [
     { label: "Tổng quan", href: "/dashboard/mentee", icon: LayoutDashboard },
     { label: "Tìm Mentor", href: "/dashboard/mentee/find-mentor", icon: Users },
+    { label: "Trở thành Mentor", href: "/dashboard/mentee/apply-mentor", icon: GraduationCap },
     { label: "Buổi học của tôi", href: "/dashboard/mentee/sessions", icon: BookOpen },
     { label: "Đóng góp", href: "/dashboard/mentee/impact", icon: Heart },
     { label: "Bảng xếp hạng", href: "/dashboard/leaderboard", icon: Trophy },

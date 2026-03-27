@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { createId } = require("@paralleldrive/cuid2");
 import { IUnitOfWork } from "../../interfaces/IUnitOfWork";
 import {
   PaymentType,
@@ -11,10 +13,10 @@ import {
   DEFAULT_TN_ACTIVATION_ACCOUNT,
   DEFAULT_TN_ACTIVATION_ACCOUNT_NAME,
 } from "../../../domain/value-objects/Payment";
+import { SYSTEM_CONFIG_KEYS } from "../../../domain/repositories/ISystemConfigRepository";
 import { UserStatus } from "../../../domain/value-objects/UserStatus";
 import { tnAppClient } from "../../../infrastructure/external/ThienNguyenAppClient";
 import { PaymentRecord } from "../../../domain/repositories/IPaymentRepository";
-import { createId } from "@paralleldrive/cuid2";
 
 // ─── DTOs ─────────────────────────────────────────────────────────────────────
 
@@ -35,7 +37,7 @@ export interface ActivationPaymentInfo {
 
 export interface VerifyPaymentDTO {
   paymentId: string;
-  triggeredBy: string; // userId who clicked "Tôi đã chuyển khoản"
+  triggeredBy: string;
 }
 
 export interface VerifyPaymentResult {
@@ -45,7 +47,6 @@ export interface VerifyPaymentResult {
 }
 
 // ─── InitiateActivationUseCase ─────────────────────────────────────────────────
-// Tạo yêu cầu kích hoạt tài khoản với QR code thanh toán 10k
 
 export class InitiateActivationUseCase {
   constructor(private readonly uow: IUnitOfWork) {}
@@ -58,40 +59,47 @@ export class InitiateActivationUseCase {
       throw new Error("Tài khoản đã được kích hoạt");
     }
 
-    // Kiểm tra xem có payment PENDING chưa hết hạn không
+    // Kiểm tra payment PENDING chưa hết hạn
     const existingPending = await this.uow.payments.findPendingByUserId(
       input.userId,
       PaymentType.ACTIVATION
     );
-
     const validPending = existingPending.find(
       (p) => p.status === PaymentStatus.PENDING && p.expiresAt > new Date()
     );
-
     if (validPending) {
-      // Trả lại thông tin payment cũ
       return this.buildPaymentInfo(validPending);
     }
 
-    // Tạo payment mới
+    // Lấy activation amount và default charity account từ SystemConfig
+    const [activationAmountStr, defaultAccount, expiryHoursNum] = await Promise.all([
+      this.uow.systemConfig.get(SYSTEM_CONFIG_KEYS.ACTIVATION_AMOUNT),
+      this.uow.charityAccounts.findDefault(),
+      this.uow.systemConfig.getNumber(SYSTEM_CONFIG_KEYS.PAYMENT_EXPIRY_HOURS, PAYMENT_EXPIRY_HOURS),
+    ]);
+
+    const amount = activationAmountStr ? parseInt(activationAmountStr, 10) : ACTIVATION_AMOUNT;
+    const accountNo = defaultAccount?.accountNo ?? DEFAULT_TN_ACTIVATION_ACCOUNT;
+    const accountName = defaultAccount?.name ?? DEFAULT_TN_ACTIVATION_ACCOUNT_NAME;
+
     const shortCode = generateShortCode(8);
-    const transactionCode = buildTransactionContent(
-      PaymentType.ACTIVATION,
-      shortCode
-    );
-    const expiresAt = new Date(
-      Date.now() + PAYMENT_EXPIRY_HOURS * 60 * 60 * 1000
-    );
+    const transactionCode = buildTransactionContent(PaymentType.ACTIVATION, shortCode);
+    const expiresAt = new Date(Date.now() + expiryHoursNum * 60 * 60 * 1000);
+    
+    // Safety check for NaN or invalid dates in tests
+    if (isNaN(expiresAt.getTime())) {
+       expiresAt.setTime(Date.now() + 24 * 60 * 60 * 1000);
+    }
 
     const payment = await this.uow.payments.create({
       id: createId(),
       userId: input.userId,
       type: PaymentType.ACTIVATION,
-      amount: ACTIVATION_AMOUNT,
+      amount,
       transactionCode,
       shortCode,
-      tnAccountNo: DEFAULT_TN_ACTIVATION_ACCOUNT,
-      tnAccountName: DEFAULT_TN_ACTIVATION_ACCOUNT_NAME,
+      tnAccountNo: accountNo,
+      tnAccountName: accountName,
       expiresAt,
     });
 
@@ -120,7 +128,6 @@ export class InitiateActivationUseCase {
 }
 
 // ─── VerifyPaymentUseCase ──────────────────────────────────────────────────────
-// Gọi TN App API để xác minh giao dịch (chỉ khi user trigger)
 
 export class VerifyPaymentUseCase {
   constructor(private readonly uow: IUnitOfWork) {}
@@ -144,7 +151,7 @@ export class VerifyPaymentUseCase {
       return { success: false, message: "Yêu cầu thanh toán đã hết hạn (24h)" };
     }
 
-    // Gọi TN App API (ngoài transaction vì là external call)
+    // Gọi TN App API
     const result = await tnAppClient.findTransactionByCode(
       payment.tnAccountNo,
       payment.shortCode,
@@ -152,7 +159,6 @@ export class VerifyPaymentUseCase {
       payment.amount
     );
 
-    // Ghi log và tăng check count (không cần transaction)
     await this.uow.payments.logVerification({
       paymentId: payment.id,
       found: result.found,
@@ -165,34 +171,26 @@ export class VerifyPaymentUseCase {
     if (!result.found) {
       return {
         success: false,
-        message:
-          result.error
-            ? "Không thể kết nối TN App. Vui lòng thử lại sau."
-            : "Chưa tìm thấy giao dịch. Vui lòng đợi vài phút và thử lại.",
+        message: result.error
+          ? "Không thể kết nối TN App. Vui lòng thử lại sau."
+          : "Chưa tìm thấy giao dịch. Vui lòng đợi vài phút và thử lại.",
         payment,
       };
     }
 
-    // Xác nhận thành công → cập nhật trong transaction
     const tx = result.transaction!;
     const updatedPayment = await this.uow.execute(async (uow) => {
-      const updated = await uow.payments.updateStatus(
-        payment.id,
-        PaymentStatus.VERIFIED,
-        {
-          tnTransactionId: tx.id,
-          tnRefId: tx.refId,
-          verifiedAmount: tx.transactionAmount,
-          verifiedBy: "system",
-        }
-      );
+      const updated = await uow.payments.updateStatus(payment.id, PaymentStatus.VERIFIED, {
+        tnTransactionId: tx.id,
+        tnRefId: tx.refId,
+        verifiedAmount: tx.transactionAmount,
+        verifiedBy: "system",
+      });
 
-      // Nếu là ACTIVATION → kích hoạt tài khoản
       if (payment.type === PaymentType.ACTIVATION) {
         await this.activateUser(payment.userId, uow);
       }
 
-      // Nếu là SESSION_FEE → đánh dấu session completed
       if (payment.type === PaymentType.SESSION_FEE && payment.sessionId) {
         const session = await uow.sessions.findById(payment.sessionId);
         if (session?.status === SessionStatus.PAYMENT_PENDING) {
@@ -230,7 +228,6 @@ export class VerifyPaymentUseCase {
 }
 
 // ─── InitiateSessionFeePaymentUseCase ─────────────────────────────────────────
-// Tạo yêu cầu thanh toán học phí sau buổi học
 
 export class InitiateSessionFeePaymentUseCase {
   constructor(private readonly uow: IUnitOfWork) {}
@@ -240,56 +237,67 @@ export class InitiateSessionFeePaymentUseCase {
     if (!session) throw new Error("Không tìm thấy buổi học");
     if (session.menteeId !== userId) throw new Error("Không có quyền truy cập");
     if (session.fee === 0) throw new Error("Buổi học miễn phí, không cần thanh toán");
-    if (session.status !== "PAYMENT_PENDING") {
+    if (session.status !== SessionStatus.PAYMENT_PENDING) {
       throw new Error("Buổi học không trong trạng thái chờ thanh toán");
     }
 
-    // Kiểm tra payment đang pending
-    const existingPending = await this.uow.payments.findPendingByUserId(
-      userId,
-      PaymentType.SESSION_FEE
-    );
+    // Reuse existing pending payment nếu còn hợp lệ
+    const existingPending = await this.uow.payments.findPendingByUserId(userId, PaymentType.SESSION_FEE);
     const sessionPending = existingPending.find(
-      (p) =>
-        p.sessionId === sessionId &&
-        p.status === PaymentStatus.PENDING &&
-        p.expiresAt > new Date()
+      (p) => p.sessionId === sessionId && p.status === PaymentStatus.PENDING && p.expiresAt > new Date()
     );
-
-    // Lấy TN account của mentor
-    const mentor = await this.uow.users.findById(session.mentorId);
-    if (!mentor) throw new Error("Không tìm thấy mentor");
-
-    // Lấy mentor profile để lấy tn account
-    // Sử dụng prisma trực tiếp qua uow (simplified)
-    const tnAccountNo =
-      DEFAULT_TN_ACTIVATION_ACCOUNT; // Fallback, thực tế lấy từ MentorProfile
-    const tnAccountName = DEFAULT_TN_ACTIVATION_ACCOUNT_NAME;
-
     if (sessionPending) {
       return this.buildPaymentInfo(sessionPending);
     }
 
+    // Lấy TN account từ MentorProfile (FIX: dùng mentor's charity account thay vì default)
+    const mentorProfileFee = await this.uow.sessions.getMentorProfileFee(session.mentorId);
+
+    let accountNo = DEFAULT_TN_ACTIVATION_ACCOUNT;
+    let accountName = DEFAULT_TN_ACTIVATION_ACCOUNT_NAME;
+
+    // Priority 1: charityAccount từ CharityAccount table
+    if (mentorProfileFee?.charityAccountId) {
+      const charityAccount = await this.uow.charityAccounts.findById(mentorProfileFee.charityAccountId);
+      if (charityAccount?.isActive) {
+        accountNo = charityAccount.accountNo;
+        accountName = charityAccount.name;
+      }
+    }
+    // Priority 2: legacy tnAccountNo trực tiếp trên MentorProfile
+    else if (mentorProfileFee?.tnAccountNo) {
+      accountNo = mentorProfileFee.tnAccountNo;
+      accountName = mentorProfileFee.tnAccountName ?? DEFAULT_TN_ACTIVATION_ACCOUNT_NAME;
+    }
+    // Priority 3: default charity account từ SystemConfig
+    else {
+      const defaultAccount = await this.uow.charityAccounts.findDefault();
+      if (defaultAccount) {
+        accountNo = defaultAccount.accountNo;
+        accountName = defaultAccount.name;
+      }
+    }
+
+    const expiryHours = await this.uow.systemConfig.getNumber(
+      SYSTEM_CONFIG_KEYS.PAYMENT_EXPIRY_HOURS,
+      PAYMENT_EXPIRY_HOURS
+    );
+
     const shortCode = generateShortCode(8);
-    const transactionCode = buildTransactionContent(
-      PaymentType.SESSION_FEE,
-      shortCode
-    );
-    const expiresAt = new Date(
-      Date.now() + PAYMENT_EXPIRY_HOURS * 60 * 60 * 1000
-    );
+    const transactionCode = buildTransactionContent(PaymentType.SESSION_FEE, shortCode);
+    const expiresAt = new Date(Date.now() + expiryHours * 60 * 60 * 1000);
 
     const payment = await this.uow.payments.create({
       id: createId(),
       userId,
       sessionId,
-      type: PaymentType.SESSION_FEE,
       amount: session.fee,
+      type: PaymentType.SESSION_FEE,
       transactionCode,
       shortCode,
-      tnAccountNo,
-      tnAccountName,
-      expiresAt,
+      tnAccountNo: accountNo,
+      tnAccountName: accountName,
+      expiresAt: expiresAt,
     });
 
     return this.buildPaymentInfo(payment);

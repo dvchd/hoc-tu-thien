@@ -42,6 +42,7 @@ describe("BookSessionUseCase", () => {
     uow.sessions.findPendingPaymentByMenteeId.mockResolvedValue(null);
     uow.sessions.create.mockResolvedValue(session);
     uow.users.createAuditLog.mockResolvedValue(undefined);
+    uow.systemConfig.getNumber.mockResolvedValue(10); // Mock config
 
     const result = await new BookSessionUseCase(uow).execute({
       menteeId: mentee.id,
@@ -62,6 +63,7 @@ describe("BookSessionUseCase", () => {
 
     const uow = createMockUnitOfWork();
     uow.users.findById.mockResolvedValue(pendingMentee);
+    uow.systemConfig.getNumber.mockResolvedValue(10);
 
     await expect(
       new BookSessionUseCase(uow).execute({
@@ -82,6 +84,7 @@ describe("BookSessionUseCase", () => {
     const uow = createMockUnitOfWork();
     uow.users.findById.mockResolvedValue(mentee);
     uow.sessions.findPendingPaymentByMenteeId.mockResolvedValue(unpaidSession);
+    uow.systemConfig.getNumber.mockResolvedValue(10);
 
     await expect(
       new BookSessionUseCase(uow).execute({
@@ -101,6 +104,7 @@ describe("BookSessionUseCase", () => {
       .mockResolvedValueOnce(mentee)
       .mockResolvedValueOnce(null); // mentor not found
     uow.sessions.findPendingPaymentByMenteeId.mockResolvedValue(null);
+    uow.systemConfig.getNumber.mockResolvedValue(10);
 
     await expect(
       new BookSessionUseCase(uow).execute({
@@ -121,6 +125,7 @@ describe("BookSessionUseCase", () => {
       .mockResolvedValueOnce(mentee)
       .mockResolvedValueOnce(anotherMentee);
     uow.sessions.findPendingPaymentByMenteeId.mockResolvedValue(null);
+    uow.systemConfig.getNumber.mockResolvedValue(10);
 
     await expect(
       new BookSessionUseCase(uow).execute({
@@ -201,8 +206,10 @@ describe("CancelSessionUseCase", () => {
     const cancelled = { ...session, status: SessionStatus.CANCELLED };
 
     const uow = createMockUnitOfWork();
-    uow.sessions.findById.mockResolvedValue(session);
-    uow.sessions.updateStatus.mockResolvedValue(cancelled as any);
+      uow.sessions.findById.mockResolvedValue(session);
+      uow.systemConfig.getNumber.mockResolvedValue(30);
+      uow.sessions.updateStatus.mockResolvedValue(cancelled as any);
+
 
     const result = await new CancelSessionUseCase(uow).execute(
       session.id,
@@ -225,6 +232,7 @@ describe("CancelSessionUseCase", () => {
     });
     const uow = createMockUnitOfWork();
     uow.sessions.findById.mockResolvedValue(session);
+    uow.systemConfig.getNumber.mockResolvedValue(30);
     uow.sessions.updateStatus.mockResolvedValue({
       ...session,
       status: SessionStatus.CANCELLED,

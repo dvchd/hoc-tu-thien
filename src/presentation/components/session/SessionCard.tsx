@@ -27,10 +27,54 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [localStatus, setLocalStatus] = useState(session.status);
+  const [mentorConfirmed, setMentorConfirmed] = useState(session.mentorConfirmed);
+  const [menteeConfirmed, setMenteeConfirmed] = useState(session.menteeConfirmed);
+  const [meetLinkInput, setMeetLinkInput] = useState(session.meetLink || "");
   const [paymentInfo, setPaymentInfo] = useState<any>(null);
   const [showPayment, setShowPayment] = useState(false);
   const [rating, setRating] = useState(session.rating ?? 0);
   const [hoverRating, setHoverRating] = useState(0);
+
+  async function confirmCompletion() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/sessions/${session.id}/confirm-completion`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ meetLink: meetLinkInput }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      
+      if (viewAs === "mentor") setMentorConfirmed(true);
+      else setMenteeConfirmed(true);
+      
+      if (data.status) setLocalStatus(data.status);
+      toast.success("Đã xác nhận hoàn thành!");
+    } catch (err: any) {
+      toast.error(err.message ?? "Có lỗi xảy ra");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function markNoShow() {
+    if (!window.confirm("Xác nhận người học không tham gia buổi học này?")) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/sessions/${session.id}/no-show`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setLocalStatus(data.status);
+      toast.success("Đã đánh dấu vắng mặt!");
+    } catch (err: any) {
+      toast.error(err.message ?? "Có lỗi xảy ra");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function doAction(action: string, extra?: object) {
     setLoading(true);
@@ -182,15 +226,46 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
             <button onClick={() => doAction("confirm")} disabled={loading}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-jade-600 text-white text-xs rounded-lg hover:bg-jade-700 transition-colors font-medium">
               {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
-              Xác nhận & Tạo Meet
+              Xác nhận buổi học
             </button>
           )}
-          {viewAs === "mentor" && (localStatus === "CONFIRMED" || localStatus === "IN_PROGRESS") && (
-            <button onClick={() => doAction("complete")} disabled={loading}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 text-white text-xs rounded-lg hover:bg-stone-900 transition-colors font-medium">
+
+          {viewAs === "mentor" && (localStatus === "CONFIRMED" || localStatus === "IN_PROGRESS") && !mentorConfirmed && (
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <input 
+                type="text" 
+                placeholder="Google Meet Link"
+                className="text-xs border rounded px-2 py-1.5 flex-1 min-w-[150px]"
+                value={meetLinkInput}
+                onChange={(e) => setMeetLinkInput(e.target.value)}
+              />
+              <button onClick={confirmCompletion} disabled={loading}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-jade-600 text-white text-xs rounded-lg hover:bg-jade-700 transition-colors font-medium whitespace-nowrap">
+                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                Xác nhận hoàn thành
+              </button>
+              {isPast && (
+                <button onClick={markNoShow} disabled={loading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 text-white text-xs rounded-lg hover:bg-orange-700 transition-colors font-medium whitespace-nowrap">
+                  Vắng mặt
+                </button>
+              )}
+            </div>
+          )}
+
+          {viewAs === "mentee" && (localStatus === "CONFIRMED" || localStatus === "IN_PROGRESS") && !menteeConfirmed && (
+            <button onClick={confirmCompletion} disabled={loading}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-jade-600 text-white text-xs rounded-lg hover:bg-jade-700 transition-colors font-medium">
               {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
-              Kết thúc buổi học
+              Xác nhận đã học xong
             </button>
+          )}
+
+          {mentorConfirmed && !menteeConfirmed && viewAs === "mentor" && (
+            <span className="text-xs text-jade-600 font-medium italic">Đang chờ Mentee xác nhận...</span>
+          )}
+          {menteeConfirmed && !mentorConfirmed && viewAs === "mentee" && (
+            <span className="text-xs text-jade-600 font-medium italic">Đang chờ Mentor xác nhận...</span>
           )}
 
           {/* Mentee payment */}

@@ -13,9 +13,9 @@ import {
 // ─── generateShortCode ────────────────────────────────────────────────────────
 
 describe("generateShortCode()", () => {
-  it("generates a code of default length 6", () => {
+  it("generates a code of default length 8", () => {
     const code = generateShortCode();
-    expect(code).toHaveLength(6);
+    expect(code).toHaveLength(8);
   });
 
   it("generates a code of specified length", () => {
