@@ -4,6 +4,7 @@ import { UserRole } from "../../../domain/value-objects/UserRole";
 import { UserStatus } from "../../../domain/value-objects/UserStatus";
 import { meetService } from "../../../infrastructure/external/GoogleMeetService";
 import { BookSessionInput, SessionRecord, LeaderboardEntry } from "../../../domain/repositories/ISessionRepository";
+import { createId } from "@paralleldrive/cuid2";
 
 // ─── BookSessionUseCase ────────────────────────────────────────────────────────
 // Mentee đặt lịch học với Mentor
@@ -50,11 +51,12 @@ export class BookSessionUseCase {
         throw new Error("Người được chọn không phải là Mentor");
       }
 
-      // 4. Lấy fee của mentor
-      const fee = 0; // Sẽ lấy từ MentorProfile trong implementation thực tế
+      // 4. Lấy fee của mentor từ MentorProfile
+      const mentorProfile = await uow.sessions.getMentorProfileFee(input.mentorId);
+      const fee = mentorProfile?.hourlyRate ?? 0;
 
       // 5. Tạo session
-      const sessionId = `sess_${Date.now()}`;
+      const sessionId = createId();
       const session = await uow.sessions.create({
         id: sessionId,
         menteeId: input.menteeId,
@@ -239,7 +241,7 @@ export class ApplyForMentorUseCase {
       performedBy: input.userId,
     });
 
-    return { applicationId: `app_${Date.now()}` };
+    return { applicationId: createId() };
   }
 }
 

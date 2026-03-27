@@ -2,6 +2,7 @@ import { IUnitOfWork } from "../../interfaces/IUnitOfWork";
 import {
   PaymentType,
   PaymentStatus,
+  SessionStatus,
   generateShortCode,
   buildTransactionContent,
   buildVietQRUrl,
@@ -83,7 +84,7 @@ export class InitiateActivationUseCase {
     );
 
     const payment = await this.uow.payments.create({
-      id: `pay_${Date.now()}`,
+      id: createId(),
       userId: input.userId,
       type: PaymentType.ACTIVATION,
       amount: ACTIVATION_AMOUNT,
@@ -143,7 +144,7 @@ export class VerifyPaymentUseCase {
       return { success: false, message: "Yêu cầu thanh toán đã hết hạn (24h)" };
     }
 
-    // Gọi TN App API
+    // Gọi TN App API (ngoài transaction vì là external call)
     const result = await tnAppClient.findTransactionByCode(
       payment.tnAccountNo,
       payment.shortCode,
@@ -151,7 +152,7 @@ export class VerifyPaymentUseCase {
       payment.amount
     );
 
-    // Ghi log
+    // Ghi log và tăng check count (không cần transaction)
     await this.uow.payments.logVerification({
       paymentId: payment.id,
       found: result.found,
@@ -172,31 +173,35 @@ export class VerifyPaymentUseCase {
       };
     }
 
-    // Xác nhận thành công → cập nhật payment
+    // Xác nhận thành công → cập nhật trong transaction
     const tx = result.transaction!;
-    const updatedPayment = await this.uow.payments.updateStatus(
-      payment.id,
-      PaymentStatus.VERIFIED,
-      {
-        tnTransactionId: tx.id,
-        tnRefId: tx.refId,
-        verifiedAmount: tx.transactionAmount,
-        verifiedBy: "system",
-      }
-    );
+    const updatedPayment = await this.uow.execute(async (uow) => {
+      const updated = await uow.payments.updateStatus(
+        payment.id,
+        PaymentStatus.VERIFIED,
+        {
+          tnTransactionId: tx.id,
+          tnRefId: tx.refId,
+          verifiedAmount: tx.transactionAmount,
+          verifiedBy: "system",
+        }
+      );
 
-    // Nếu là ACTIVATION → kích hoạt tài khoản
-    if (payment.type === PaymentType.ACTIVATION) {
-      await this.activateUser(payment.userId);
-    }
-
-    // Nếu là SESSION_FEE → đánh dấu session completed (nếu cần)
-    if (payment.type === PaymentType.SESSION_FEE && payment.sessionId) {
-      const session = await this.uow.sessions.findById(payment.sessionId);
-      if (session?.status === "PAYMENT_PENDING") {
-        await this.uow.sessions.updateStatus(payment.sessionId, "COMPLETED" as any);
+      // Nếu là ACTIVATION → kích hoạt tài khoản
+      if (payment.type === PaymentType.ACTIVATION) {
+        await this.activateUser(payment.userId, uow);
       }
-    }
+
+      // Nếu là SESSION_FEE → đánh dấu session completed
+      if (payment.type === PaymentType.SESSION_FEE && payment.sessionId) {
+        const session = await uow.sessions.findById(payment.sessionId);
+        if (session?.status === SessionStatus.PAYMENT_PENDING) {
+          await uow.sessions.updateStatus(payment.sessionId, SessionStatus.COMPLETED);
+        }
+      }
+
+      return updated;
+    });
 
     return {
       success: true,
@@ -208,20 +213,18 @@ export class VerifyPaymentUseCase {
     };
   }
 
-  private async activateUser(userId: string) {
-    return this.uow.execute(async (uow) => {
-      const user = await uow.users.findById(userId);
-      if (!user) return;
+  private async activateUser(userId: string, uow: IUnitOfWork) {
+    const user = await uow.users.findById(userId);
+    if (!user) return;
 
-      const activated = user.activate("system");
-      await uow.users.update(activated);
+    const activated = user.activate("system");
+    await uow.users.update(activated);
 
-      await uow.users.createAuditLog({
-        userId,
-        action: "ACCOUNT_ACTIVATED",
-        newValues: { status: "ACTIVE", activatedBy: "payment_verified" },
-        performedBy: "system",
-      });
+    await uow.users.createAuditLog({
+      userId,
+      action: "ACCOUNT_ACTIVATED",
+      newValues: { status: "ACTIVE", activatedBy: "payment_verified" },
+      performedBy: "system",
     });
   }
 }
@@ -277,7 +280,7 @@ export class InitiateSessionFeePaymentUseCase {
     );
 
     const payment = await this.uow.payments.create({
-      id: `pay_${Date.now()}`,
+      id: createId(),
       userId,
       sessionId,
       type: PaymentType.SESSION_FEE,

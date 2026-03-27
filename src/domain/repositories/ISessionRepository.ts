@@ -1,5 +1,14 @@
 import { SessionStatus } from "../value-objects/Payment";
 
+// ─── MentorProfileFee ─────────────────────────────────────────────────────────
+
+export interface MentorProfileFee {
+  hourlyRate: number | null;
+  tnAccountNo: string | null;
+  tnAccountName: string | null;
+  tnCampaignKeyword: string | null;
+}
+
 // ─── SessionRecord ─────────────────────────────────────────────────────────────
 
 export interface SessionRecord {
@@ -48,6 +57,7 @@ export interface ISessionRepository {
   findByMentorId(mentorId: string, limit?: number): Promise<SessionRecord[]>;
   findUpcomingByMentorId(mentorId: string): Promise<SessionRecord[]>;
   findPendingPaymentByMenteeId(menteeId: string): Promise<SessionRecord | null>;
+  getMentorProfileFee(mentorUserId: string): Promise<MentorProfileFee | null>;
 
   create(input: BookSessionInput): Promise<SessionRecord>;
   updateStatus(

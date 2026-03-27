@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { createId } from "@paralleldrive/cuid2";
 import {
   IPaymentRepository,
   CreatePaymentInput,
@@ -11,13 +12,16 @@ import {
   SessionRecord,
   TeachingFieldRecord,
   LeaderboardEntry,
+  MentorProfileFee,
 } from "../../../domain/repositories/ISessionRepository";
 import { PaymentStatus, PaymentType, SessionStatus } from "../../../domain/value-objects/Payment";
+
+type PrismaTransactionClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
 
 // ─── PrismaPaymentRepository ──────────────────────────────────────────────────
 
 export class PrismaPaymentRepository implements IPaymentRepository {
-  constructor(private readonly prisma: PrismaClient | any) {}
+  constructor(private readonly prisma: PrismaClient | PrismaTransactionClient) {}
 
   private toRecord(p: any): PaymentRecord {
     return {
@@ -131,7 +135,7 @@ export class PrismaPaymentRepository implements IPaymentRepository {
 // ─── PrismaSessionRepository ──────────────────────────────────────────────────
 
 export class PrismaSessionRepository implements ISessionRepository {
-  constructor(private readonly prisma: PrismaClient | any) {}
+  constructor(private readonly prisma: PrismaClient | PrismaTransactionClient) {}
 
   private toRecord(s: any): SessionRecord {
     return { ...s, status: s.status as SessionStatus };
@@ -178,6 +182,25 @@ export class PrismaSessionRepository implements ISessionRepository {
       where: { menteeId, status: "PAYMENT_PENDING", isDeleted: false },
     });
     return s ? this.toRecord(s) : null;
+  }
+
+  async getMentorProfileFee(mentorUserId: string): Promise<MentorProfileFee | null> {
+    const profile = await this.prisma.mentorProfile.findUnique({
+      where: { userId: mentorUserId },
+      select: {
+        hourlyRate: true,
+        tnAccountNo: true,
+        tnAccountName: true,
+        tnCampaignKeyword: true,
+      },
+    });
+    if (!profile) return null;
+    return {
+      hourlyRate: profile.hourlyRate,
+      tnAccountNo: profile.tnAccountNo,
+      tnAccountName: profile.tnAccountName,
+      tnCampaignKeyword: profile.tnCampaignKeyword,
+    };
   }
 
   async create(input: BookSessionInput): Promise<SessionRecord> {
@@ -335,7 +358,7 @@ export class PrismaSessionRepository implements ISessionRepository {
 // ─── PrismaTeachingFieldRepository ───────────────────────────────────────────
 
 export class PrismaTeachingFieldRepository implements ITeachingFieldRepository {
-  constructor(private readonly prisma: PrismaClient | any) {}
+  constructor(private readonly prisma: PrismaClient | PrismaTransactionClient) {}
 
   async findAll(): Promise<TeachingFieldRecord[]> {
     return this.prisma.teachingField.findMany({
@@ -360,7 +383,7 @@ export class PrismaTeachingFieldRepository implements ITeachingFieldRepository {
     return this.prisma.teachingField.create({
       data: {
         ...input,
-        id: `tf_${Date.now()}`,
+        id: createId(),
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -381,7 +404,7 @@ export class PrismaTeachingFieldRepository implements ITeachingFieldRepository {
     // Re-create
     await this.prisma.mentorTeachingField.createMany({
       data: fieldIds.map((teachingFieldId) => ({
-        id: `mtf_${Date.now()}_${teachingFieldId}`,
+        id: createId(),
         mentorProfileId,
         teachingFieldId,
       })),

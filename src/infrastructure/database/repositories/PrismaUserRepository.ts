@@ -1,4 +1,6 @@
 import { PrismaClient, User as PrismaUser, UserRole as PrismaUserRole, UserStatus as PrismaUserStatus } from "@prisma/client";
+
+type PrismaTransactionClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
 import { IUserRepository, FindUsersOptions, UserCount } from "../../../domain/repositories/IUserRepository";
 import { UserEntity } from "../../../domain/entities/User";
 import { Email } from "../../../domain/value-objects/Email";
@@ -9,7 +11,7 @@ import { UserStatus } from "../../../domain/value-objects/UserStatus";
 // Infrastructure implementation of IUserRepository using Prisma
 
 export class PrismaUserRepository implements IUserRepository {
-  constructor(private readonly prisma: PrismaClient | any) {}
+  constructor(private readonly prisma: PrismaClient | PrismaTransactionClient) {}
 
   // ─── Mapping ──────────────────────────────────────────────────────────────
 
@@ -73,9 +75,11 @@ export class PrismaUserRepository implements IUserRepository {
       where.status = this.toPrismaStatus(options.status);
     }
     if (options.search) {
+      // SQLite does not support mode: "insensitive" — use case-insensitive LIKE via contains
+      const search = options.search.toLowerCase();
       where.OR = [
-        { name: { contains: options.search, mode: "insensitive" } },
-        { email: { contains: options.search, mode: "insensitive" } },
+        { name: { contains: search } },
+        { email: { contains: search } },
       ];
     }
 
@@ -98,12 +102,13 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   async getUserStats(): Promise<UserCount> {
-    const [total, adminCount, mentorCount, menteeCount, activeCount, inactiveCount, suspendedCount] =
+    const [total, adminCount, mentorCount, menteeCount, pendingCount, activeCount, inactiveCount, suspendedCount] =
       await Promise.all([
         this.prisma.user.count({ where: { isDeleted: false } }),
         this.prisma.user.count({ where: { isDeleted: false, role: "ADMIN" } }),
         this.prisma.user.count({ where: { isDeleted: false, role: "MENTOR" } }),
         this.prisma.user.count({ where: { isDeleted: false, role: "MENTEE" } }),
+        this.prisma.user.count({ where: { isDeleted: false, status: "PENDING_ACTIVATION" } }),
         this.prisma.user.count({ where: { isDeleted: false, status: "ACTIVE" } }),
         this.prisma.user.count({ where: { isDeleted: false, status: "INACTIVE" } }),
         this.prisma.user.count({ where: { isDeleted: false, status: "SUSPENDED" } }),
@@ -117,6 +122,7 @@ export class PrismaUserRepository implements IUserRepository {
         [UserRole.MENTEE]: menteeCount,
       },
       byStatus: {
+        [UserStatus.PENDING_ACTIVATION]: pendingCount,
         [UserStatus.ACTIVE]: activeCount,
         [UserStatus.INACTIVE]: inactiveCount,
         [UserStatus.SUSPENDED]: suspendedCount,

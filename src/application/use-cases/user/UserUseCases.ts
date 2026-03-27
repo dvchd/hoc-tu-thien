@@ -49,14 +49,14 @@ export class FindOrCreateUserUseCase {
         return UserMapper.toDTO(existing);
       }
 
-      // Create new user with default MENTEE role
+      // Create new user with default MENTEE role and PENDING_ACTIVATION status
       const newUser = UserEntity.create({
         id: input.id,
         email: input.email,
         name: input.name,
         image: input.image,
         role: UserRole.MENTEE,
-        status: UserStatus.ACTIVE,
+        status: UserStatus.PENDING_ACTIVATION,
         createdBy: "google-oauth",
       });
 
