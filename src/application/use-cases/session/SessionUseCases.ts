@@ -34,11 +34,6 @@ export class BookSessionUseCase {
       const mentee = await uow.users.findById(input.menteeId);
       if (!mentee) throw new Error("Không tìm thấy người học");
 
-      // 4. Validate kích hoạt tài khoản (BR03, BR04)
-      if (mentee.status !== UserStatus.ACTIVE) {
-        throw new Error("Tài khoản chưa được kích hoạt");
-      }
-
       // 7. Validate không có outstanding payment (BR09)
       const pendingPaymentSession = await uow.sessions.findPendingPaymentByMenteeId(input.menteeId);
       if (pendingPaymentSession) {
@@ -58,9 +53,21 @@ export class BookSessionUseCase {
         uow.systemConfig.getNumber(SYSTEM_CONFIG_KEYS.MAX_ACTIVE_BOOKINGS, MAX_ACTIVE_BOOKINGS),
       ]);
 
-      // 3. Lấy fee và TN account của mentor
+      // 3. Lấy fee của mentor
       const mentorProfile = await uow.sessions.getMentorProfileFee(input.mentorId);
       const fee = mentorProfile?.hourlyRate ?? 0;
+
+      // 4. Validate kích hoạt tài khoản (BR03, BR04)
+      // BR03: session có phí -> bắt buộc ACTIVE
+      // BR04: session miễn phí (fee = 0) -> cho phép cả PENDING_ACTIVATION
+      if (fee > 0 && mentee.status !== UserStatus.ACTIVE) {
+        throw new Error("Tài khoản chưa được kích hoạt. Vui lòng kích hoạt tài khoản trước khi đặt buổi học có phí.");
+      }
+
+      // Check mentor.onlyActivatedMentee (BR06)
+      if (mentorProfile && (mentorProfile as any).onlyActivatedMentee && mentee.status !== UserStatus.ACTIVE) {
+        throw new Error("Mentor này chỉ nhận học viên đã kích hoạt tài khoản.");
+      }
 
       // 6. Validate không có active booking quá giới hạn (BR05)
       const activeCount = await uow.sessions.countActiveByMenteeId(input.menteeId);
@@ -314,6 +321,9 @@ export class MarkNoShowUseCase {
         isNoShow: true,
         noShowMarkedBy: mentorId,
       });
+
+      // Tăng noShowCount của mentee (BR37)
+      await uow.users.incrementNoShow(session.menteeId);
 
       await uow.users.createAuditLog({
         userId: mentorId,

@@ -33,6 +33,7 @@ import {
 import {
   UpdateMentorProfileUseCase,
   SetTeachingFieldsUseCase,
+  GetMentorPublicProfileUseCase,
 } from "../application/use-cases/mentor/MentorProfileUseCases";
 import {
   CreateCharityAccountUseCase,
@@ -92,6 +93,7 @@ export function createUseCases() {
     // Mentor Profile
     updateMentorProfile: new UpdateMentorProfileUseCase(uow),
     setTeachingFields: new SetTeachingFieldsUseCase(uow),
+    getMentorPublicProfile: new GetMentorPublicProfileUseCase(uow),
     // Charity Accounts
     createCharityAccount: new CreateCharityAccountUseCase(uow),
     listCharityAccounts: new ListCharityAccountsUseCase(uow),

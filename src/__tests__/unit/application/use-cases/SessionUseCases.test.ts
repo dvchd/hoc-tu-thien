@@ -52,24 +52,31 @@ describe("BookSessionUseCase", () => {
     expect(uow.sessions.create).toHaveBeenCalledTimes(1);
   });
 
-  it("throws when mentee account is not active", async () => {
+  it("throws when mentee account is not active and session has fee (BR03)", async () => {
     const pendingMentee = buildUser({
       id: "m1",
       status: UserStatus.PENDING_ACTIVATION,
     });
+    const mentor = buildMentor();
 
     const uow = createMockUnitOfWork();
-    uow.users.findById.mockResolvedValue(pendingMentee);
-    uow.systemConfig.getNumber.mockResolvedValue(10);
+    uow.users.findById
+      .mockResolvedValueOnce(pendingMentee) // mentee
+      .mockResolvedValueOnce(mentor);       // mentor
+    uow.sessions.findPendingPaymentByMenteeId.mockResolvedValue(null);
+    uow.sessions.getMentorProfileFee.mockResolvedValue({ hourlyRate: 50000, tnAccountNo: null, tnAccountName: null, tnCampaignKeyword: null, charityAccountId: null });
+    uow.sessions.countActiveByMenteeId.mockResolvedValue(0);
+    uow.sessions.findConflictingSession.mockResolvedValue(null);
+    uow.systemConfig.getNumber.mockResolvedValue(1); // minAdvanceHours=1
 
     await expect(
       new BookSessionUseCase(uow).execute({
         menteeId: "m1",
-        mentorId: "mentor_01",
+        mentorId: mentor.id,
         title: "Test",
-        scheduledAt: new Date(),
+        scheduledAt: new Date(Date.now() + 7200000), // 2h sau
       })
-    ).rejects.toThrow("Tài khoản chưa được kích hoạt");
+    ).rejects.toThrow("kích hoạt tài khoản");
   });
 
   it("throws when mentee has unpaid session", async () => {

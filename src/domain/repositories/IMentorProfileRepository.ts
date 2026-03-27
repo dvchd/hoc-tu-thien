@@ -1,4 +1,10 @@
-import { IUserRepository } from "./IUserRepository";
+export interface AvailabilitySlotRecord {
+  id: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  isRecurring: boolean;
+}
 
 export interface MentorProfileRecord {
   id: string;
@@ -20,6 +26,7 @@ export interface MentorProfileRecord {
   charityAccount?: {
     id: string;
     name: string;
+    accountNo: string;
     bankName: string;
   } | null;
   teachingFields?: {
@@ -27,10 +34,13 @@ export interface MentorProfileRecord {
     field: {
       id: string;
       name: string;
+      icon?: string | null;
     };
   }[];
+  availabilitySlots?: AvailabilitySlotRecord[];
   totalSessions?: number;
   averageRating?: number | null;
+  ratingCount?: number;
 }
 
 export interface IMentorProfileRepository {

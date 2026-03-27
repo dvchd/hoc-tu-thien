@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { IMentorProfileRepository, MentorProfileRecord } from "../../../domain/repositories/IMentorProfileRepository";
+import { IMentorProfileRepository, MentorProfileRecord, AvailabilitySlotRecord } from "../../../domain/repositories/IMentorProfileRepository";
 
 export class PrismaMentorProfileRepository implements IMentorProfileRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -11,31 +11,53 @@ export class PrismaMentorProfileRepository implements IMentorProfileRepository {
       bio: profile.bio,
       experience: profile.experience,
       headline: profile.headline,
-      hourlyRate: Number(profile.hourlyRate),
+      hourlyRate: Number(profile.hourlyRate ?? 0),
       charityAccountId: profile.charityAccountId,
-      onlyActivatedMentee: profile.onlyActivatedMentee,
-      isActive: profile.isActive,
+      onlyActivatedMentee: profile.onlyActivatedMentee ?? false,
+      isActive: profile.isAvailable ?? profile.isActive ?? true,
       createdAt: profile.createdAt,
       updatedAt: profile.updatedAt,
       user: profile.user,
-      charityAccount: profile.charityAccount,
+      charityAccount: profile.charityAccount
+        ? {
+            id: profile.charityAccount.id,
+            name: profile.charityAccount.name,
+            accountNo: profile.charityAccount.accountNo,
+            bankName: profile.charityAccount.bankName,
+          }
+        : null,
       teachingFields: profile.teachingFields?.map((tf: any) => ({
         id: tf.id,
-        field: tf.teachingField
+        field: {
+          id: tf.teachingField?.id ?? tf.id,
+          name: tf.teachingField?.name ?? "",
+          icon: tf.teachingField?.icon ?? null,
+        },
       })),
-      totalSessions: profile.totalSessions,
-      averageRating: profile.rating
+      availabilitySlots: profile.availabilitySlots?.map((s: any): AvailabilitySlotRecord => ({
+        id: s.id,
+        dayOfWeek: s.dayOfWeek,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        isRecurring: s.isRecurring,
+      })),
+      totalSessions: profile.totalSessions ?? 0,
+      averageRating: profile.rating ?? null,
+      ratingCount: profile.ratingCount ?? 0,
     };
   }
+
+  private readonly includeAll = {
+    user: { select: { name: true, email: true, image: true } },
+    charityAccount: true,
+    teachingFields: { include: { teachingField: true } },
+    availabilitySlots: { orderBy: { dayOfWeek: "asc" as const } },
+  } as const;
 
   async findById(id: string): Promise<MentorProfileRecord | null> {
     const profile = await this.prisma.mentorProfile.findUnique({
       where: { id },
-      include: {
-        user: { select: { name: true, email: true, image: true } },
-        charityAccount: true,
-        teachingFields: { include: { teachingField: true } },
-      }
+      include: this.includeAll,
     });
     return profile ? this.mapToRecord(profile) : null;
   }
@@ -43,48 +65,40 @@ export class PrismaMentorProfileRepository implements IMentorProfileRepository {
   async findByUserId(userId: string): Promise<MentorProfileRecord | null> {
     const profile = await this.prisma.mentorProfile.findUnique({
       where: { userId },
-      include: {
-        user: { select: { name: true, email: true, image: true } },
-        charityAccount: true,
-        teachingFields: { include: { teachingField: true } },
-      }
+      include: this.includeAll,
     });
     return profile ? this.mapToRecord(profile) : null;
   }
 
   async findAll(filters?: { isActive?: boolean }): Promise<MentorProfileRecord[]> {
-    const { isActive, ...rest } = filters || {};
-    const profileFilters: any = rest;
-    if (isActive !== undefined) {
-      profileFilters.isAvailable = isActive; // Mapping isActive to isAvailable in schema
+    const where: any = {};
+    if (filters?.isActive !== undefined) {
+      where.isAvailable = filters.isActive;
     }
 
     const profiles = await this.prisma.mentorProfile.findMany({
-      where: profileFilters,
-      include: {
-        user: { select: { name: true, email: true, image: true } },
-        charityAccount: true,
-        teachingFields: { include: { teachingField: true } },
-      }
+      where,
+      include: this.includeAll,
     });
     return profiles.map(p => this.mapToRecord(p));
   }
 
   async create(data: any): Promise<MentorProfileRecord> {
+    // Map isActive -> isAvailable for schema
+    const { isActive, ...rest } = data;
+    const createData: any = { ...rest };
+    if (isActive !== undefined) createData.isAvailable = isActive;
+
     const profile = await this.prisma.mentorProfile.create({
-      data,
-      include: {
-        user: { select: { name: true, email: true, image: true } },
-        charityAccount: true,
-        teachingFields: { include: { teachingField: true } },
-      }
+      data: createData,
+      include: this.includeAll,
     });
     return this.mapToRecord(profile);
   }
 
   async update(id: string, data: Partial<MentorProfileRecord>): Promise<MentorProfileRecord> {
-    const { user, charityAccount, teachingFields, totalSessions, averageRating, isActive, ...rest } = data as any;
-    const updateData = { ...rest };
+    const { user, charityAccount, teachingFields, availabilitySlots, totalSessions, averageRating, ratingCount, isActive, ...rest } = data as any;
+    const updateData: any = { ...rest };
     if (isActive !== undefined) {
       updateData.isAvailable = isActive;
     }
@@ -92,11 +106,7 @@ export class PrismaMentorProfileRepository implements IMentorProfileRepository {
     const profile = await this.prisma.mentorProfile.update({
       where: { id },
       data: updateData,
-      include: {
-        user: { select: { name: true, email: true, image: true } },
-        charityAccount: true,
-        teachingFields: { include: { teachingField: true } },
-      }
+      include: this.includeAll,
     });
     return this.mapToRecord(profile);
   }

@@ -4,6 +4,7 @@ import { IUnitOfWork } from "../../interfaces/IUnitOfWork";
 import { UserStatus } from "../../../domain/value-objects/UserStatus";
 import { UserRole } from "../../../domain/value-objects/UserRole";
 import { MentorApplicationRecord } from "../../../domain/repositories/IMentorApplicationRepository";
+import { MentorProfileRecord } from "../../../domain/repositories/IMentorProfileRepository";
 
 // ─── DTOs ─────────────────────────────────────────────────────────────────────
 
@@ -97,7 +98,7 @@ export class ApproveMentorApplicationUseCase {
     applicationId: string,
     reviewedBy: string,
     reviewNote?: string
-  ): Promise<MentorApplicationRecord> {
+  ): Promise<MentorApplicationRecord & { mentorProfile: MentorProfileRecord }> {
     return this.uow.execute(async (uow) => {
       const application = await uow.mentorApplications.findById(applicationId);
       if (!application) throw new Error("Không tìm thấy đơn đăng ký");
@@ -121,18 +122,36 @@ export class ApproveMentorApplicationUseCase {
       await uow.users.update(promoted);
 
       // 3. Tạo MentorProfile nếu chưa có
-      // (dùng prisma trực tiếp qua prisma client - simplified via raw upsert)
-      // Lưu ý: MentorProfile tạo bằng cách gọi API riêng sau khi được approve
-      // Ở đây chỉ set role, profile sẽ được mentor tự setup sau
+      const existingProfile = await uow.mentorProfiles.findByUserId(application.userId);
+      let mentorProfile: MentorProfileRecord;
+      if (!existingProfile) {
+        mentorProfile = await uow.mentorProfiles.create({
+          userId: application.userId,
+          bio: null,
+          experience: null,
+          headline: null,
+          hourlyRate: 0,
+          charityAccountId: null,
+          onlyActivatedMentee: false,
+          isActive: true,
+        });
+      } else {
+        mentorProfile = existingProfile;
+      }
 
       await uow.users.createAuditLog({
         userId: application.userId,
         action: "MENTOR_APPLICATION_APPROVED",
-        newValues: { applicationId, reviewedBy, newRole: UserRole.MENTOR },
+        newValues: {
+          applicationId,
+          reviewedBy,
+          newRole: UserRole.MENTOR,
+          mentorProfileId: mentorProfile.id,
+        },
         performedBy: reviewedBy,
       });
 
-      return updated;
+      return { ...updated, mentorProfile };
     });
   }
 }
