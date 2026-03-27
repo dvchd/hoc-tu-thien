@@ -1,4 +1,6 @@
-import { PrismaClient, User as PrismaUser } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
+
+type PrismaUser = Prisma.UserGetPayload<Record<string, never>>;
 
 type PrismaTransactionClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
 import { IUserRepository, FindUsersOptions, UserCount } from "../../../domain/repositories/IUserRepository";
