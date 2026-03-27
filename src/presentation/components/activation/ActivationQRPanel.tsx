@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatVND } from "@/lib/utils";
 import {
@@ -56,7 +55,6 @@ function CopyButton({ value, label }: { value: string; label: string }) {
 }
 
 export function ActivationQRPanel({ paymentInfo, userId, sessionId, onSuccess }: Props) {
-  const router = useRouter();
   const [countdown, setCountdown] = useState(
     formatCountdown(paymentInfo.expiresAt)
   );
@@ -91,8 +89,9 @@ export function ActivationQRPanel({ paymentInfo, userId, sessionId, onSuccess }:
           if (onSuccess) {
             onSuccess();
           } else {
-            router.push("/dashboard");
-            router.refresh();
+            // Hard redirect to force full page reload + fresh JWT session
+            // router.push/refresh is not enough on iOS Safari (stale JWT causes redirect loop)
+            window.location.href = "/dashboard";
           }
         }, 1500);
       } else {
