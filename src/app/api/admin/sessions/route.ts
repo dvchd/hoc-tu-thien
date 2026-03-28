@@ -10,14 +10,14 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const sessions = await prisma.session.findMany({
-      orderBy: { createdAt: "desc" },
-      include: {
-        mentor: { select: { id: true, name: true } },
-        mentee: { select: { id: true, name: true } },
-      },
-      take: 50,
-    });
+     const sessions = await prisma.learningSession.findMany({
+       orderBy: [{ createdAt: "desc" }],
+       include: {
+         mentor: { select: { id: true, name: true } },
+         mentee: { select: { id: true, name: true } },
+       },
+       take: 50,
+     });
 
     return NextResponse.json({ sessions });
   } catch (error) {
