@@ -671,6 +671,20 @@ const LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // bỏ I, O
 
 ---
 
+## 💡 Hướng dẫn cho người mới (Onboarding & Troubleshooting)
+
+Nếu bạn là một newbie (Mentee/Fresher) vừa tham gia dự án, đừng lo lắng! Chúng tôi đã chuẩn bị sẵn một tài liệu Onboarding chi tiết dựa trên những kinh nghiệm thực tế.
+
+👉 **[Đọc tài liệu Onboarding tại đây](docs/onboarding.md)**
+
+Trong tài liệu này, bạn sẽ tìm thấy:
+- Cách xử lý các lỗi thường gặp khi cài đặt (Node.js version, Prisma DB, Google OAuth).
+- Bản đồ source code (Clean Architecture) để biết "đi đâu tìm gì".
+- Giải thích các "Magic Code" (Unit of Work, Dependency Injection).
+- Hướng dẫn chạy test an toàn trước khi commit.
+
+---
+
 ## 🤝 Đóng góp
 
 1. Fork repository
