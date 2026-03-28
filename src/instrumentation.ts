@@ -14,7 +14,6 @@ export async function register() {
   if (!proxyUrl) return;
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { ProxyAgent } = require("undici");
     const agent = new ProxyAgent(proxyUrl);
 

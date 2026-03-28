@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { createId } = require("@paralleldrive/cuid2");
 import { IUnitOfWork } from "../../interfaces/IUnitOfWork";
 import { UserStatus } from "../../../domain/value-objects/UserStatus";

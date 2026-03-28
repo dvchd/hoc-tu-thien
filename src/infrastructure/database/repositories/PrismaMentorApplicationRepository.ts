@@ -6,7 +6,6 @@ import {
   FindMentorApplicationsOptions,
 } from "../../../domain/repositories/IMentorApplicationRepository";
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { createId } = require("@paralleldrive/cuid2");
 
 type PrismaTransactionClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;

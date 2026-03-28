@@ -60,7 +60,7 @@ export default async function LoginPage({
         {/* Quote */}
         <div className="relative">
           <blockquote className="font-display text-3xl font-medium text-white leading-tight mb-6">
-            "Tri thức chia sẻ không bao giờ cạn — nó chỉ sinh sôi thêm."
+            &quot;Tri thức chia sẻ không bao giờ cạn — nó chỉ sinh sôi thêm.&quot;
           </blockquote>
           <p className="text-stone-400 text-sm">
             Mỗi buổi học của bạn góp phần xây dựng một tương lai tốt đẹp hơn
