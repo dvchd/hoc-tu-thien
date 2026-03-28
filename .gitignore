@@ -42,3 +42,7 @@ node_modules/.prisma/
 # Type check
 *.tsbuildinfo
 next-env.d.ts
+
+# Test results
+test-results/
+playwright-report/
