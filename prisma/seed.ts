@@ -34,7 +34,7 @@ async function main() {
       data: {
         id: "charity_default_seed",
         name: "Hội Chữ Thập Đỏ Việt Nam",
-        accountNo: "2000",
+        accountNo: "2022",
         bankName: "MB Bank",
         campaignKeyword: "HOCTUTHIEN",
         description: "Tài khoản mặc định được tạo tự động khi khởi tạo hệ thống. Admin có thể thay đổi.",
@@ -45,7 +45,7 @@ async function main() {
         verificationStatus: "UNVERIFIED",
       },
     });
-    console.log("✅ Default charity account: Hội Chữ Thập Đỏ VN (2000) — chưa xác thực, Admin cần xác thực qua UI");
+    console.log("✅ Default charity account: Hội Chữ Thập Đỏ VN (2022) — chưa xác thực, Admin cần xác thực qua UI");
   } else {
     console.log(`⏭️  Default charity account đã tồn tại: ${existingDefault.name} (${existingDefault.accountNo})`);
   }
