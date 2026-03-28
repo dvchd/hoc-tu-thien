@@ -101,6 +101,17 @@ describe("Scenario 1 – New User Registration & Activation", () => {
     uow.users.findById.mockResolvedValue(newUser);
     uow.payments.findPendingByUserId.mockResolvedValue([]);
     uow.payments.create.mockResolvedValue(paymentRecord);
+    uow.systemConfig.get.mockResolvedValue(null);
+    uow.charityAccounts.findDefault.mockResolvedValue({
+      id: "charity_001",
+      name: "Quỹ Test",
+      accountNo: "123456789",
+      accountName: "Quy Test",
+      bankName: "MB Bank",
+      isActive: true,
+      isDefault: true,
+    });
+    uow.systemConfig.getNumber.mockResolvedValue(24);
 
     const initiateActivation = new InitiateActivationUseCase(uow);
     const activationInfo = await initiateActivation.execute({ userId: "new_user_001" });

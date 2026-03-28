@@ -232,7 +232,15 @@ describe("Scenario 1 – Mentee Complete Flow", () => {
     uow.payments.findPendingByUserId.mockResolvedValue([]);
     uow.payments.create.mockResolvedValue(paymentRecord);
     uow.systemConfig.get.mockResolvedValue(null);
-    uow.charityAccounts.findDefault.mockResolvedValue(null);
+    uow.charityAccounts.findDefault.mockResolvedValue({
+      id: "charity_full_001",
+      name: "Quỹ Học Từ Thiện",
+      accountNo: "123456789",
+      accountName: "Quy Hoc Tu Thien",
+      bankName: "MB Bank",
+      isActive: true,
+      isDefault: true,
+    });
     uow.systemConfig.getNumber.mockResolvedValue(24);
 
     const initiateActivation = new InitiateActivationUseCase(uow);

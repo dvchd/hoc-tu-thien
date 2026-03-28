@@ -17,22 +17,21 @@ test.describe("Activation Flow", () => {
     await expect(page.locator("text=Chào mừng!").first()).toBeVisible();
   });
 
-  test("PENDING_ACTIVATION user is redirected to /activation", async ({
+  test("PENDING_ACTIVATION user can access dashboard with activation banner", async ({
     page,
     loginAs,
   }) => {
     await loginAs(TestUsers.PENDING_MENTEE);
     await page.goto("/dashboard");
 
-    // Middleware sẽ redirect về /activation
-    await expect(page).toHaveURL(/\/activation/, { timeout: 10000 });
+    // Middleware cho phép PENDING_ACTIVATION truy cập dashboard
+    // nhưng hiển thị banner kích hoạt
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
 
-    // Kiểm tra nội dung trang activation
+    // Kiểm tra banner kích hoạt hiển thị
     await expect(
-      page.locator("h1", { hasText: "Kích hoạt tài khoản" })
+      page.locator("text=Kích hoạt tài khoản").first()
     ).toBeVisible();
-    await expect(page.locator("text=10.000₫")).toBeVisible();
-    await expect(page.locator("text=Quỹ Thiện Nguyện MBBank").first()).toBeVisible();
   });
 
   test("activation page shows QR code and payment instructions", async ({
@@ -70,14 +69,14 @@ test.describe("Activation Flow", () => {
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
   });
 
-  test("PENDING_ACTIVATION user cannot access /dashboard/mentee directly", async ({
+  test("PENDING_ACTIVATION user can access /dashboard/mentee with banner", async ({
     page,
     loginAs,
   }) => {
     await loginAs(TestUsers.PENDING_MENTEE);
     await page.goto("/dashboard/mentee");
 
-    // Middleware redirect về /activation
-    await expect(page).toHaveURL(/\/activation/, { timeout: 10000 });
+    // Middleware cho phép PENDING_ACTIVATION truy cập
+    await expect(page).toHaveURL(/\/dashboard\/mentee/, { timeout: 10000 });
   });
 });

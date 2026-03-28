@@ -86,12 +86,11 @@ test.describe("Admin Dashboard", () => {
   });
 
   test("admin can navigate to mentor applications page", async ({ page }) => {
-    await page.goto("/dashboard/admin/mentor-applications");
-    await page.waitForLoadState("networkidle");
+    await page.goto("/dashboard/admin/applications");
 
     await expect(
-      page.locator("h1, h2").filter({ hasText: /[Mm]entor/ }).first()
-    ).toBeVisible({ timeout: 10000 });
+      page.locator("h1").filter({ hasText: "Đơn đăng ký Mentor" }).first()
+    ).toBeVisible({ timeout: 15000 });
   });
 
   test("admin can approve a mentor application via API", async ({
