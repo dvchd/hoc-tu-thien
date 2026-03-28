@@ -16,18 +16,21 @@ export default async function MenteeDashboardPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  // Load available mentors
-  const { listUsers } = createUseCases();
-  const { users: mentors } = await listUsers.execute({
-    role: "MENTOR" as any,
-    pageSize: 6,
-  });
+  // Load available mentors and stats
+  const { listUsers, getMenteeLearningStats } = createUseCases();
+  const [{ users: mentors }, menteeStats] = await Promise.all([
+    listUsers.execute({
+      role: "MENTOR" as any,
+      pageSize: 6,
+    }),
+    getMenteeLearningStats.execute(session.user.id)
+  ]);
 
   const stats = [
-    { label: "Buổi đã học", value: "24", icon: BookOpen, color: "text-jade-600", bg: "bg-jade-50" },
-    { label: "Giờ học", value: "48h", icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
-    { label: "Đã góp quỹ", value: "₫4.8M", icon: Heart, color: "text-rose-600", bg: "bg-rose-50" },
-    { label: "Đánh giá TB", value: "4.9★", icon: Star, color: "text-amber-500", bg: "bg-amber-50" },
+    { label: "Buổi đã học", value: menteeStats.totalSessions.toString(), icon: BookOpen, color: "text-jade-600", bg: "bg-jade-50" },
+    { label: "Giờ học", value: `${menteeStats.totalHours}h`, icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
+    { label: "Đã góp quỹ", value: `₫${menteeStats.totalDonated.toLocaleString("vi-VN")}`, icon: Heart, color: "text-rose-600", bg: "bg-rose-50" },
+    { label: "Đánh giá TB", value: menteeStats.avgRatingGiven ? `${menteeStats.avgRatingGiven.toFixed(1)}★` : "N/A", icon: Star, color: "text-amber-500", bg: "bg-amber-50" },
   ];
 
   // Fallback mock mentors if no data yet
@@ -109,8 +112,8 @@ export default async function MenteeDashboardPage() {
           <div>
             <h3 className="font-semibold mb-1">Tác động của bạn</h3>
             <p className="text-jade-100 text-sm">
-              ₫4,800,000 học phí của bạn đã được chuyển vào Quỹ Thiện Nguyện MBBank —
-              tương đương 240 bữa ăn cho trẻ em vùng cao 🌱
+              ₫{menteeStats.totalDonated.toLocaleString("vi-VN")} học phí của bạn đã được chuyển vào Quỹ Thiện Nguyện MBBank —
+              tương đương {Math.floor(menteeStats.totalDonated / 20000)} bữa ăn cho trẻ em vùng cao 🌱
             </p>
           </div>
         </div>

@@ -1,6 +1,5 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { UserStatus } from "@/domain/value-objects/UserStatus";
 import { prisma } from "@/infrastructure/database/prisma/client";
 import { FindMentorClient } from "@/presentation/components/mentee/FindMentorClient";
 
