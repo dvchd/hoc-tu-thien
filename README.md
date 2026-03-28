@@ -16,6 +16,7 @@
 - [Cài đặt & Chạy dự án](#-cài-đặt--chạy-dự-án)
 - [Biến môi trường](#-biến-môi-trường)
 - [Kiểm thử](#-kiểm-thử)
+- [Triển khai](#-triển-khai)
 - [Công nghệ sử dụng](#-công-nghệ-sử-dụng)
 - [Đóng góp](#-đóng-góp)
 
@@ -564,6 +565,20 @@ src/__tests__/
                                           ──────────
                                      Total: ~247 tests
 ```
+
+---
+
+## 🚀 Triển khai
+
+Dự án có thể triển khai lên nhiều nền tảng. Xem [DEPLOY.md](./DEPLOY.md) để biết hướng dẫn chi tiết.
+
+### Nền tảng được hỗ trợ
+
+| Nền tảng | Hướng dẫn |
+|----------|-----------|
+| **Vercel** | [Xem chi tiết](./DEPLOY.md#1-vercel-khuyến-nghị) |
+| **Railway** | [Xem chi tiết](./DEPLOY.md#2-railway) |
+| **Render** | [Xem chi tiết](./DEPLOY.md#3-render) |
 
 ---
 
