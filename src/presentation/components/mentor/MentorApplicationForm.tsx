@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Loader2, CheckCircle2, XCircle, GraduationCap } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface MentorApplication {
   id: string;
@@ -14,12 +16,37 @@ interface MentorApplication {
   createdAt: string;
 }
 
+const STATUS_CONFIG = {
+  PENDING: {
+    label: "Đang chờ duyệt",
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+    border: "border-amber-200",
+    icon: Loader2,
+  },
+  APPROVED: {
+    label: "Đã duyệt",
+    bg: "bg-jade-50",
+    text: "text-jade-700",
+    border: "border-jade-200",
+    icon: CheckCircle2,
+  },
+  REJECTED: {
+    label: "Từ chối",
+    bg: "bg-red-50",
+    text: "text-red-700",
+    border: "border-red-200",
+    icon: XCircle,
+  },
+};
+
 export function MentorApplicationForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [application, setApplication] = useState<MentorApplication | null>(null);
-  
+  const [showForm, setShowForm] = useState(false);
+
   const [formData, setFormData] = useState({
     motivation: "",
     experience: "",
@@ -45,6 +72,10 @@ export function MentorApplicationForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.motivation.trim() || !formData.experience.trim()) {
+      toast.error("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
     setLoading(true);
 
     try {
@@ -58,6 +89,7 @@ export function MentorApplicationForm() {
         toast.success("Đơn đăng ký đã được gửi thành công!");
         const data = await res.json();
         setApplication(data);
+        setShowForm(false);
       } else {
         const error = await res.json();
         toast.error(error.message || "Có lỗi xảy ra khi gửi đơn.");
@@ -70,52 +102,65 @@ export function MentorApplicationForm() {
   };
 
   if (fetching) {
-    return <div className="p-4 animate-pulse text-center">Đang tải thông tin...</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 text-jade-500 animate-spin" />
+      </div>
+    );
   }
 
   if (application) {
+    const status = STATUS_CONFIG[application.status];
+    const StatusIcon = status.icon;
+
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">Trạng thái đơn đăng ký Mentor</h2>
+      <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <GraduationCap className="w-5 h-5 text-jade-600" />
+          <h2 className="text-lg font-semibold text-stone-800">Trạng thái đơn đăng ký Mentor</h2>
+        </div>
+
         <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <span className="text-gray-600">Trạng thái:</span>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              application.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-              application.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
-              'bg-red-100 text-red-700'
-            }`}>
-              {application.status === 'PENDING' ? 'Đang chờ duyệt' :
-               application.status === 'APPROVED' ? 'Đã duyệt' : 'Từ chối'}
-            </span>
+          <div className={cn("flex items-center gap-2 p-3 rounded-xl border", status.bg, status.border)}>
+            <StatusIcon className={cn("w-4 h-4", status.text, application.status === "PENDING" && "animate-spin")} />
+            <span className={cn("text-sm font-medium", status.text)}>{status.label}</span>
           </div>
-          
-          <div className="p-4 bg-gray-50 rounded-md">
-            <p className="text-sm text-gray-500 mb-1">Ngày gửi đơn:</p>
-            <p className="text-gray-700">{new Date(application.createdAt).toLocaleDateString('vi-VN')}</p>
+
+          <div className="p-4 bg-stone-50 rounded-xl">
+            <p className="text-xs text-stone-400 mb-1">Ngày gửi đơn</p>
+            <p className="text-stone-700 text-sm font-medium">
+              {new Date(application.createdAt).toLocaleDateString("vi-VN", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+              })}
+            </p>
           </div>
 
           {application.reviewNote && (
-            <div className="p-4 bg-orange-50 border border-orange-100 rounded-md">
-              <p className="text-sm text-orange-600 font-medium mb-1">Ghi chú từ Admin:</p>
-              <p className="text-orange-700">{application.reviewNote}</p>
+            <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
+              <p className="text-xs text-amber-600 font-medium mb-1 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" /> Ghi chú từ Admin
+              </p>
+              <p className="text-amber-700 text-sm">{application.reviewNote}</p>
             </div>
           )}
 
-          {application.status === 'REJECTED' && (
+          {application.status === "REJECTED" && (
             <button
-              onClick={() => setApplication(null)}
-              className="w-full py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
+              onClick={() => { setApplication(null); setShowForm(true); }}
+              className="w-full py-2.5 bg-jade-600 text-white rounded-xl text-sm font-medium hover:bg-jade-700 transition-colors"
             >
-              Gửi lại đơn mới
+              Gửi đơn mới
             </button>
           )}
-          
-          {application.status === 'APPROVED' && (
+
+          {application.status === "APPROVED" && (
             <button
-              onClick={() => router.push('/dashboard/mentor/profile')}
-              className="w-full py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+              onClick={() => router.push("/dashboard/mentor/profile")}
+              className="w-full py-2.5 bg-jade-600 text-white rounded-xl text-sm font-medium hover:bg-jade-700 transition-colors flex items-center justify-center gap-2"
             >
+              <GraduationCap className="w-4 h-4" />
               Cập nhật hồ sơ Mentor
             </button>
           )}
@@ -124,21 +169,50 @@ export function MentorApplicationForm() {
     );
   }
 
+  if (!showForm) {
+    return (
+      <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm text-center">
+        <div className="w-14 h-14 rounded-2xl bg-jade-50 flex items-center justify-center mx-auto mb-4">
+          <GraduationCap className="w-7 h-7 text-jade-600" />
+        </div>
+        <h2 className="text-lg font-semibold text-stone-800 mb-2">Trở thành Mentor</h2>
+        <p className="text-stone-500 text-sm mb-5 max-w-sm mx-auto">
+          Chia sẻ kiến thức của bạn để giúp đỡ cộng đồng và đóng góp cho các quỹ từ thiện.
+        </p>
+        <button
+          onClick={() => setShowForm(true)}
+          className="px-6 py-2.5 bg-jade-600 text-white rounded-xl text-sm font-medium hover:bg-jade-700 transition-colors"
+        >
+          Đăng ký ngay
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 space-y-4">
-      <h2 className="text-xl font-semibold mb-2 text-gray-800">Đăng ký trở thành Mentor</h2>
-      <p className="text-gray-600 text-sm mb-6">
-        Hãy chia sẻ kiến thức của bạn để giúp đỡ cộng đồng và đóng góp cho các quỹ từ thiện.
-      </p>
+    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm space-y-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <GraduationCap className="w-5 h-5 text-jade-600" />
+          <h2 className="text-lg font-semibold text-stone-800">Đăng ký trở thành Mentor</h2>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowForm(false)}
+          className="text-stone-400 hover:text-stone-600 transition-colors text-sm"
+        >
+          Huỷ
+        </button>
+      </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Động lực của bạn (Motivation)
+        <label className="block text-sm font-medium text-stone-700 mb-1.5">
+          Động lực của bạn <span className="text-red-500">*</span>
         </label>
         <textarea
           required
           rows={4}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+          className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100 transition-all resize-none"
           placeholder="Tại sao bạn muốn trở thành mentor tại Học Từ Thiện?"
           value={formData.motivation}
           onChange={(e) => setFormData({ ...formData, motivation: e.target.value })}
@@ -146,13 +220,13 @@ export function MentorApplicationForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Kinh nghiệm chuyên môn (Experience)
+        <label className="block text-sm font-medium text-stone-700 mb-1.5">
+          Kinh nghiệm chuyên môn <span className="text-red-500">*</span>
         </label>
         <textarea
           required
           rows={4}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+          className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100 transition-all resize-none"
           placeholder="Tóm tắt kinh nghiệm và kỹ năng bạn có thể chia sẻ."
           value={formData.experience}
           onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
@@ -160,12 +234,12 @@ export function MentorApplicationForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          LinkedIn URL (Tùy chọn)
+        <label className="block text-sm font-medium text-stone-700 mb-1.5">
+          LinkedIn URL <span className="text-stone-400 font-normal">(tuỳ chọn)</span>
         </label>
         <input
           type="url"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+          className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100 transition-all"
           placeholder="https://linkedin.com/in/yourprofile"
           value={formData.linkedinUrl}
           onChange={(e) => setFormData({ ...formData, linkedinUrl: e.target.value })}
@@ -174,9 +248,10 @@ export function MentorApplicationForm() {
 
       <button
         type="submit"
-        disabled={loading}
-        className="w-full py-2 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={loading || !formData.motivation.trim() || !formData.experience.trim()}
+        className="w-full py-3 bg-jade-600 text-white rounded-xl text-sm font-semibold hover:bg-jade-700 transition-colors disabled:bg-stone-200 disabled:text-stone-400 flex items-center justify-center gap-2"
       >
+        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GraduationCap className="w-4 h-4" />}
         {loading ? "Đang gửi..." : "Gửi đơn đăng ký"}
       </button>
     </form>
