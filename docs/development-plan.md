@@ -7,40 +7,40 @@
 
 ---
 
-## Muc luc
+## Mục lục
 
-1. [Tong quan phuong phap](#1-tong-quan-phuong-phap)
+1. [Tổng quan phương pháp](#1-tổng-quan-phương-pháp)
 2. [Phase 1: Domain Layer](#2-phase-1-domain-layer)
 3. [Phase 2: Infrastructure Layer](#3-phase-2-infrastructure-layer)
 4. [Phase 3: Application Layer](#4-phase-3-application-layer)
 5. [Phase 4: Presentation Layer (API + UI)](#5-phase-4-presentation-layer)
 6. [Phase 5: Integration & Testing](#6-phase-5-integration--testing)
-7. [Thu tu thuc hien de xuat](#7-thu-tu-thuc-hien-de-xuat)
+7. [Thứ tự thực hiện đề xuất](#7-thứ-tự-thực-hiện-đề-xuất)
 
 ---
 
-## 1. Tong quan phuong phap
+## 1. Tổng quan phương pháp
 
-Ke hoach phat trien theo **bottom-up layer approach**:
-1. **Domain Layer** truoc - dinh nghia entities, value objects, repository contracts
+Kế hoạch phát triển theo **bottom-up layer approach**:
+1. **Domain Layer** trước - định nghĩa entities, value objects, repository contracts
 2. **Infrastructure Layer** - implement repositories, external services
 3. **Application Layer** - business logic use cases
-4. **Presentation Layer** - API routes va UI components
+4. **Presentation Layer** - API routes và UI components
 
-Moi phase co the test doc lap nho dependency inversion.
+Mỗi phase có thể test độc lập nhờ dependency inversion.
 
 ---
 
 ## 2. Phase 1: Domain Layer
 
-> Muc tieu: Dinh nghia tat ca business concepts, rules va contracts can thiet.
-> Estimated: 3-4 ngay
+> Mục tiêu: Định nghĩa tất cả business concepts, rules và contracts cần thiết.
+> Estimated: 3-4 ngày
 
-### 2.1 Value Objects - Sua doi
+### 2.1 Value Objects - Sửa đổi
 
 #### File: `src/domain/value-objects/Payment.ts`
 
-**Them SessionStatus.NO_SHOW:**
+**Thêm SessionStatus.NO_SHOW:**
 ```typescript
 export enum SessionStatus {
   PENDING = "PENDING",
@@ -49,19 +49,19 @@ export enum SessionStatus {
   COMPLETED = "COMPLETED",
   CANCELLED = "CANCELLED",
   PAYMENT_PENDING = "PAYMENT_PENDING",
-  NO_SHOW = "NO_SHOW",              // MOI
+  NO_SHOW = "NO_SHOW",              // MỚI
 }
 ```
 
-**Bo hardcoded constants, chuyen sang configurable:**
+**Bỏ hardcoded constants, chuyển sang configurable:**
 ```typescript
-// TRUOC (hardcoded):
+// TRƯỚC (hardcoded):
 // export const ACTIVATION_AMOUNT = 10000;
-// SAU (lay tu SystemConfig):
-// Xoa constant, dung SystemConfigService.get("activation_amount") trong use case
+// SAU (lấy từ SystemConfig):
+// Xóa constant, dùng SystemConfigService.get("activation_amount") trong use case
 ```
 
-#### File moi: `src/domain/value-objects/CancellationPolicy.ts`
+#### File mới: `src/domain/value-objects/CancellationPolicy.ts`
 ```typescript
 export interface CancellationResult {
   canCancel: boolean;
@@ -78,7 +78,7 @@ export function evaluateCancellation(
 ): CancellationResult;
 ```
 
-#### File moi: `src/domain/value-objects/BookingPolicy.ts`
+#### File mới: `src/domain/value-objects/BookingPolicy.ts`
 ```typescript
 export interface BookingValidationResult {
   canBook: boolean;
@@ -100,24 +100,24 @@ export function validateBookingEligibility(params: {
 }): BookingValidationResult;
 ```
 
-### 2.2 Entities - Sua doi
+### 2.2 Entities - Sửa đổi
 
 #### File: `src/domain/entities/User.ts`
 
-**Them fields:**
+**Thêm fields:**
 ```typescript
 // Trong UserEntity:
 lateCancellationCount: number;  // default 0
 noShowCount: number;            // default 0 (cho mentee)
 
-// Methods moi:
+// Methods mới:
 incrementLateCancellation(): void;
 incrementNoShow(): void;
 ```
 
-### 2.3 Repository Interfaces - Moi
+### 2.3 Repository Interfaces - Mới
 
-#### File moi: `src/domain/repositories/IMentorApplicationRepository.ts`
+#### File mới: `src/domain/repositories/IMentorApplicationRepository.ts`
 ```typescript
 export interface IMentorApplicationRepository {
   findById(id: string): Promise<MentorApplicationRecord | null>;
@@ -131,7 +131,7 @@ export interface IMentorApplicationRepository {
 }
 ```
 
-#### File moi: `src/domain/repositories/ICharityAccountRepository.ts`
+#### File mới: `src/domain/repositories/ICharityAccountRepository.ts`
 ```typescript
 export interface ICharityAccountRepository {
   findById(id: string): Promise<CharityAccountRecord | null>;
@@ -141,12 +141,12 @@ export interface ICharityAccountRepository {
   create(input: CreateCharityAccountInput): Promise<CharityAccountRecord>;
   update(id: string, input: UpdateCharityAccountInput): Promise<CharityAccountRecord>;
   deactivate(id: string): Promise<void>;
-  delete(id: string): Promise<void>;  // hard delete, chi khi usageCount = 0
+  delete(id: string): Promise<void>;  // hard delete, chỉ khi usageCount = 0
   getUsageCount(id: string): Promise<number>;
 }
 ```
 
-#### File moi: `src/domain/repositories/ISystemConfigRepository.ts`
+#### File mới: `src/domain/repositories/ISystemConfigRepository.ts`
 ```typescript
 export interface ISystemConfigRepository {
   get(key: string): Promise<string | null>;
@@ -156,7 +156,7 @@ export interface ISystemConfigRepository {
 }
 ```
 
-#### File moi: `src/domain/repositories/IReportRepository.ts`
+#### File mới: `src/domain/repositories/IReportRepository.ts`
 ```typescript
 export interface IReportRepository {
   findById(id: string): Promise<ReportRecord | null>;
@@ -169,73 +169,73 @@ export interface IReportRepository {
 }
 ```
 
-### 2.4 Sua doi Repository Interfaces hien tai
+### 2.4 Sửa đổi Repository Interfaces hiện tại
 
 #### File: `src/domain/repositories/ISessionRepository.ts`
 
-**Them methods:**
+**Thêm methods:**
 ```typescript
-// Methods moi:
+// Methods mới:
 findActiveByMenteeId(menteeId: string): Promise<SessionRecord[]>;
-// -> sessions co status: PENDING, CONFIRMED, IN_PROGRESS (khong COMPLETED, CANCELLED, PAYMENT_PENDING)
+// -> sessions có status: PENDING, CONFIRMED, IN_PROGRESS (không COMPLETED, CANCELLED, PAYMENT_PENDING)
 
 countActiveByMenteeId(menteeId: string): Promise<number>;
-// -> dem so active bookings cua mentee
+// -> đếm số active bookings của mentee
 
 findConflictingSession(mentorId: string, scheduledAt: Date, durationMinutes: number): Promise<SessionRecord | null>;
-// -> tim session cua mentor bi trung gio
+// -> tìm session của mentor bị trùng giờ
 
 updateConfirmation(id: string, confirmedBy: "mentor" | "mentee"): Promise<SessionRecord>;
-// -> cap nhat mentorConfirmed hoac menteeConfirmed
+// -> cập nhật mentorConfirmed hoặc menteeConfirmed
 
 markNoShow(id: string, markedBy: string): Promise<SessionRecord>;
-// -> danh dau no-show
+// -> đánh dấu no-show
 ```
 
 ---
 
 ## 3. Phase 2: Infrastructure Layer
 
-> Muc tieu: Implement cac repository va external services.
-> Estimated: 4-5 ngay
+> Mục tiêu: Implement các repository và external services.
+> Estimated: 4-5 ngày
 
 ### 3.1 Database Schema Changes
 
-> Chi tiet xem file `docs/schema-changes.md`
+> Chi tiết xem file `docs/schema-changes.md`
 
-**Tong hop:**
-- Them 3 models moi: `CharityAccount`, `SystemConfig`, `Report`
-- Sua `LearningSession`: them 5 fields (mentorConfirmed, menteeConfirmed, isLateCancellation, isNoShow, noShowMarkedBy)
-- Sua `User`: them `lateCancellationCount`
-- Sua `MenteeProfile`: them `noShowCount`
-- Sua `MentorProfile`: them `charityAccountId`, `onlyActivatedMentee`
+**Tổng hợp:**
+- Thêm 3 models mới: `CharityAccount`, `SystemConfig`, `Report`
+- Sửa `LearningSession`: thêm 5 fields (mentorConfirmed, menteeConfirmed, isLateCancellation, isNoShow, noShowMarkedBy)
+- Sửa `User`: thêm `lateCancellationCount`
+- Sửa `MenteeProfile`: thêm `noShowCount`
+- Sửa `MentorProfile`: thêm `charityAccountId`, `onlyActivatedMentee`
 
-### 3.2 Repository Implementations Moi
+### 3.2 Repository Implementations Mới
 
-#### File moi: `src/infrastructure/database/repositories/PrismaMentorApplicationRepository.ts`
+#### File mới: `src/infrastructure/database/repositories/PrismaMentorApplicationRepository.ts`
 - Implement `IMentorApplicationRepository`
 - Include user info khi query (name, email, image)
-- Support pagination va filter by status
+- Support pagination và filter by status
 
-#### File moi: `src/infrastructure/database/repositories/PrismaCharityAccountRepository.ts`
+#### File mới: `src/infrastructure/database/repositories/PrismaCharityAccountRepository.ts`
 - Implement `ICharityAccountRepository`
-- `getUsageCount()`: dem so MentorProfile va Payment tham chieu den account nay
-- `delete()`: throw error neu usageCount > 0
+- `getUsageCount()`: đếm số MentorProfile và Payment tham chiếu đến account này
+- `delete()`: throw error nếu usageCount > 0
 
-#### File moi: `src/infrastructure/database/repositories/PrismaSystemConfigRepository.ts`
+#### File mới: `src/infrastructure/database/repositories/PrismaSystemConfigRepository.ts`
 - Implement `ISystemConfigRepository`
 - Upsert pattern cho `set()` method
-- Cache in-memory voi TTL cho `get()` (tranh query moi request)
+- Cache in-memory với TTL cho `get()` (tránh query mỗi request)
 
-#### File moi: `src/infrastructure/database/repositories/PrismaReportRepository.ts`
+#### File mới: `src/infrastructure/database/repositories/PrismaReportRepository.ts`
 - Implement `IReportRepository`
-- Include reporter va reported user info
+- Include reporter và reported user info
 
-### 3.3 Sua Repository Implementations hien tai
+### 3.3 Sửa Repository Implementations hiện tại
 
 #### File: `src/infrastructure/database/repositories/PrismaPaymentSessionRepositories.ts`
 
-**PrismaSessionRepository - them methods:**
+**PrismaSessionRepository - thêm methods:**
 ```typescript
 async findActiveByMenteeId(menteeId: string): Promise<SessionRecord[]> {
   // WHERE menteeId = ? AND status IN ('PENDING', 'CONFIRMED', 'IN_PROGRESS')
@@ -246,13 +246,13 @@ async countActiveByMenteeId(menteeId: string): Promise<number> {
 }
 
 async findConflictingSession(mentorId: string, scheduledAt: Date, durationMinutes: number): Promise<SessionRecord | null> {
-  // Tim session cua mentor ma thoi gian bi overlap
+  // Tìm session của mentor mà thời gian bị overlap
   // WHERE mentorId = ? AND status NOT IN ('CANCELLED', 'NO_SHOW')
   // AND (scheduledAt < endAt AND endAt > scheduledAt)
 }
 
 async updateConfirmation(id: string, confirmedBy: "mentor" | "mentee"): Promise<SessionRecord> {
-  // Update mentorConfirmed hoac menteeConfirmed = true
+  // Update mentorConfirmed hoặc menteeConfirmed = true
 }
 
 async markNoShow(id: string, markedBy: string): Promise<SessionRecord> {
@@ -263,10 +263,10 @@ async markNoShow(id: string, markedBy: string): Promise<SessionRecord> {
 ### 3.4 External Services
 
 #### File: `src/infrastructure/external/GoogleMeetService.ts`
-**Chuyen sang Mentor tu nhap:**
+**Chuyển sang Mentor tự nhập:**
 ```typescript
-// Xoa/deprecate generateMeetLink()
-// Them validation function:
+// Xóa/deprecate generateMeetLink()
+// Thêm validation function:
 export function validateMeetLink(url: string): boolean {
   return /^https:\/\/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}$/.test(url);
 }
@@ -275,7 +275,7 @@ export function validateMeetLink(url: string): boolean {
 ### 3.5 Unit of Work Update
 
 #### File: `src/infrastructure/unit-of-work/PrismaUnitOfWork.ts`
-**Them repositories moi:**
+**Thêm repositories mới:**
 ```typescript
 get mentorApplications(): IMentorApplicationRepository;
 get charityAccounts(): ICharityAccountRepository;
@@ -287,23 +287,23 @@ get reports(): IReportRepository;
 
 ## 4. Phase 3: Application Layer
 
-> Muc tieu: Implement tat ca business logic use cases.
-> Estimated: 5-7 ngay
+> Mục tiêu: Implement tất cả business logic use cases.
+> Estimated: 5-7 ngày
 
 ### 4.1 Mentor Application Use Cases
 
-#### File moi: `src/application/use-cases/mentor/MentorApplicationUseCases.ts`
+#### File mới: `src/application/use-cases/mentor/MentorApplicationUseCases.ts`
 
 **SubmitMentorApplicationUseCase:**
 - Input: `{ userId, motivation, experience, linkedinUrl?, contactInfo: { zalo?, facebook?, email } }`
-- Validate: user exists, user is ACTIVE, khong co pending/approved application
+- Validate: user exists, user is ACTIVE, không có pending/approved application
 - Output: `MentorApplicationRecord`
 - Audit log: "MENTOR_APPLICATION_SUBMITTED"
 
 **ListMentorApplicationsUseCase:**
 - Input: `{ status?, page?, pageSize? }`
 - Output: `{ applications: MentorApplicationRecord[], total: number }`
-- Chi admin su dung
+- Chỉ admin sử dụng
 
 **ApproveMentorApplicationUseCase:**
 - Input: `{ applicationId, reviewedBy, reviewNote? }`
@@ -321,60 +321,60 @@ get reports(): IReportRepository;
 
 ### 4.2 Mentor Profile Use Cases
 
-#### File moi: `src/application/use-cases/mentor/MentorProfileUseCases.ts`
+#### File mới: `src/application/use-cases/mentor/MentorProfileUseCases.ts`
 
 **UpdateMentorProfileUseCase:**
 - Input: `{ userId, headline?, expertise?, experience?, hourlyRate?, charityAccountId?, onlyActivatedMentee? }`
-- Validate: user is MENTOR, charityAccountId thuoc danh sach active charity accounts
-- Audit log: "MENTOR_PROFILE_UPDATED" voi old/new values
+- Validate: user is MENTOR, charityAccountId thuộc danh sách active charity accounts
+- Audit log: "MENTOR_PROFILE_UPDATED" với old/new values
 - Output: `MentorProfileRecord`
 
 **SetTeachingFieldsUseCase:**
 - Input: `{ userId, teachingFieldIds: string[] }`
-- Logic: Neu doi teaching fields -> can admin re-review (BR30)
-  - So sanh old vs new fields
-  - Neu khac -> tao audit log "MENTOR_FIELDS_CHANGED_PENDING_REVIEW"
-  - MVP: van cho update nhung ghi nhan de admin biet
+- Logic: Nếu đổi teaching fields -> cần admin re-review (BR30)
+  - So sánh old vs new fields
+  - Nếu khác -> tạo audit log "MENTOR_FIELDS_CHANGED_PENDING_REVIEW"
+  - MVP: vẫn cho update nhưng ghi nhận để admin biết
 - Output: `MentorProfileRecord`
 
 **GetMentorPublicProfileUseCase:**
 - Input: `{ mentorUserId }`
 - Output: MentorProfile + User info + TeachingFields + AvailabilitySlots + rating + totalSessions + lateCancellationCount
 
-### 4.3 Booking Use Cases - Sua doi
+### 4.3 Booking Use Cases - Sửa đổi
 
 #### File: `src/application/use-cases/session/SessionUseCases.ts`
 
-**BookSessionUseCase - them validations:**
+**BookSessionUseCase - thêm validations:**
 ```typescript
-// Truoc khi tao session:
+// Trước khi tạo session:
 1. Validate mentee exists
 2. Validate mentor exists + role = MENTOR + isAvailable = true
 3. if (fee > 0 && mentee.status !== ACTIVE) -> reject (BR03)
 4. if (fee === 0 && mentee.status === PENDING_ACTIVATION) -> allow (BR04)
 5. if (activeBookingCount >= MAX_ACTIVE_BOOKINGS) -> reject (BR05)
-6. if (hasOutstandingPayment) -> reject (BR09) [da co]
+6. if (hasOutstandingPayment) -> reject (BR09) [đã có]
 7. if (scheduledAt - now < minAdvanceHours) -> reject (BR10)
 8. if (durationMinutes % 60 !== 0) -> reject (BR11)
 9. if (conflictingSession exists) -> reject
 10. if (mentor.onlyActivatedMentee && mentee.status !== ACTIVE) -> reject (BR06)
 ```
 
-**CancelSessionUseCase - them late cancel logic:**
+**CancelSessionUseCase - thêm late cancel logic:**
 ```typescript
-// Khi huy:
-1. Validate session exists, status cho phep huy
+// Khi hủy:
+1. Validate session exists, status cho phép hủy
 2. const minutesBeforeStart = (scheduledAt - now) / 60000
 3. const isLate = minutesBeforeStart <= LATE_CANCEL_THRESHOLD_MINUTES (30 min)
 4. if (isLate) -> session.isLateCancellation = true
 5. if (isLate) -> increment user.lateCancellationCount
 6. Update session status = CANCELLED
-7. Audit log voi isLateCancellation flag
+7. Audit log với isLateCancellation flag
 ```
 
 **CompleteSessionUseCase -> ConfirmCompletionUseCase (refactor):**
 ```typescript
-// Doi tu chi mentor confirm sang dual confirmation:
+// Đổi từ chỉ mentor confirm sang dual confirmation:
 1. Input: { sessionId, userId, role: "mentor" | "mentee" }
 2. if role === "mentor" -> set mentorConfirmed = true
 3. if role === "mentee" -> set menteeConfirmed = true
@@ -387,27 +387,27 @@ get reports(): IReportRepository;
 
 ### 4.4 No-show Use Cases
 
-#### Them vao file: `src/application/use-cases/session/SessionUseCases.ts`
+#### Thêm vào file: `src/application/use-cases/session/SessionUseCases.ts`
 
 **MarkNoShowUseCase:**
 - Input: `{ sessionId, mentorId }`
 - Validate: session exists, mentor is session's mentor, status in [CONFIRMED, IN_PROGRESS]
 - Logic:
   1. Set status = NO_SHOW, isNoShow = true, noShowMarkedBy = mentorId
-  2. Theo OQ05.1/OQ05.3: van tao payment obligation cho mentee
-  3. if (fee > 0) -> chuyen sang PAYMENT_PENDING
-  4. if (fee === 0) -> chi ghi nhan no-show, khong payment
+  2. Theo OQ05.1/OQ05.3: vẫn tạo payment obligation cho mentee
+  3. if (fee > 0) -> chuyển sang PAYMENT_PENDING
+  4. if (fee === 0) -> chỉ ghi nhận no-show, không payment
   5. Increment mentee noShowCount
 - Output: `SessionRecord`
 
 ### 4.5 Charity Account Use Cases
 
-#### File moi: `src/application/use-cases/admin/CharityAccountUseCases.ts`
+#### File mới: `src/application/use-cases/admin/CharityAccountUseCases.ts`
 
 **CreateCharityAccountUseCase:**
 - Input: `{ name, accountNo, bankName, campaignKeyword?, isDefault?, createdBy }`
 - Validate: accountNo unique
-- Neu isDefault = true -> bo default cua account cu
+- Nếu isDefault = true -> bỏ default của account cũ
 - Output: `CharityAccountRecord`
 
 **ListCharityAccountsUseCase:**
@@ -422,11 +422,11 @@ get reports(): IReportRepository;
 - Input: `{ id }`
 - Validate: usageCount === 0 (BR20), else throw error
 - Hard delete
-- Neu usageCount > 0 -> suggest deactivate thay vi delete (BR21)
+- Nếu usageCount > 0 -> suggest deactivate thay vì delete (BR21)
 
 ### 4.6 System Config Use Cases
 
-#### File moi: `src/application/use-cases/admin/SystemConfigUseCases.ts`
+#### File mới: `src/application/use-cases/admin/SystemConfigUseCases.ts`
 
 **GetSystemConfigUseCase:**
 - Input: `{ key? }` (null = get all)
@@ -437,13 +437,13 @@ get reports(): IReportRepository;
 - Validate: key must be in allowed list
 - Audit log: "SYSTEM_CONFIG_UPDATED"
 
-### 4.7 Payment Use Cases - Sua doi
+### 4.7 Payment Use Cases - Sửa đổi
 
 #### File: `src/application/use-cases/payment/PaymentUseCases.ts`
 
 **InitiateSessionFeePaymentUseCase - fix TN account:**
 ```typescript
-// TRUOC (bug):
+// TRƯỚC (bug):
 // const accountNo = DEFAULT_TN_ACTIVATION_ACCOUNT;
 
 // SAU (correct):
@@ -454,7 +454,7 @@ const accountName = mentorProfile?.tnAccountName || defaultCharityAccount.name;
 
 **InitiateActivationUseCase - configurable amount:**
 ```typescript
-// TRUOC:
+// TRƯỚC:
 // const amount = ACTIVATION_AMOUNT; // hardcoded 10000
 
 // SAU:
@@ -467,7 +467,7 @@ const accountNo = defaultAccount?.accountNo || DEFAULT_TN_ACTIVATION_ACCOUNT;
 
 ### 4.8 Stats Use Cases
 
-#### File moi: `src/application/use-cases/stats/StatsUseCases.ts`
+#### File mới: `src/application/use-cases/stats/StatsUseCases.ts`
 
 **GetMenteeLearningStatsUseCase:**
 - Input: `{ menteeId }`
@@ -483,7 +483,7 @@ const accountNo = defaultAccount?.accountNo || DEFAULT_TN_ACTIVATION_ACCOUNT;
 
 ### 4.9 Report Use Cases
 
-#### File moi: `src/application/use-cases/report/ReportUseCases.ts`
+#### File mới: `src/application/use-cases/report/ReportUseCases.ts`
 
 **SubmitReportUseCase:**
 - Input: `{ reporterId, reportedUserId, sessionId?, reason, description }`
@@ -501,7 +501,7 @@ const accountNo = defaultAccount?.accountNo || DEFAULT_TN_ACTIVATION_ACCOUNT;
 
 #### File: `src/lib/container.ts`
 
-**Them use cases moi:**
+**Thêm use cases mới:**
 ```typescript
 export function createUseCases() {
   const uow = new PrismaUnitOfWork(prisma);
@@ -549,18 +549,18 @@ export function createUseCases() {
 
 ## 5. Phase 4: Presentation Layer
 
-> Muc tieu: API routes va UI components.
-> Estimated: 5-7 ngay
-> Chi tiet API xem file `docs/api-plan.md`
+> Mục tiêu: API routes và UI components.
+> Estimated: 5-7 ngày
+> Chi tiết API xem file `docs/api-plan.md`
 
-### 5.1 API Routes Moi
+### 5.1 API Routes Mới
 
 | Method | Endpoint | Use Case | Actor |
 |--------|----------|----------|-------|
-| POST | `/api/mentor/apply` | SubmitMentorApplication (SUA LAI) | Mentee |
+| POST | `/api/mentor/apply` | SubmitMentorApplication (SỬA LẠI) | Mentee |
 | GET | `/api/admin/mentor-applications` | ListMentorApplications | Admin |
 | PATCH | `/api/admin/mentor-applications/[id]` | Approve/Reject | Admin |
-| PUT | `/api/mentor/profile` | UpdateMentorProfile (SUA LAI) | Mentor |
+| PUT | `/api/mentor/profile` | UpdateMentorProfile (SỬA LẠI) | Mentor |
 | POST | `/api/mentor/teaching-fields` | SetTeachingFields | Mentor |
 | GET | `/api/mentor/[id]/public-profile` | GetMentorPublicProfile | Public |
 | GET | `/api/mentee/stats` | GetMenteeLearningStats | Mentee |
@@ -577,24 +577,24 @@ export function createUseCases() {
 | GET | `/api/admin/reports` | ListReports | Admin |
 | PATCH | `/api/admin/reports/[id]` | ResolveReport | Admin |
 
-### 5.2 UI Components Moi
+### 5.2 UI Components Mới
 
 #### Mentor Application Flow
 - `src/presentation/components/mentor/MentorApplicationForm.tsx`
   - Form: motivation (textarea), experience (textarea), linkedin URL, contact info (zalo, facebook, email)
   - Submit -> POST /api/mentor/apply
-  - Show trang thai application neu da submit
+  - Show trạng thái application nếu đã submit
 - `src/presentation/components/admin/MentorApplicationsTable.tsx`
   - Table: applicant info, motivation preview, status badge, submitted date
-  - Actions: Approve (confirm dialog), Reject (dialog voi review note)
+  - Actions: Approve (confirm dialog), Reject (dialog với review note)
 
 #### Mentor Public Profile
 - `src/presentation/components/mentor/MentorPublicProfile.tsx`
   - Header: avatar, name, headline, rating stars, total sessions
   - Body: bio, expertise, teaching fields, experience years
   - Stats: total sessions, late cancellation count
-  - Availability calendar: hien thi slots kha dung
-  - CTA: "Dat lich hoc" button
+  - Availability calendar: hiển thị slots khả dụng
+  - CTA: "Đặt lịch học" button
 
 #### Charity Account Manager
 - `src/presentation/components/admin/CharityAccountManager.tsx`
@@ -605,7 +605,7 @@ export function createUseCases() {
 
 #### System Config Panel
 - `src/presentation/components/admin/SystemConfigPanel.tsx`
-  - Key-value editor cho cac config:
+  - Key-value editor cho các config:
     - Activation amount (number input, VND)
     - Default charity account (dropdown)
     - Min booking advance hours (number)
@@ -614,63 +614,63 @@ export function createUseCases() {
   - Save button -> PATCH /api/admin/config
 
 #### Session Confirmation UI (Dual Confirm)
-- Sua `src/presentation/components/session/SessionCard.tsx`:
-  - Sau buoi hoc: hien thi 2 confirmation states
-  - Mentor: "Xac nhan buoi hoc da hoan tat" button
-  - Mentee: "Xac nhan da hoc xong" button
-  - Khi ca 2 confirmed -> hien thi "Da hoan tat"
-  - Dispute: "Bao cao van de" link
+- Sửa `src/presentation/components/session/SessionCard.tsx`:
+  - Sau buổi học: hiển thị 2 confirmation states
+  - Mentor: "Xác nhận buổi học đã hoàn tất" button
+  - Mentee: "Xác nhận đã học xong" button
+  - Khi cả 2 confirmed -> hiển thị "Đã hoàn tất"
+  - Dispute: "Báo cáo vấn đề" link
 
 #### No-show UI
-- Sua `src/presentation/components/session/SessionCard.tsx`:
-  - Mentor view: "Danh dau mentee vang mat" button (chi hien thi sau gio bat dau session)
-  - Confirm dialog truoc khi danh dau
+- Sửa `src/presentation/components/session/SessionCard.tsx`:
+  - Mentor view: "Đánh dấu mentee vắng mặt" button (chỉ hiển thị sau giờ bắt đầu session)
+  - Confirm dialog trước khi đánh dấu
 
 #### Report Form
 - `src/presentation/components/review/ReportForm.tsx`
-  - Gop vao review flow: sau khi rating -> option "Bao cao van de"
-  - Fields: reason (dropdown: khong phu hop, hanh vi xau, khac), description (textarea)
+  - Gộp vào review flow: sau khi rating -> option "Báo cáo vấn đề"
+  - Fields: reason (dropdown: không phù hợp, hành vi xấu, khác), description (textarea)
 
 #### Late Cancel Badge
-- Sua `src/presentation/components/mentor/MentorPublicProfile.tsx`:
-  - Hien thi "Huy muon: X lan" tren profile
+- Sửa `src/presentation/components/mentor/MentorPublicProfile.tsx`:
+  - Hiển thị "Hủy muộn: X lần" trên profile
 
-### 5.3 Pages Moi va Sua doi
+### 5.3 Pages Mới và Sửa đổi
 
-| Page | File | Muc dich |
+| Page | File | Mục đích |
 |------|------|---------|
-| Mentor Application | `src/app/(dashboard)/dashboard/mentee/apply-mentor/page.tsx` | Form dang ky mentor |
+| Mentor Application | `src/app/(dashboard)/dashboard/mentee/apply-mentor/page.tsx` | Form đăng ký mentor |
 | Mentor Applications (Admin) | `src/app/(dashboard)/dashboard/admin/mentor-applications/page.tsx` | Admin review applications |
-| Mentor Public Profile | `src/app/(dashboard)/dashboard/mentee/mentor/[id]/page.tsx` | Mentee xem ho so mentor |
-| Charity Accounts (Admin) | `src/app/(dashboard)/dashboard/admin/charity-accounts/page.tsx` | Admin quan ly TN accounts |
-| System Config (Admin) | `src/app/(dashboard)/dashboard/admin/config/page.tsx` | Admin cau hinh he thong |
+| Mentor Public Profile | `src/app/(dashboard)/dashboard/mentee/mentor/[id]/page.tsx` | Mentee xem hồ sơ mentor |
+| Charity Accounts (Admin) | `src/app/(dashboard)/dashboard/admin/charity-accounts/page.tsx` | Admin quản lý TN accounts |
+| System Config (Admin) | `src/app/(dashboard)/dashboard/admin/config/page.tsx` | Admin cấu hình hệ thống |
 | Reports (Admin) | `src/app/(dashboard)/dashboard/admin/reports/page.tsx` | Admin xem reports |
 
-### 5.4 Sua doi Pages hien tai
+### 5.4 Sửa đổi Pages hiện tại
 
-| Page | Thay doi |
+| Page | Thay đổi |
 |------|---------|
-| Mentor Dashboard | Thay mock data bang real stats tu API |
-| Mentee Dashboard | Thay mock data bang real stats tu API |
-| Mentor Sessions | Them no-show button, dual confirm UI |
-| Mentee Sessions | Them confirm completion button |
-| Find Mentor | Them link den mentor public profile |
-| Admin Overview | Them link den mentor applications |
-| Sidebar | Fix dead links, them menu items moi |
+| Mentor Dashboard | Thay mock data bằng real stats từ API |
+| Mentee Dashboard | Thay mock data bằng real stats từ API |
+| Mentor Sessions | Thêm no-show button, dual confirm UI |
+| Mentee Sessions | Thêm confirm completion button |
+| Find Mentor | Thêm link đến mentor public profile |
+| Admin Overview | Thêm link đến mentor applications |
+| Sidebar | Fix dead links, thêm menu items mới |
 
 ---
 
 ## 6. Phase 5: Integration & Testing
 
-> Muc tieu: Dam bao tat ca features hoat dong dung.
-> Estimated: 3-4 ngay
+> Mục tiêu: Đảm bảo tất cả features hoạt động đúng.
+> Estimated: 3-4 ngày
 
-### 6.1 Unit Tests Moi
+### 6.1 Unit Tests Mới
 
-| Test File | Doi tuong | So tests du kien |
+| Test File | Đối tượng | Số tests dự kiến |
 |-----------|----------|-----------------|
 | `MentorApplicationUseCases.test.ts` | Submit, Approve, Reject flows | ~15 tests |
-| `BookingValidations.test.ts` | Tat ca booking rules | ~20 tests |
+| `BookingValidations.test.ts` | Tất cả booking rules | ~20 tests |
 | `CancellationPolicy.test.ts` | Late cancel detection | ~10 tests |
 | `NoShowUseCases.test.ts` | No-show marking | ~8 tests |
 | `DualConfirmation.test.ts` | Dual completion flow | ~12 tests |
@@ -680,15 +680,15 @@ export function createUseCases() {
 | `ReportUseCases.test.ts` | Submit/Resolve reports | ~8 tests |
 | `PaymentFix.test.ts` | Correct TN account routing | ~5 tests |
 
-**Tong: ~104 tests moi (tren ~247 hien tai = ~351 tests)**
+**Tổng: ~104 tests mới (trên ~247 hiện tại = ~351 tests)**
 
 ### 6.2 Integration Tests
 
-| Test File | Doi tuong |
+| Test File | Đối tượng |
 |-----------|----------|
 | `PrismaMentorApplicationRepo.test.ts` | Repository CRUD |
 | `PrismaCharityAccountRepo.test.ts` | Repository CRUD + usage count |
-| `BookingApiRoutes.test.ts` | Full booking flow voi validations |
+| `BookingApiRoutes.test.ts` | Full booking flow với validations |
 | `MentorApplicationApiRoutes.test.ts` | Application submit + approval flow |
 
 ### 6.3 E2E Test Updates
@@ -696,54 +696,54 @@ export function createUseCases() {
 | Test | Scenario |
 |------|----------|
 | `MentorApplicationJourney.test.ts` | Mentee apply -> Admin approve -> Mentor setup profile -> Open slots |
-| `BookingWithValidations.test.ts` | Full booking flow voi tat ca BR checks |
+| `BookingWithValidations.test.ts` | Full booking flow với tất cả BR checks |
 | `CancellationJourney.test.ts` | Normal cancel + Late cancel + No-show |
-| `DualConfirmJourney.test.ts` | Session complete voi ca 2 confirm |
+| `DualConfirmJourney.test.ts` | Session complete với cả 2 confirm |
 
 ---
 
-## 7. Thu tu thuc hien de xuat
+## 7. Thứ tự thực hiện đề xuất
 
-### Wave 1: Foundation (ngay 1-4)
-> Domain + Infrastructure cho cac features core
+### Wave 1: Foundation (ngày 1-4)
+> Domain + Infrastructure cho các features core
 
 1. Schema changes (migration)
-2. Value objects moi (CancellationPolicy, BookingPolicy)
-3. Repository interfaces moi
-4. Repository implementations moi
+2. Value objects mới (CancellationPolicy, BookingPolicy)
+3. Repository interfaces mới
+4. Repository implementations mới
 5. Unit of Work update
 
-### Wave 2: Core Business Logic (ngay 5-11)
-> Use cases cho cac tinh nang P1
+### Wave 2: Core Business Logic (ngày 5-11)
+> Use cases cho các tính năng P1
 
 6. Mentor Application use cases + API + UI
-7. Booking validations (sua BookSessionUseCase)
-8. Cancellation rules (sua CancelSessionUseCase)
+7. Booking validations (sửa BookSessionUseCase)
+8. Cancellation rules (sửa CancelSessionUseCase)
 9. Dual confirmation (refactor CompleteSessionUseCase)
 10. No-show handling
 11. Payment fix (TN account routing)
-12. Google Meet -> mentor tu nhap
+12. Google Meet -> mentor tự nhập
 
-### Wave 3: Admin Features (ngay 12-16)
-> Admin tools va configuration
+### Wave 3: Admin Features (ngày 12-16)
+> Admin tools và configuration
 
 13. Charity Account management (use cases + API + UI)
 14. System Config (use cases + API + UI)
 15. Mentor Profile use cases refactor
 16. Admin mentor application review UI
 
-### Wave 4: Polish & Stats (ngay 17-20)
+### Wave 4: Polish & Stats (ngày 17-20)
 > Statistics, reports, UI polish
 
 17. Mentee/Mentor statistics (real data)
 18. Report system
 19. Late cancel display on profile
-20. Sua cac trang dashboard thay mock data
+20. Sửa các trang dashboard thay mock data
 
-### Wave 5: Testing (ngay 21-25)
+### Wave 5: Testing (ngày 21-25)
 > Comprehensive testing
 
-21. Unit tests cho tat ca use cases moi
+21. Unit tests cho tất cả use cases mới
 22. Integration tests cho repositories
 23. API route tests
 24. E2E journey tests
@@ -751,9 +751,9 @@ export function createUseCases() {
 
 ---
 
-## Appendix: Files tham chieu
+## Appendix: Files tham chiếu
 
-| Layer | Directory | Files hien tai |
+| Layer | Directory | Files hiện tại |
 |-------|-----------|---------------|
 | Domain | `src/domain/` | entities/, value-objects/, repositories/, events/ |
 | Application | `src/application/` | use-cases/, dtos/, interfaces/ |

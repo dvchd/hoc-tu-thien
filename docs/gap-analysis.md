@@ -7,28 +7,28 @@
 
 ---
 
-## 1. Tong quan
+## 1. Tổng quan
 
-Codebase hien tai da xay dung duoc khoang **40% MVP** voi nen tang kien truc vung chac:
+Codebase hiện tại đã xây dựng được khoảng **40% MVP** với nền tảng kiến trúc vững chắc:
 - Clean Architecture 4 layer (Domain, Application, Infrastructure, Presentation)
-- DDD voi Entity, Value Object, Domain Events
+- DDD với Entity, Value Object, Domain Events
 - Repository Pattern + Unit of Work
 - Audit Logging + Optimistic Locking
 - ~247 test cases (unit, integration, e2e)
 
-Phan con lai (~60%) bao gom cac tinh nang nghiep vu cot loi chua duoc implement hoac chi la stub.
+Phần còn lại (~60%) bao gồm các tính năng nghiệp vụ cốt lõi chưa được implement hoặc chỉ là stub.
 
 ---
 
-## 2. Tinh nang DA HOAN THANH
+## 2. Tính năng ĐÃ HOÀN THÀNH
 
-| STT | Feature ID | Feature | Trang thai | Files chinh |
+| STT | Feature ID | Feature | Trạng thái | Files chính |
 |-----|-----------|---------|-----------|-------------|
 | 1 | F1 | Login with Google | DONE | `src/auth.ts`, `src/app/(auth)/login/page.tsx` |
 | 2 | F2 | Create Default Mentee Account | DONE | `UserUseCases.ts` - FindOrCreateUserUseCase |
 | 3 | F3 | Account Activation | DONE | `PaymentUseCases.ts` - InitiateActivationUseCase, `ActivationQRPanel.tsx` |
 | 4 | F4 | View Personal Information | DONE | `SettingsForm.tsx`, `/dashboard/settings/page.tsx` |
-| 5 | F13 | Browse and Filter Sessions | PARTIAL | `FindMentorClient.tsx` - co search/filter nhung thieu filter thoi gian |
+| 5 | F13 | Browse and Filter Sessions | PARTIAL | `FindMentorClient.tsx` - có search/filter nhưng thiếu filter thời gian |
 | 6 | F19 | Store Session History | DONE | `LearningSession` model, `SessionCard.tsx` |
 | 7 | F20 | Generate Transfer Code and VietQR | DONE | `Payment.ts` - generateShortCode(), buildVietQRUrl() |
 | 8 | F22 | Auto Payment Verification | DONE | `ThienNguyenAppClient.ts`, `VerifyPaymentUseCase` |
@@ -40,254 +40,254 @@ Phan con lai (~60%) bao gom cac tinh nang nghiep vu cot loi chua duoc implement 
 
 ---
 
-## 3. Tinh nang CON THIEU hoac CHUA HOAN CHINH
+## 3. Tính năng CÒN THIẾU hoặc CHƯA HOÀN CHỈNH
 
-### 3.1 P1 - Critical (Bat buoc cho MVP)
+### 3.1 P1 - Critical (Bắt buộc cho MVP)
 
 #### GAP-A: Mentor Application + Approval (F7, F8, F9)
-**Business Rules lien quan:** BR02, BR07
-**Hien trang:**
-- `ApplyForMentorUseCase` la STUB - khong tao `MentorApplication` record, tra ve mock ID
-- `MentorApplication` model da co trong schema nhung khong duoc su dung
-- `MentorApplicationStatus` enum da dinh nghia (PENDING, APPROVED, REJECTED)
-- Khong co admin UI de review applications
+**Business Rules liên quan:** BR02, BR07
+**Hiện trạng:**
+- `ApplyForMentorUseCase` là STUB - không tạo `MentorApplication` record, trả về mock ID
+- `MentorApplication` model đã có trong schema nhưng không được sử dụng
+- `MentorApplicationStatus` enum đã định nghĩa (PENDING, APPROVED, REJECTED)
+- Không có admin UI để review applications
 
-**Can lam:**
+**Cần làm:**
 - [ ] Domain: `IMentorApplicationRepository` interface
 - [ ] Infrastructure: `PrismaMentorApplicationRepository`
-- [ ] Application: `SubmitMentorApplicationUseCase` (tao record that)
+- [ ] Application: `SubmitMentorApplicationUseCase` (tạo record thật)
 - [ ] Application: `ListMentorApplicationsUseCase` (admin list)
-- [ ] Application: `ApproveMentorApplicationUseCase` (approve + tao MentorProfile + doi role)
+- [ ] Application: `ApproveMentorApplicationUseCase` (approve + tạo MentorProfile + đổi role)
 - [ ] Application: `RejectMentorApplicationUseCase` (reject + ghi note)
-- [ ] API: `POST /api/mentor/apply` (sua lai), `GET /api/admin/mentor-applications`, `PATCH /api/admin/mentor-applications/[id]`
-- [ ] UI: Form dang ky mentor (mentee), Admin review panel
-- [ ] Kiem tra trung lap application (user da co pending/approved)
-- [ ] Khi approve: tu dong tao MentorProfile va chuyen role sang MENTOR
+- [ ] API: `POST /api/mentor/apply` (sửa lại), `GET /api/admin/mentor-applications`, `PATCH /api/admin/mentor-applications/[id]`
+- [ ] UI: Form đăng ký mentor (mentee), Admin review panel
+- [ ] Kiểm tra trùng lặp application (user đã có pending/approved)
+- [ ] Khi approve: tự động tạo MentorProfile và chuyển role sang MENTOR
 
 ---
 
 #### GAP-B: Mentor Profile Management (F10, F11, F12)
-**Business Rules lien quan:** BR07, BR08, BR30
-**Hien trang:**
-- `MentorProfileForm` va `AvailabilityManager` UI da co
-- API routes `/api/mentor/profile` va `/api/mentor/availability` da co
-- NHUNG: khong co use case layer - API goi truc tiep Prisma
-- Mentor co the chon bat ky TN account nao (vi pham BR08)
+**Business Rules liên quan:** BR07, BR08, BR30
+**Hiện trạng:**
+- `MentorProfileForm` và `AvailabilityManager` UI đã có
+- API routes `/api/mentor/profile` và `/api/mentor/availability` đã có
+- NHƯNG: không có use case layer - API gọi trực tiếp Prisma
+- Mentor có thể chọn bất kỳ TN account nào (vi phạm BR08)
 
-**Can lam:**
+**Cần làm:**
 - [ ] Application: `CreateMentorProfileUseCase` (auto-create khi approved)
 - [ ] Application: `UpdateMentorProfileUseCase` (validate + audit)
 - [ ] Application: `GetMentorPublicProfileUseCase` (mentee xem)
-- [ ] Application: `SetTeachingConfigurationUseCase` (chon mon, TN account, muc phi)
-- [ ] Validation: mentor chi chon TN account tu danh sach admin (BR08)
-- [ ] Logic: doi subject can admin re-review (BR30, OQ06)
-- [ ] API: them public mentor profile endpoint
+- [ ] Application: `SetTeachingConfigurationUseCase` (chọn môn, TN account, mức phí)
+- [ ] Validation: mentor chỉ chọn TN account từ danh sách admin (BR08)
+- [ ] Logic: đổi subject cần admin re-review (BR30, OQ06)
+- [ ] API: thêm public mentor profile endpoint
 - [ ] UI: Mentor public profile page cho mentee xem
 
 ---
 
 #### GAP-C: Booking Validations (F16)
-**Business Rules lien quan:** BR03, BR04, BR05, BR09, BR10, BR11
-**Hien trang:**
-- `BookSessionUseCase` chi check: user active, no outstanding PAYMENT_PENDING
-- Thieu nhieu validation quan trong
+**Business Rules liên quan:** BR03, BR04, BR05, BR09, BR10, BR11
+**Hiện trạng:**
+- `BookSessionUseCase` chỉ check: user active, no outstanding PAYMENT_PENDING
+- Thiếu nhiều validation quan trọng
 
-**Can lam:**
-- [ ] Check activation cho paid session (BR03): mentee chua kich hoat chi dat 0 dong
-- [ ] Cho phep unactivated mentee dat buoi hoc free (BR04)
-- [ ] Gioi han 1 active booking tai 1 thoi diem (BR05)
-- [ ] Minimum advance booking time = 1h truoc gio hoc (BR10)
-- [ ] Session duration = gio nguyen: 1h, 2h, 3h (BR11)
-- [ ] Schedule conflict: mentor khong co 2 session cung gio
-- [ ] Validate mentor availability slot (mentee chi dat trong khung gio mentor mo)
+**Cần làm:**
+- [ ] Check activation cho paid session (BR03): mentee chưa kích hoạt chỉ đặt 0 đồng
+- [ ] Cho phép unactivated mentee đặt buổi học free (BR04)
+- [ ] Giới hạn 1 active booking tại 1 thời điểm (BR05)
+- [ ] Minimum advance booking time = 1h trước giờ học (BR10)
+- [ ] Session duration = giờ nguyên: 1h, 2h, 3h (BR11)
+- [ ] Schedule conflict: mentor không có 2 session cùng giờ
+- [ ] Validate mentor availability slot (mentee chỉ đặt trong khung giờ mentor mở)
 - [ ] Check mentor.isAvailable == true
-- [ ] Check mentor chi nhan activated mentee (BR06, P2)
+- [ ] Check mentor chỉ nhận activated mentee (BR06, P2)
 
 ---
 
 #### GAP-D: Session Completion - Dual Confirmation (BR31)
-**Business Rules lien quan:** BR31
-**Hien trang:**
-- Chi mentor goi `CompleteSessionUseCase` -> session COMPLETED hoac PAYMENT_PENDING
-- Mentee khong co quyen confirm
-- Khong co dispute flow
+**Business Rules liên quan:** BR31
+**Hiện trạng:**
+- Chỉ mentor gọi `CompleteSessionUseCase` -> session COMPLETED hoặc PAYMENT_PENDING
+- Mentee không có quyền confirm
+- Không có dispute flow
 
-**Can lam:**
-- [ ] Schema: them `mentorConfirmed`, `menteeConfirmed` vao LearningSession
+**Cần làm:**
+- [ ] Schema: thêm `mentorConfirmed`, `menteeConfirmed` vào LearningSession
 - [ ] Application: `ConfirmCompletionByMentorUseCase` (set mentorConfirmed = true)
 - [ ] Application: `ConfirmCompletionByMenteeUseCase` (set menteeConfirmed = true)
-- [ ] Logic: khi ca 2 confirmed -> chuyen COMPLETED hoac PAYMENT_PENDING
-- [ ] Logic: dispute - neu 1 ben tu choi, admin can thiep
-- [ ] API: sua `PATCH /api/sessions/[id]` them action "confirm_completion"
-- [ ] UI: nut confirm cho ca mentor va mentee sau buoi hoc
+- [ ] Logic: khi cả 2 confirmed -> chuyển COMPLETED hoặc PAYMENT_PENDING
+- [ ] Logic: dispute - nếu 1 bên từ chối, admin can thiệp
+- [ ] API: sửa `PATCH /api/sessions/[id]` thêm action "confirm_completion"
+- [ ] UI: nút confirm cho cả mentor và mentee sau buổi học
 
 ---
 
 #### GAP-E: Cancellation Rules (F17, BR34, BR35, BR36)
-**Business Rules lien quan:** BR34, BR35, BR36
-**Hien trang:**
-- `CancelSessionUseCase` cho ca 2 huy, nhung khong co time-based rules
-- `cancelledAt` duoc luu nhung khong dung de phan loai
+**Business Rules liên quan:** BR34, BR35, BR36
+**Hiện trạng:**
+- `CancelSessionUseCase` cho cả 2 hủy, nhưng không có time-based rules
+- `cancelledAt` được lưu nhưng không dùng để phân loại
 
-**Can lam:**
-- [ ] Schema: them `isLateCancellation` vao LearningSession
-- [ ] Schema: them `lateCancellationCount` vao User (hoac MentorProfile + MenteeProfile)
-- [ ] Logic: huy trong 30 phut truoc scheduledAt -> isLateCancellation = true (BR35)
-- [ ] Logic: tang lateCancellationCount khi late cancel
-- [ ] UI: hien thi so lan huy muon tren profile (BR36)
-- [ ] UI: canh bao khi user huy sat gio
+**Cần làm:**
+- [ ] Schema: thêm `isLateCancellation` vào LearningSession
+- [ ] Schema: thêm `lateCancellationCount` vào User (hoặc MentorProfile + MenteeProfile)
+- [ ] Logic: hủy trong 30 phút trước scheduledAt -> isLateCancellation = true (BR35)
+- [ ] Logic: tăng lateCancellationCount khi late cancel
+- [ ] UI: hiển thị số lần hủy muộn trên profile (BR36)
+- [ ] UI: cảnh báo khi user hủy sát giờ
 
 ---
 
 #### GAP-F: No-show Handling (BR37, BR38)
-**Business Rules lien quan:** BR37, BR38
-**Hien trang:** Hoan toan chua co
+**Business Rules liên quan:** BR37, BR38
+**Hiện trạng:** Hoàn toàn chưa có
 
-**Can lam:**
-- [ ] Value Object: them `NO_SHOW` vao SessionStatus enum
-- [ ] Application: `MarkNoShowUseCase` (mentor danh dau mentee no-show)
-- [ ] Logic: no-show -> KHONG phat sinh payment obligation (BR38)
-- [ ] Logic: theo OQ05.1 - van tao payment binh thuong de mentee phai thanh toan
-  - **Luu y:** OQ05.1 final decision va BR38 co mau thuan. BR38 noi "no payment", OQ05.1 noi "van tao payment". Can lam ro voi Founder.
-  - Huong xu ly: Theo OQ05.1 (Founder decision) - van phat sinh payment cho mentee
-- [ ] Schema: them `isNoShow`, `noShowMarkedBy` vao LearningSession
-- [ ] Schema: them `noShowCount` vao MenteeProfile
-- [ ] Mentor no-show (OQ05.2): mentor co the huy buoi hoc de mentee khong bi khoa
-- [ ] Mutual no-show (OQ05.3): van phat sinh payment cho mentee
+**Cần làm:**
+- [ ] Value Object: thêm `NO_SHOW` vào SessionStatus enum
+- [ ] Application: `MarkNoShowUseCase` (mentor đánh dấu mentee no-show)
+- [ ] Logic: no-show -> KHÔNG phát sinh payment obligation (BR38)
+- [ ] Logic: theo OQ05.1 - vẫn tạo payment bình thường để mentee phải thanh toán
+  - **Lưu ý:** OQ05.1 final decision và BR38 có mâu thuẫn. BR38 nói "no payment", OQ05.1 nói "vẫn tạo payment". Cần làm rõ với Founder.
+  - Hướng xử lý: Theo OQ05.1 (Founder decision) - vẫn phát sinh payment cho mentee
+- [ ] Schema: thêm `isNoShow`, `noShowMarkedBy` vào LearningSession
+- [ ] Schema: thêm `noShowCount` vào MenteeProfile
+- [ ] Mentor no-show (OQ05.2): mentor có thể hủy buổi học để mentee không bị khóa
+- [ ] Mutual no-show (OQ05.3): vẫn phát sinh payment cho mentee
 
 ---
 
-#### GAP-G: Session Fee Payment dung sai TN Account
-**Business Rules lien quan:** BR08, BR16
-**Hien trang:**
-- `InitiateSessionFeePaymentUseCase` (line 265-267) luon dung `DEFAULT_TN_ACTIVATION_ACCOUNT`
-- Mentor co fields `tnAccountNo`, `tnAccountName` nhung khong duoc su dung
+#### GAP-G: Session Fee Payment dùng sai TN Account
+**Business Rules liên quan:** BR08, BR16
+**Hiện trạng:**
+- `InitiateSessionFeePaymentUseCase` (line 265-267) luôn dùng `DEFAULT_TN_ACTIVATION_ACCOUNT`
+- Mentor có fields `tnAccountNo`, `tnAccountName` nhưng không được sử dụng
 
-**Can fix:**
-- [ ] Lay TN account tu MentorProfile (tnAccountNo, tnAccountName, tnCampaignKeyword)
-- [ ] Fallback ve default account chi khi mentor chua cau hinh
-- [ ] Sau khi co CharityAccount model: validate tnAccountNo thuoc danh sach admin approved
+**Cần fix:**
+- [ ] Lấy TN account từ MentorProfile (tnAccountNo, tnAccountName, tnCampaignKeyword)
+- [ ] Fallback về default account chỉ khi mentor chưa cấu hình
+- [ ] Sau khi có CharityAccount model: validate tnAccountNo thuộc danh sách admin approved
 
 ---
 
 #### GAP-H: Payment 24h Deadline Enforcement (BR32)
-**Business Rules lien quan:** BR32
-**Hien trang:**
-- `expiresAt` duoc set (24h) nhung chi check khi user goi verify
-- Khong co background job
+**Business Rules liên quan:** BR32
+**Hiện trạng:**
+- `expiresAt` được set (24h) nhưng chỉ check khi user gọi verify
+- Không có background job
 
-**Can lam:**
+**Cần làm:**
 - [ ] Cron job / API route scheduled: check expired payments, mark FAILED
-- [ ] Hoac: check expiry khi mentee truy cap dashboard / dat lich moi
-- [ ] Logic: qua 24h -> mark FAILED -> mentee chua du dieu kien dat lich moi
+- [ ] Hoặc: check expiry khi mentee truy cập dashboard / đặt lịch mới
+- [ ] Logic: quá 24h -> mark FAILED -> mentee chưa đủ điều kiện đặt lịch mới
 
 ---
 
 #### GAP-I: Charity Account Management (BR19, BR20, BR21)
-**Business Rules lien quan:** BR19, BR20, BR21, BR28
-**Hien trang:** TN account hardcoded trong env vars
+**Business Rules liên quan:** BR19, BR20, BR21, BR28
+**Hiện trạng:** TN account hardcoded trong env vars
 
-**Can lam:**
+**Cần làm:**
 - [ ] Schema: model `CharityAccount`
 - [ ] Domain: `ICharityAccountRepository` interface
 - [ ] Infrastructure: `PrismaCharityAccountRepository`
 - [ ] Application: `CreateCharityAccountUseCase`
 - [ ] Application: `ListCharityAccountsUseCase`
 - [ ] Application: `UpdateCharityAccountUseCase`
-- [ ] Application: `DeactivateCharityAccountUseCase` (soft delete cho account da su dung - BR21)
-- [ ] Application: `DeleteCharityAccountUseCase` (hard delete chi khi chua su dung - BR20)
+- [ ] Application: `DeactivateCharityAccountUseCase` (soft delete cho account đã sử dụng - BR21)
+- [ ] Application: `DeleteCharityAccountUseCase` (hard delete chỉ khi chưa sử dụng - BR20)
 - [ ] API: `GET/POST/PATCH/DELETE /api/admin/charity-accounts`
 - [ ] UI: Admin charity account manager component
-- [ ] Default activation account co the cau hinh (BR28)
+- [ ] Default activation account có thể cấu hình (BR28)
 
 ---
 
-#### GAP-J: Admin Core Configuration (F26 mo rong)
-**Business Rules lien quan:** BR28
-**Hien trang:** Activation amount = 10000 hardcoded, TN account trong env
+#### GAP-J: Admin Core Configuration (F26 mở rộng)
+**Business Rules liên quan:** BR28
+**Hiện trạng:** Activation amount = 10000 hardcoded, TN account trong env
 
-**Can lam:**
+**Cần làm:**
 - [ ] Schema: model `SystemConfig` (key-value store)
-- [ ] Keys can thiet: `activation_amount`, `default_charity_account_id`, `min_booking_advance_hours`, `late_cancel_threshold_minutes`, `payment_expiry_hours`
+- [ ] Keys cần thiết: `activation_amount`, `default_charity_account_id`, `min_booking_advance_hours`, `late_cancel_threshold_minutes`, `payment_expiry_hours`
 - [ ] Application: `GetSystemConfigUseCase`, `UpdateSystemConfigUseCase`
 - [ ] API: `GET/PATCH /api/admin/config`
 - [ ] UI: Admin system config panel
-- [ ] Thay the tat ca hardcoded constants bang configurable values
+- [ ] Thay thế tất cả hardcoded constants bằng configurable values
 
 ---
 
 #### GAP-K: Teaching Slot Creation (F14)
-**Hien trang:** AvailabilityManager quan ly weekly schedule (recurring), chua co don le
+**Hiện trạng:** AvailabilityManager quản lý weekly schedule (recurring), chưa có đơn lẻ
 
-**Can lam:**
-- [ ] Application: `CreateTeachingSlotUseCase` (buoi day don le)
-- [ ] Logic: support lich lap theo ngay/tuan
-- [ ] Mentor view: calendar UI de tao va quan ly slots
-- [ ] Mentee view: hien thi slots kha dung khi booking
-
----
-
-#### GAP-L: Google Meet Link - Mentor tu nhap (F18, BR39)
-**Hien trang:** `GoogleMeetService` la STUB tao link random
-
-**Can lam (da chot: mentor tu nhap):**
-- [ ] Sua `ConfirmSessionUseCase`: nhan `meetLink` tu mentor input
-- [ ] Sua `SessionCard.tsx`: them input field cho mentor nhap Google Meet link khi confirm
-- [ ] Validation: URL phai la `https://meet.google.com/*`
-- [ ] Xoa hoac deprecate `GoogleMeetService` stub
-- [ ] Tu dong hien thi Meet link cho mentee sau khi mentor confirm
+**Cần làm:**
+- [ ] Application: `CreateTeachingSlotUseCase` (buổi dạy đơn lẻ)
+- [ ] Logic: support lịch lặp theo ngày/tuần
+- [ ] Mentor view: calendar UI để tạo và quản lý slots
+- [ ] Mentee view: hiển thị slots khả dụng khi booking
 
 ---
 
-### 3.2 P2 - Important (Nen co cho MVP)
+#### GAP-L: Google Meet Link - Mentor tự nhập (F18, BR39)
+**Hiện trạng:** `GoogleMeetService` là STUB tạo link random
+
+**Cần làm (đã chốt: mentor tự nhập):**
+- [ ] Sửa `ConfirmSessionUseCase`: nhận `meetLink` từ mentor input
+- [ ] Sửa `SessionCard.tsx`: thêm input field cho mentor nhập Google Meet link khi confirm
+- [ ] Validation: URL phải là `https://meet.google.com/*`
+- [ ] Xóa hoặc deprecate `GoogleMeetService` stub
+- [ ] Tự động hiển thị Meet link cho mentee sau khi mentor confirm
+
+---
+
+### 3.2 P2 - Important (Nên có cho MVP)
 
 #### GAP-M: Mentee Learning Statistics (F5)
 - [ ] Application: `GetMenteeLearningStatsUseCase`
-- [ ] Query: tong sessions, tong gio hoc, tong donated, avg rating given
+- [ ] Query: tổng sessions, tổng giờ học, tổng donated, avg rating given
 - [ ] API: `GET /api/mentee/stats`
-- [ ] UI: thay the hardcoded stats tren mentee dashboard
+- [ ] UI: thay thế hardcoded stats trên mentee dashboard
 
 #### GAP-N: Mentor Teaching Statistics (F6)
 - [ ] Application: `GetMentorTeachingStatsUseCase`
-- [ ] Query: tong sessions, tong mentees, tong donations nhan, tong gio day
+- [ ] Query: tổng sessions, tổng mentees, tổng donations nhận, tổng giờ dạy
 - [ ] API: `GET /api/mentor/stats`
-- [ ] UI: thay the hardcoded stats tren mentor dashboard
+- [ ] UI: thay thế hardcoded stats trên mentor dashboard
 
 #### GAP-O: Review & Report Mentor (F25)
 - [ ] Schema: model `Report`
 - [ ] Application: `ReportMentorUseCase`
-- [ ] Gop review + report trong 1 UI flow (BR25)
-- [ ] Admin: xem va xu ly reports (BR27)
+- [ ] Gộp review + report trong 1 UI flow (BR25)
+- [ ] Admin: xem và xử lý reports (BR27)
 
 #### GAP-P: Late Cancellation Display on Profile (BR36)
-- [ ] UI: hien thi so lan huy muon tren mentor/mentee profile
-- [ ] Public profile: badge hoac counter
+- [ ] UI: hiển thị số lần hủy muộn trên mentor/mentee profile
+- [ ] Public profile: badge hoặc counter
 
 ---
 
-## 4. Thong ke Gaps
+## 4. Thống kê Gaps
 
-| Priority | So luong gaps | Estimated effort |
+| Priority | Số lượng gaps | Estimated effort |
 |----------|-------------|-----------------|
-| P1 Critical | 12 gaps (A-L) | ~15-20 ngay dev |
-| P2 Important | 4 gaps (M-P) | ~5-7 ngay dev |
-| **Tong** | **16 gaps** | **~20-27 ngay dev** |
+| P1 Critical | 12 gaps (A-L) | ~15-20 ngày dev |
+| P2 Important | 4 gaps (M-P) | ~5-7 ngày dev |
+| **Tổng** | **16 gaps** | **~20-27 ngày dev** |
 
 ---
 
-## 5. Luu y quan trong
+## 5. Lưu ý quan trọng
 
-### 5.1 Mau thuan can lam ro voi Founder
-- **OQ05.1 vs BR38:** BR38 noi no-show khong phat sinh payment, nhung OQ05.1 Founder quyet dinh van tao payment. Can chot 1 huong duy nhat.
+### 5.1 Mâu thuẫn cần làm rõ với Founder
+- **OQ05.1 vs BR38:** BR38 nói no-show không phát sinh payment, nhưng OQ05.1 Founder quyết định vẫn tạo payment. Cần chốt 1 hướng duy nhất.
 
 ### 5.2 Risks
-- **Google Meet stub:** Hien tai link la random, khong phai real meeting. Can chuyen sang mentor tu nhap.
-- **Payment routing:** Session fee dang chuyen ve sai TN account (platform account thay vi mentor's charity account). Day la bug nghiem trong can fix som.
-- **No background jobs:** Khong co cron job cho payment expiry, session auto-completion, etc. Can phuong an thay the (API-triggered checks).
+- **Google Meet stub:** Hiện tại link là random, không phải real meeting. Cần chuyển sang mentor tự nhập.
+- **Payment routing:** Session fee đang chuyển về sai TN account (platform account thay vì mentor's charity account). Đây là bug nghiêm trọng cần fix sớm.
+- **No background jobs:** Không có cron job cho payment expiry, session auto-completion, etc. Cần phương án thay thế (API-triggered checks).
 
 ### 5.3 Technical Debt
-- Mentor dashboard va mentee dashboard dung hardcoded mock data
-- Admin stats "change" text (+12 tuan nay) la hardcoded
-- Mobile sidebar toggle chua wire logic
-- Notification bell UI co nhung chua co logic
-- Admin stats page (`/dashboard/admin/stats`) va mentee impact page (`/dashboard/mentee/impact`) chua co (dead links trong sidebar)
+- Mentor dashboard và mentee dashboard dùng hardcoded mock data
+- Admin stats "change" text (+12 tuần này) là hardcoded
+- Mobile sidebar toggle chưa wire logic
+- Notification bell UI có nhưng chưa có logic
+- Admin stats page (`/dashboard/admin/stats`) và mentee impact page (`/dashboard/mentee/impact`) chưa có (dead links trong sidebar)

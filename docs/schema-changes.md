@@ -1,51 +1,51 @@
-# HocTuThien - Schema Changes
+# HọcTừThiện - Thay đổi Lược đồ (Schema Changes)
 
-**Project:** HocTuThien
-**Date:** 27/03/2026
-**Version:** v0.1
-**File:** `prisma/schema.prisma`
+**Dự án:** HọcTừThiện
+**Ngày:** 27/03/2026
+**Phiên bản:** v0.1
+**Tệp:** `prisma/schema.prisma`
 
 ---
 
-## 1. Tong quan
+## 1. Tổng quan
 
-### Models moi (3)
-| Model | Muc dich | Lien quan BR |
+### Các Model mới (3)
+| Model | Mục đích | Liên quan BR |
 |-------|---------|-------------|
-| `CharityAccount` | Quan ly danh sach tai khoan thien nguyen | BR19, BR20, BR21 |
-| `SystemConfig` | Cau hinh he thong (key-value) | BR28 |
-| `Report` | Bao cao vi pham | BR25, BR27 |
+| `CharityAccount` | Quản lý danh sách tài khoản thiện nguyện | BR19, BR20, BR21 |
+| `SystemConfig` | Cấu hình hệ thống (key-value) | BR28 |
+| `Report` | Báo cáo vi phạm | BR25, BR27 |
 
-### Models sua doi (4)
-| Model | Thay doi | Lien quan BR |
+### Các Model sửa đổi (4)
+| Model | Thay đổi | Liên quan BR |
 |-------|---------|-------------|
-| `LearningSession` | Them dual confirmation, late cancel, no-show fields | BR31, BR35, BR37 |
-| `User` | Them lateCancellationCount | BR36 |
-| `MenteeProfile` | Them noShowCount | BR37 |
-| `MentorProfile` | Them charityAccountId, onlyActivatedMentee | BR06, BR08 |
+| `LearningSession` | Thêm các trường xác nhận kép (dual confirmation), hủy muộn (late cancel), vắng mặt (no-show) | BR31, BR35, BR37 |
+| `User` | Thêm lateCancellationCount | BR36 |
+| `MenteeProfile` | Thêm noShowCount | BR37 |
+| `MentorProfile` | Thêm charityAccountId, onlyActivatedMentee | BR06, BR08 |
 
 ### Enums (Value Objects)
-| Enum | Thay doi |
+| Enum | Thay đổi |
 |------|---------|
-| `SessionStatus` | Them `NO_SHOW` |
+| `SessionStatus` | Thêm `NO_SHOW` |
 
 ---
 
-## 2. Models MOI - Chi tiet Prisma Schema
+## 2. Các Model MỚI - Chi tiết Prisma Schema
 
 ### 2.1 CharityAccount
 
 ```prisma
 model CharityAccount {
   id                String    @id @default(cuid())
-  name              String                          // Ten tai khoan / to chuc
-  accountNo         String    @unique               // So tai khoan TN App (vd: "2000")
-  bankName          String    @default("MB Bank")   // Ten ngan hang
-  campaignKeyword   String?                         // Tu khoa chien dich (optional)
-  description       String?                         // Mo ta them
-  isActive          Boolean   @default(true)        // Con hoat dong?
-  isDefault         Boolean   @default(false)       // La tai khoan mac dinh cho activation?
-  usageCount        Int       @default(0)           // So lan su dung (denormalized counter)
+  name              String                          // Tên tài khoản / tổ chức
+  accountNo         String    @unique               // Số tài khoản TN App (vd: "2000")
+  bankName          String    @default("MB Bank")   // Tên ngân hàng
+  campaignKeyword   String?                         // Từ khóa chiến dịch (tùy chọn)
+  description       String?                         // Mô tả thêm
+  isActive          Boolean   @default(true)        // Còn hoạt động?
+  isDefault         Boolean   @default(false)       // Là tài khoản mặc định cho activation?
+  usageCount        Int       @default(0)           // Số lần sử dụng (denormalized counter)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   createdBy         String?
@@ -53,23 +53,23 @@ model CharityAccount {
   deletedAt         DateTime?
 
   // Relations
-  mentorProfiles    MentorProfile[]                 // Mentors su dung account nay
+  mentorProfiles    MentorProfile[]                 // Các mentor sử dụng account này
 
   @@index([isActive, isDeleted])
 }
 ```
 
-**Giai thich:**
-- `accountNo` la unique vi moi TN App account chi co 1 entry
-- `isDefault` chi 1 record co the la true tai 1 thoi diem (enforce trong use case)
-- `usageCount` la denormalized counter de check nhanh truoc khi delete (BR20)
-- Khi `isDeleted = true` hoac `isActive = false` -> khong cho mentor chon nua (BR21)
+**Giải thích:**
+- `accountNo` là unique vì mỗi tài khoản TN App chỉ có 1 bản ghi
+- `isDefault` chỉ 1 bản ghi có thể là true tại 1 thời điểm (bắt buộc trong use case)
+- `usageCount` là bộ đếm phi chuẩn hóa (denormalized counter) để kiểm tra nhanh trước khi xóa (BR20)
+- Khi `isDeleted = true` hoặc `isActive = false` -> không cho mentor chọn nữa (BR21)
 
-**Seed data:**
+**Dữ liệu mẫu (Seed data):**
 ```typescript
-// Default activation account
+// Tài khoản kích hoạt mặc định
 {
-  name: "Quy Thien Nguyen",
+  name: "Quỹ Thiện Nguyện",
   accountNo: "2000",
   bankName: "MB Bank",
   isActive: true,
@@ -85,8 +85,8 @@ model CharityAccount {
 model SystemConfig {
   id          String    @id @default(cuid())
   key         String    @unique                  // Config key (vd: "activation_amount")
-  value       String                             // Config value (string, parse trong code)
-  description String?                            // Mo ta cho admin hieu
+  value       String                             // Config value (chuỗi, parse trong code)
+  description String?                            // Mô tả cho admin hiểu
   updatedAt   DateTime  @updatedAt
   updatedBy   String?
 
@@ -94,25 +94,25 @@ model SystemConfig {
 }
 ```
 
-**Config keys mac dinh:**
+**Các config key mặc định:**
 
-| Key | Default Value | Type | Mo ta |
+| Key | Giá trị mặc định | Kiểu | Mô tả |
 |-----|--------------|------|-------|
-| `activation_amount` | `"10000"` | number | So tien kich hoat tai khoan (VND) |
-| `default_charity_account_id` | `"{cuid}"` | string | ID CharityAccount mac dinh |
-| `min_booking_advance_hours` | `"1"` | number | So gio toi thieu dat truoc |
-| `late_cancel_threshold_minutes` | `"30"` | number | Nguong huy muon (phut) |
-| `payment_expiry_hours` | `"24"` | number | Thoi han thanh toan (gio) |
-| `max_active_bookings` | `"1"` | number | So booking active toi da / mentee |
+| `activation_amount` | `"10000"` | number | Số tiền kích hoạt tài khoản (VNĐ) |
+| `default_charity_account_id` | `"{cuid}"` | string | ID CharityAccount mặc định |
+| `min_booking_advance_hours` | `"1"` | number | Số giờ tối thiểu đặt trước |
+| `late_cancel_threshold_minutes` | `"30"` | number | Ngưỡng hủy muộn (phút) |
+| `payment_expiry_hours` | `"24"` | number | Thời hạn thanh toán (giờ) |
+| `max_active_bookings` | `"1"` | number | Số booking active tối đa / mentee |
 
-**Seed data:**
+**Dữ liệu mẫu (Seed data):**
 ```typescript
 const defaultConfigs = [
-  { key: "activation_amount", value: "10000", description: "So tien kich hoat tai khoan (VND)" },
-  { key: "min_booking_advance_hours", value: "1", description: "So gio toi thieu dat lich truoc" },
-  { key: "late_cancel_threshold_minutes", value: "30", description: "Nguong huy muon (phut truoc gio bat dau)" },
-  { key: "payment_expiry_hours", value: "24", description: "Thoi han thanh toan sau buoi hoc (gio)" },
-  { key: "max_active_bookings", value: "1", description: "So booking dang hoat dong toi da moi mentee" },
+  { key: "activation_amount", value: "10000", description: "Số tiền kích hoạt tài khoản (VNĐ)" },
+  { key: "min_booking_advance_hours", value: "1", description: "Số giờ tối thiểu đặt lịch trước" },
+  { key: "late_cancel_threshold_minutes", value: "30", description: "Ngưỡng hủy muộn (phút trước giờ bắt đầu)" },
+  { key: "payment_expiry_hours", value: "24", description: "Thời hạn thanh toán sau buổi học (giờ)" },
+  { key: "max_active_bookings", value: "1", description: "Số booking đang hoạt động tối đa mỗi mentee" },
 ];
 ```
 
@@ -123,15 +123,15 @@ const defaultConfigs = [
 ```prisma
 model Report {
   id              String    @id @default(cuid())
-  reporterId      String                          // User bao cao
-  reportedUserId  String                          // User bi bao cao
-  sessionId       String?                         // Buoi hoc lien quan (optional)
-  reason          String                          // Ly do (enum-like: INAPPROPRIATE, MISCONDUCT, NO_SHOW_DISPUTE, OTHER)
-  description     String                          // Mo ta chi tiet
+  reporterId      String                          // Người báo cáo
+  reportedUserId  String                          // Người bị báo cáo
+  sessionId       String?                         // Buổi học liên quan (tùy chọn)
+  reason          String                          // Lý do (kiểu enum: INAPPROPRIATE, MISCONDUCT, NO_SHOW_DISPUTE, OTHER)
+  description     String                          // Mô tả chi tiết
   status          String    @default("PENDING")   // PENDING, REVIEWED, RESOLVED, DISMISSED
-  reviewedBy      String?                         // Admin xu ly
+  reviewedBy      String?                         // Admin xử lý
   reviewedAt      DateTime?
-  reviewNote      String?                         // Ghi chu cua admin
+  reviewNote      String?                         // Ghi chú của admin
   createdAt       DateTime  @default(now())
 
   // Relations
@@ -144,57 +144,57 @@ model Report {
 }
 ```
 
-**Giai thich:**
-- `reason` la string, su dung enum-like values de de mo rong
-- `status` flow: PENDING -> REVIEWED -> RESOLVED hoac DISMISSED
-- Lien ket voi session de admin co context
+**Giải thích:**
+- `reason` là chuỗi, sử dụng các giá trị kiểu enum để dễ mở rộng
+- Luồng `status`: PENDING -> REVIEWED -> RESOLVED hoặc DISMISSED
+- Liên kết với session để admin có ngữ cảnh (context)
 
 ---
 
-## 3. Models SUA DOI - Chi tiet
+## 3. Các Model SỬA ĐỔI - Chi tiết
 
-### 3.1 LearningSession - Them fields
+### 3.1 LearningSession - Thêm trường
 
 ```prisma
 model LearningSession {
   // ... existing fields ...
 
-  // MOI - Dual Confirmation (BR31)
-  mentorConfirmed    Boolean   @default(false)    // Mentor xac nhan buoi hoc hoan tat
-  menteeConfirmed    Boolean   @default(false)    // Mentee xac nhan buoi hoc hoan tat
+  // MỚI - Xác nhận kép (BR31)
+  mentorConfirmed    Boolean   @default(false)    // Mentor xác nhận buổi học hoàn tất
+  menteeConfirmed    Boolean   @default(false)    // Mentee xác nhận buổi học hoàn tất
 
-  // MOI - Late Cancellation (BR35)
-  isLateCancellation Boolean   @default(false)    // Co phai huy muon khong
+  // MỚI - Hủy muộn (BR35)
+  isLateCancellation Boolean   @default(false)    // Có phải hủy muộn không
 
-  // MOI - No-show (BR37)
-  isNoShow           Boolean   @default(false)    // Mentee co vang mat khong
-  noShowMarkedBy     String?                      // Ai danh dau no-show (mentor userId)
+  // MỚI - Vắng mặt (BR37)
+  isNoShow           Boolean   @default(false)    // Mentee có vắng mặt không
+  noShowMarkedBy     String?                      // Ai đánh dấu vắng mặt (mentor userId)
 
   // ... existing relations ...
 
-  // MOI - Report relation
+  // MỚI - Report relation
   reports            Report[]
 }
 ```
 
-**Migration impact:**
-- Tat ca fields moi deu co default value -> khong anh huong data cu
-- Khong can data migration cho existing records
+**Tác động của Migration:**
+- Tất cả các trường mới đều có giá trị mặc định -> không ảnh hưởng dữ liệu cũ
+- Không cần migrate dữ liệu cho các bản ghi hiện tại
 
 ---
 
-### 3.2 User - Them fields
+### 3.2 User - Thêm trường
 
 ```prisma
 model User {
   // ... existing fields ...
 
-  // MOI - Late Cancellation tracking (BR36)
+  // MỚI - Theo dõi hủy muộn (BR36)
   lateCancellationCount  Int   @default(0)
 
   // ... existing relations ...
 
-  // MOI - Report relations
+  // MỚI - Report relations
   reportsMade        Report[]  @relation("ReportsMade")
   reportsReceived    Report[]  @relation("ReportsReceived")
 }
@@ -202,49 +202,49 @@ model User {
 
 ---
 
-### 3.3 MenteeProfile - Them fields
+### 3.3 MenteeProfile - Thêm trường
 
 ```prisma
 model MenteeProfile {
   // ... existing fields ...
 
-  // MOI - No-show tracking
+  // MỚI - Theo dõi vắng mặt
   noShowCount  Int  @default(0)
 }
 ```
 
 ---
 
-### 3.4 MentorProfile - Them fields
+### 3.4 MentorProfile - Thêm trường
 
 ```prisma
 model MentorProfile {
   // ... existing fields ...
 
-  // MOI - Charity Account (BR08)
+  // MỚI - Tài khoản thiện nguyện (BR08)
   charityAccountId   String?
   charityAccount     CharityAccount?  @relation(fields: [charityAccountId], references: [id])
 
-  // MOI - Mentor preference (BR06)
-  onlyActivatedMentee  Boolean  @default(false)   // Chi nhan mentee da kich hoat
+  // MỚI - Tùy chọn của mentor (BR06)
+  onlyActivatedMentee  Boolean  @default(false)   // Chỉ nhận mentee đã kích hoạt
 
   // ... existing relations ...
 }
 ```
 
-**Giai thich:**
-- `charityAccountId` thay the `tnAccountNo` hien tai? KHONG - giu ca 2:
-  - `charityAccountId` la FK den CharityAccount (validated)
-  - `tnAccountNo`, `tnAccountName` van giu de backward compatible
-  - Logic: uu tien charityAccountId, fallback ve tnAccountNo
-- `onlyActivatedMentee`: mentor co the bat/tat tuy chon nay (BR06, P2)
+**Giải thích:**
+- `charityAccountId` thay thế `tnAccountNo` hiện tại? KHÔNG - giữ cả 2:
+  - `charityAccountId` là khóa ngoại (FK) đến CharityAccount (đã xác thực)
+  - `tnAccountNo`, `tnAccountName` vẫn giữ lại để tương thích ngược (backward compatible)
+  - Logic: ưu tiên charityAccountId, dự phòng (fallback) về tnAccountNo
+- `onlyActivatedMentee`: mentor có thể bật/tắt tùy chọn này (BR06, P2)
 
 ---
 
-## 4. Full Schema Diff
+## 4. Khác biệt toàn bộ Lược đồ (Full Schema Diff)
 
 ```diff
-// === MODELS MOI ===
+// === CÁC MODEL MỚI ===
 
 + model CharityAccount {
 +   id                String    @id @default(cuid())
@@ -294,7 +294,7 @@ model MentorProfile {
 +   @@index([reportedUserId])
 + }
 
-// === MODELS SUA DOI ===
+// === CÁC MODEL SỬA ĐỔI ===
 
   model User {
     // ... existing ...
@@ -328,23 +328,23 @@ model MentorProfile {
 
 ---
 
-## 5. Migration Plan
+## 5. Kế hoạch Migration
 
-### Step 1: Tao migration file
+### Bước 1: Tạo file migration
 ```bash
 npx prisma migrate dev --name add_charity_config_report_models
 ```
 
-### Step 2: Seed data moi
+### Bước 2: Thêm dữ liệu mẫu mới (Seed data)
 ```typescript
-// prisma/seed.ts - them:
+// prisma/seed.ts - thêm:
 
-// 1. Default Charity Account
+// 1. Tài khoản thiện nguyện mặc định
 const defaultCharity = await prisma.charityAccount.upsert({
   where: { accountNo: "2000" },
   update: {},
   create: {
-    name: "Quy Thien Nguyen",
+    name: "Quỹ Thiện Nguyện",
     accountNo: "2000",
     bankName: "MB Bank",
     isActive: true,
@@ -352,13 +352,13 @@ const defaultCharity = await prisma.charityAccount.upsert({
   },
 });
 
-// 2. System Configs
+// 2. Cấu hình hệ thống (System Configs)
 const configs = [
-  { key: "activation_amount", value: "10000", description: "So tien kich hoat tai khoan (VND)" },
-  { key: "min_booking_advance_hours", value: "1", description: "So gio toi thieu dat lich truoc" },
-  { key: "late_cancel_threshold_minutes", value: "30", description: "Nguong huy muon (phut)" },
-  { key: "payment_expiry_hours", value: "24", description: "Thoi han thanh toan (gio)" },
-  { key: "max_active_bookings", value: "1", description: "So booking active toi da / mentee" },
+  { key: "activation_amount", value: "10000", description: "Số tiền kích hoạt tài khoản (VNĐ)" },
+  { key: "min_booking_advance_hours", value: "1", description: "Số giờ tối thiểu đặt lịch trước" },
+  { key: "late_cancel_threshold_minutes", value: "30", description: "Ngưỡng hủy muộn (phút)" },
+  { key: "payment_expiry_hours", value: "24", description: "Thời hạn thanh toán (giờ)" },
+  { key: "max_active_bookings", value: "1", description: "Số booking active tối đa / mentee" },
 ];
 
 for (const config of configs) {
@@ -370,54 +370,54 @@ for (const config of configs) {
 }
 ```
 
-### Step 3: Verify migration
+### Bước 3: Kiểm tra (Verify) migration
 ```bash
 npx prisma studio
-# Kiem tra cac tables moi da duoc tao
-# Kiem tra cac columns moi tren tables cu
+# Kiểm tra các bảng (tables) mới đã được tạo
+# Kiểm tra các cột (columns) mới trên các bảng cũ
 ```
 
 ---
 
-## 6. Index Recommendations
+## 6. Đề xuất Index
 
 ```prisma
-// Da co:
+// Đã có:
 // User.email @@unique
 // Payment.transactionCode @@unique
 // MentorTeachingField @@unique([mentorProfileId, teachingFieldId])
 
-// MOI:
+// MỚI:
 // CharityAccount @@index([isActive, isDeleted])
-// SystemConfig @@index([key])  -- tuy nhien @unique da tu tao index
+// SystemConfig @@index([key])  -- tuy nhiên @unique đã tự tạo index
 // Report @@index([status])
 // Report @@index([reportedUserId])
 
-// DE XUAT THEM:
+// ĐỀ XUẤT THÊM:
 // LearningSession @@index([menteeId, status])  -- cho countActiveByMenteeId
-// LearningSession @@index([mentorId, scheduledAt])  -- cho conflict detection
+// LearningSession @@index([mentorId, scheduledAt])  -- cho phát hiện xung đột (conflict detection)
 // Payment @@index([userId, type, status])  -- cho findPendingByUserId
 ```
 
 ---
 
-## 7. Data Integrity Notes
+## 7. Ghi chú về tính toàn vẹn dữ liệu (Data Integrity Notes)
 
-1. **CharityAccount.usageCount** la denormalized counter:
-   - Tang khi mentor chon account cho profile
-   - Tang khi payment su dung account
-   - Dung de quick-check truoc khi delete
-   - Neu sai lech -> co the recalculate tu MentorProfile + Payment tables
+1. **CharityAccount.usageCount** là bộ đếm phi chuẩn hóa (denormalized counter):
+   - Tăng khi mentor chọn account cho profile
+   - Tăng khi thanh toán (payment) sử dụng account
+   - Dùng để kiểm tra nhanh trước khi xóa
+   - Nếu sai lệch -> có thể tính toán lại (recalculate) từ các bảng MentorProfile + Payment
 
-2. **User.lateCancellationCount** la denormalized counter:
-   - Tang khi huy muon (isLateCancellation = true)
-   - Co the recalculate tu LearningSession WHERE cancelledBy = userId AND isLateCancellation = true
+2. **User.lateCancellationCount** là bộ đếm phi chuẩn hóa:
+   - Tăng khi hủy muộn (isLateCancellation = true)
+   - Có thể tính toán lại từ LearningSession WHERE cancelledBy = userId AND isLateCancellation = true
 
-3. **MenteeProfile.noShowCount** la denormalized counter:
-   - Tang khi bi danh dau no-show
-   - Co the recalculate tu LearningSession WHERE menteeId = userId AND isNoShow = true
+3. **MenteeProfile.noShowCount** là bộ đếm phi chuẩn hóa:
+   - Tăng khi bị đánh dấu vắng mặt (no-show)
+   - Có thể tính toán lại từ LearningSession WHERE menteeId = userId AND isNoShow = true
 
-4. **MentorProfile.charityAccountId** vs `tnAccountNo`:
-   - `charityAccountId` la cach moi (validated against CharityAccount)
-   - `tnAccountNo` van giu lai cho backward compatibility
-   - Payment logic: uu tien charityAccount -> fallback tnAccountNo -> fallback default
+4. **MentorProfile.charityAccountId** so với `tnAccountNo`:
+   - `charityAccountId` là cách mới (đã xác thực thông qua bảng CharityAccount)
+   - `tnAccountNo` vẫn giữ lại để tương thích ngược (backward compatibility)
+   - Logic thanh toán (Payment): ưu tiên charityAccount -> dự phòng tnAccountNo -> dự phòng mặc định (default)

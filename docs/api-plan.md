@@ -1,25 +1,25 @@
-# HocTuThien - API Endpoints Plan
+# HocTuThien - Kế hoạch API Endpoints
 
-**Project:** HocTuThien
-**Date:** 27/03/2026
-**Version:** v0.1
+**Dự án:** Học Từ Thiện (HocTuThien)
+**Ngày:** 27/03/2026
+**Phiên bản:** v0.1
 
 ---
 
-## 1. API Endpoints Hien Tai
+## 1. API Endpoints Hiện Tại
 
-### Auth
+### Xác thực (Auth)
 | Method | Endpoint | Actor | Status |
 |--------|----------|-------|--------|
 | GET/POST | `/api/auth/[...nextauth]` | Public | DONE |
 
-### Users
+### Người dùng (Users)
 | Method | Endpoint | Actor | Status |
 |--------|----------|-------|--------|
 | GET | `/api/users/profile` | Authenticated | DONE |
 | PATCH | `/api/users/profile` | Authenticated | DONE |
 
-### Admin
+### Quản trị viên (Admin)
 | Method | Endpoint | Actor | Status |
 |--------|----------|-------|--------|
 | GET | `/api/admin/users/role` | Admin | DONE |
@@ -30,31 +30,31 @@
 | PATCH | `/api/admin/fields/[id]` | Admin | DONE |
 | DELETE | `/api/admin/fields/[id]` | Admin | DONE |
 
-### Mentor
+### Người hướng dẫn (Mentor)
 | Method | Endpoint | Actor | Status |
 |--------|----------|-------|--------|
 | GET | `/api/mentor/profile` | Mentor | DONE |
-| PUT | `/api/mentor/profile` | Mentor | DONE (can refactor qua use case) |
+| PUT | `/api/mentor/profile` | Mentor | DONE (cần refactor qua use case) |
 | GET | `/api/mentor/availability` | Mentor | DONE |
 | POST | `/api/mentor/availability` | Mentor | DONE |
-| POST | `/api/mentor/apply` | Mentee | DONE (STUB - can fix) |
+| POST | `/api/mentor/apply` | Mentee | DONE (STUB - cần fix) |
 
-### Sessions
+### Buổi học (Sessions)
 | Method | Endpoint | Actor | Status |
 |--------|----------|-------|--------|
 | GET | `/api/sessions` | Authenticated | DONE |
-| POST | `/api/sessions` | Mentee | DONE (can them validations) |
+| POST | `/api/sessions` | Mentee | DONE (cần thêm validations) |
 | GET | `/api/sessions/[id]` | Authenticated | DONE |
-| PATCH | `/api/sessions/[id]` | Authenticated | DONE (can refactor) |
+| PATCH | `/api/sessions/[id]` | Authenticated | DONE (cần refactor) |
 | POST | `/api/sessions/[id]/payment` | Mentee | DONE |
 
-### Payments
+### Thanh toán (Payments)
 | Method | Endpoint | Actor | Status |
 |--------|----------|-------|--------|
-| POST | `/api/payments/session-fee` | Mentee | DONE (bug: sai TN account) |
+| POST | `/api/payments/session-fee` | Mentee | DONE (bug: sai tài khoản thiện nguyện) |
 | POST | `/api/payments/verify` | Authenticated | DONE |
 
-### Other
+### Khác (Other)
 | Method | Endpoint | Actor | Status |
 |--------|----------|-------|--------|
 | GET | `/api/leaderboard` | Authenticated | DONE |
@@ -62,24 +62,24 @@
 
 ---
 
-## 2. API Endpoints MOI Can Them
+## 2. API Endpoints MỚI Cần Thêm
 
-### 2.1 Mentor Application (P1)
+### 2.1 Đăng ký Mentor (Mentor Application) (P1)
 
-#### `POST /api/mentor/apply` (SUA LAI)
-**Muc dich:** Mentee gui don dang ky lam mentor
-**Actor:** Mentee (ACTIVE status)
-**File:** `src/app/api/mentor/apply/route.ts` (sua lai)
+#### `POST /api/mentor/apply` (SỬA LẠI)
+**Mục đích:** Mentee gửi đơn đăng ký làm mentor
+**Actor:** Mentee (trạng thái ACTIVE)
+**File:** `src/app/api/mentor/apply/route.ts` (sửa lại)
 
 **Request Body:**
 ```json
 {
-  "motivation": "string (required, min 50 chars)",
-  "experience": "string (required, min 50 chars)",
-  "linkedinUrl": "string (optional, URL format)",
-  "contactZalo": "string (optional)",
-  "contactFacebook": "string (optional)",
-  "contactEmail": "string (optional)"
+  "motivation": "string (bắt buộc, tối thiểu 50 ký tự)",
+  "experience": "string (bắt buộc, tối thiểu 50 ký tự)",
+  "linkedinUrl": "string (tùy chọn, định dạng URL)",
+  "contactZalo": "string (tùy chọn)",
+  "contactFacebook": "string (tùy chọn)",
+  "contactEmail": "string (tùy chọn)"
 }
 ```
 
@@ -98,20 +98,20 @@
 }
 ```
 
-**Response 400:** Da co application pending/approved
-**Response 403:** User chua ACTIVE
+**Response 400:** Đã có đơn đăng ký đang chờ (pending) hoặc đã được duyệt (approved)
+**Response 403:** Người dùng chưa ACTIVE
 
 ---
 
 #### `GET /api/admin/mentor-applications`
-**Muc dich:** Admin xem danh sach mentor applications
+**Mục đích:** Admin xem danh sách đơn đăng ký làm mentor
 **Actor:** Admin
 **File:** `src/app/api/admin/mentor-applications/route.ts`
 
 **Query Params:**
-- `status`: PENDING | APPROVED | REJECTED (optional)
-- `page`: number (default 1)
-- `pageSize`: number (default 20)
+- `status`: PENDING | APPROVED | REJECTED (tùy chọn)
+- `page`: number (mặc định 1)
+- `pageSize`: number (mặc định 20)
 
 **Response 200:**
 ```json
@@ -144,7 +144,7 @@
 ---
 
 #### `PATCH /api/admin/mentor-applications/[id]`
-**Muc dich:** Admin approve hoac reject application
+**Mục đích:** Admin phê duyệt (approve) hoặc từ chối (reject) đơn đăng ký
 **Actor:** Admin
 **File:** `src/app/api/admin/mentor-applications/[id]/route.ts`
 
@@ -152,11 +152,11 @@
 ```json
 {
   "action": "approve" | "reject",
-  "reviewNote": "string (required khi reject)"
+  "reviewNote": "string (bắt buộc khi reject)"
 }
 ```
 
-**Response 200 (approve):**
+**Response 200 (khi approve):**
 ```json
 {
   "success": true,
@@ -173,13 +173,13 @@
 }
 ```
 
-**Side effects khi approve:**
-1. Application status -> APPROVED
-2. Tao MentorProfile cho user
-3. User role -> MENTOR
-4. Audit log
+**Side effects khi approve (Các tác vụ phụ):**
+1. Cập nhật trạng thái đơn (Application status) -> APPROVED
+2. Tạo hồ sơ MentorProfile cho người dùng
+3. Cập nhật quyền người dùng (User role) -> MENTOR
+4. Ghi log kiểm tra (Audit log)
 
-**Response 200 (reject):**
+**Response 200 (khi reject):**
 ```json
 {
   "success": true,
@@ -193,11 +193,11 @@
 
 ---
 
-### 2.2 Mentor Public Profile (P1)
+### 2.2 Hồ sơ Công khai của Mentor (Mentor Public Profile) (P1)
 
 #### `GET /api/mentor/[id]/public-profile`
-**Muc dich:** Xem ho so cong khai cua mentor
-**Actor:** Authenticated (bat ky role)
+**Mục đích:** Xem hồ sơ công khai của mentor
+**Actor:** Người dùng đã xác thực (Authenticated - bất kỳ quyền nào)
 **File:** `src/app/api/mentor/[id]/public-profile/route.ts`
 
 **Response 200:**
@@ -220,12 +220,12 @@
     "ratingCount": 32,
     "onlyActivatedMentee": false,
     "charityAccount": {
-      "name": "Quy Thien Nguyen",
+      "name": "Quỹ Thiện Nguyện",
       "accountNo": "2000"
     }
   },
   "teachingFields": [
-    { "id": "cuid", "name": "Lap trinh", "icon": "💻" }
+    { "id": "cuid", "name": "Lập trình", "icon": "💻" }
   ],
   "availabilitySlots": [
     { "dayOfWeek": 1, "startTime": "09:00", "endTime": "12:00" }
@@ -235,20 +235,20 @@
 
 ---
 
-### 2.3 Session - Dual Confirmation (P1)
+### 2.3 Buổi học - Xác nhận Kép (Session - Dual Confirmation) (P1)
 
 #### `POST /api/sessions/[id]/confirm-completion`
-**Muc dich:** Mentor hoac mentee xac nhan buoi hoc hoan tat
-**Actor:** Mentor hoac Mentee cua session do
+**Mục đích:** Mentor hoặc mentee xác nhận buổi học hoàn tất
+**Actor:** Mentor hoặc Mentee của buổi học đó
 **File:** `src/app/api/sessions/[id]/confirm-completion/route.ts`
 
 **Request Body:**
 ```json
 {
-  "meetLink": "https://meet.google.com/xxx-yyyy-zzz"  // Chi khi mentor confirm lan dau
+  "meetLink": "https://meet.google.com/xxx-yyyy-zzz"  // Chỉ cần khi mentor xác nhận lần đầu
 }
 ```
-(Body co the rong neu mentee confirm hoac mentor da nhap link truoc do)
+(Body có thể rỗng nếu mentee xác nhận hoặc mentor đã nhập link trước đó)
 
 **Response 200:**
 ```json
@@ -256,37 +256,37 @@
   "success": true,
   "session": {
     "id": "cuid",
-    "status": "CONFIRMED",        // hoac "COMPLETED" / "PAYMENT_PENDING"
+    "status": "CONFIRMED",        // hoặc "COMPLETED" / "PAYMENT_PENDING"
     "mentorConfirmed": true,
     "menteeConfirmed": false,
     "meetLink": "https://meet.google.com/..."
   },
-  "message": "Mentor da xac nhan. Cho mentee xac nhan."
+  "message": "Mentor đã xác nhận. Chờ mentee xác nhận."
 }
 ```
 
-**Logic:**
-1. Check user la mentor hoac mentee cua session
-2. if mentor -> set mentorConfirmed = true (+ meetLink neu co)
-3. if mentee -> set menteeConfirmed = true
-4. if (mentorConfirmed && menteeConfirmed):
-   - fee > 0 -> status = PAYMENT_PENDING
-   - fee = 0 -> status = COMPLETED
-5. Return updated session
+**Logic xử lý:**
+1. Kiểm tra user là mentor hoặc mentee của buổi học
+2. Nếu là mentor -> thiết lập mentorConfirmed = true (+ meetLink nếu có)
+3. Nếu là mentee -> thiết lập menteeConfirmed = true
+4. Nếu cả hai đã xác nhận (mentorConfirmed && menteeConfirmed):
+   - Phí học > 0 -> trạng thái (status) = PAYMENT_PENDING
+   - Phí học = 0 -> trạng thái (status) = COMPLETED
+5. Trả về thông tin buổi học đã cập nhật (updated session)
 
 ---
 
-### 2.4 Session - No-show (P1)
+### 2.4 Buổi học - Vắng mặt (Session - No-show) (P1)
 
 #### `POST /api/sessions/[id]/no-show`
-**Muc dich:** Mentor danh dau mentee vang mat
-**Actor:** Mentor cua session
+**Mục đích:** Mentor đánh dấu mentee vắng mặt
+**Actor:** Mentor của buổi học
 **File:** `src/app/api/sessions/[id]/no-show/route.ts`
 
 **Request Body:**
 ```json
 {
-  "reason": "string (optional)"
+  "reason": "string (tùy chọn)"
 }
 ```
 
@@ -296,32 +296,32 @@
   "success": true,
   "session": {
     "id": "cuid",
-    "status": "PAYMENT_PENDING",  // hoac "NO_SHOW" tuy theo fee
+    "status": "PAYMENT_PENDING",  // hoặc "NO_SHOW" tùy theo học phí
     "isNoShow": true,
     "noShowMarkedBy": "mentor_cuid"
   }
 }
 ```
 
-**Logic:**
-1. Validate mentor owns session, status in [CONFIRMED, IN_PROGRESS]
-2. Validate scheduledAt da qua (khong cho mark no-show truoc gio hoc)
-3. Set isNoShow = true, noShowMarkedBy = mentorId
-4. Theo OQ05.1: if fee > 0 -> status = PAYMENT_PENDING (van phat sinh payment)
-5. if fee = 0 -> status = NO_SHOW (ghi nhan, khong payment)
-6. Increment mentee noShowCount
+**Logic xử lý:**
+1. Validate mentor là người phụ trách buổi học, trạng thái trong khoảng [CONFIRMED, IN_PROGRESS]
+2. Validate thời gian scheduledAt đã qua (không cho phép đánh dấu vắng mặt trước giờ học)
+3. Thiết lập isNoShow = true, noShowMarkedBy = mentorId
+4. Theo OQ05.1: Nếu học phí > 0 -> trạng thái = PAYMENT_PENDING (vẫn phát sinh thanh toán)
+5. Nếu học phí = 0 -> trạng thái = NO_SHOW (ghi nhận vắng mặt, không có thanh toán)
+6. Tăng biến đếm số lần vắng mặt của mentee (mentee noShowCount)
 
 ---
 
-### 2.5 Charity Account Management (P1)
+### 2.5 Quản lý Tài khoản Thiện nguyện (Charity Account Management) (P1)
 
 #### `GET /api/admin/charity-accounts`
 **Actor:** Admin
 **File:** `src/app/api/admin/charity-accounts/route.ts`
 
 **Query Params:**
-- `isActive`: boolean (optional)
-- `includeDeleted`: boolean (default false)
+- `isActive`: boolean (tùy chọn)
+- `includeDeleted`: boolean (mặc định false)
 
 **Response 200:**
 ```json
@@ -329,7 +329,7 @@
   "accounts": [
     {
       "id": "cuid",
-      "name": "Quy Thien Nguyen",
+      "name": "Quỹ Thiện Nguyện",
       "accountNo": "2000",
       "bankName": "MB Bank",
       "campaignKeyword": null,
@@ -351,11 +351,11 @@
 **Request Body:**
 ```json
 {
-  "name": "string (required)",
-  "accountNo": "string (required, 4 digits)",
-  "bankName": "string (default: MB Bank)",
-  "campaignKeyword": "string (optional)",
-  "description": "string (optional)",
+  "name": "string (bắt buộc)",
+  "accountNo": "string (bắt buộc, 4 chữ số)",
+  "bankName": "string (mặc định: MB Bank)",
+  "campaignKeyword": "string (tùy chọn)",
+  "description": "string (tùy chọn)",
   "isDefault": false
 }
 ```
@@ -377,11 +377,11 @@
 **Request Body:**
 ```json
 {
-  "name": "string (optional)",
-  "bankName": "string (optional)",
-  "campaignKeyword": "string (optional)",
-  "isActive": "boolean (optional)",
-  "isDefault": "boolean (optional)"
+  "name": "string (tùy chọn)",
+  "bankName": "string (tùy chọn)",
+  "campaignKeyword": "string (tùy chọn)",
+  "isActive": "boolean (tùy chọn)",
+  "isDefault": "boolean (tùy chọn)"
 }
 ```
 
@@ -391,12 +391,12 @@
 **Actor:** Admin
 **File:** `src/app/api/admin/charity-accounts/[id]/route.ts`
 
-**Response 200:** Hard delete thanh cong (usageCount = 0)
-**Response 400:** Khong the xoa - tai khoan dang duoc su dung. Suggest deactivate thay vi delete.
+**Response 200:** Xóa cứng thành công (Hard delete - khi usageCount = 0)
+**Response 400:** Không thể xóa - tài khoản đang được sử dụng. Gợi ý vô hiệu hóa (deactivate) thay vì xóa (delete).
 
 ---
 
-### 2.6 System Config (P1)
+### 2.6 Cấu hình Hệ thống (System Config) (P1)
 
 #### `GET /api/admin/config`
 **Actor:** Admin
@@ -406,7 +406,7 @@
 ```json
 {
   "configs": [
-    { "key": "activation_amount", "value": "10000", "description": "So tien kich hoat (VND)" },
+    { "key": "activation_amount", "value": "10000", "description": "Số tiền kích hoạt (VND)" },
     { "key": "min_booking_advance_hours", "value": "1", "description": "..." },
     { "key": "late_cancel_threshold_minutes", "value": "30", "description": "..." },
     { "key": "payment_expiry_hours", "value": "24", "description": "..." },
@@ -441,7 +441,7 @@
 
 ---
 
-### 2.7 Statistics (P2)
+### 2.7 Thống kê (Statistics) (P2)
 
 #### `GET /api/mentee/stats`
 **Actor:** Mentee
@@ -480,7 +480,7 @@
 
 ---
 
-### 2.8 Reports (P2)
+### 2.8 Báo cáo (Reports) (P2)
 
 #### `POST /api/reports`
 **Actor:** Mentee
@@ -489,10 +489,10 @@
 **Request Body:**
 ```json
 {
-  "reportedUserId": "cuid (required)",
-  "sessionId": "cuid (optional)",
+  "reportedUserId": "cuid (bắt buộc)",
+  "sessionId": "cuid (tùy chọn)",
   "reason": "INAPPROPRIATE | MISCONDUCT | NO_SHOW_DISPUTE | OTHER",
-  "description": "string (required, min 20 chars)"
+  "description": "string (bắt buộc, tối thiểu 20 ký tự)"
 }
 ```
 
@@ -514,84 +514,84 @@
 ```json
 {
   "status": "REVIEWED | RESOLVED | DISMISSED",
-  "reviewNote": "string (required)"
+  "reviewNote": "string (bắt buộc)"
 }
 ```
 
 ---
 
-## 3. API Endpoints CAN SUA DOI
+## 3. API Endpoints CẦN SỬA ĐỔI
 
-### 3.1 `POST /api/sessions` - Them Validations
+### 3.1 `POST /api/sessions` - Thêm Validations (Kiểm tra dữ liệu)
 
-**Them checks:**
+**Thêm các kiểm tra:**
 ```
-1. if (fee > 0 && user.status !== "ACTIVE") -> 403 "Can kich hoat tai khoan"
-2. if (activeBookingCount >= maxActiveBookings) -> 400 "Da co booking dang hoat dong"
-3. if (scheduledAt - now < minAdvanceHours * 3600000) -> 400 "Dat truoc it nhat X gio"
-4. if (durationMinutes % 60 !== 0) -> 400 "Thoi luong phai la gio nguyen"
-5. if (conflictingSession) -> 400 "Mentor da co buoi hoc vao thoi gian nay"
-6. if (mentor.onlyActivatedMentee && user.status !== "ACTIVE") -> 403
+1. Nếu (học phí > 0 && user.status !== "ACTIVE") -> 403 "Cần kích hoạt tài khoản"
+2. Nếu (activeBookingCount >= maxActiveBookings) -> 400 "Đã có lịch học đang hoạt động"
+3. Nếu (scheduledAt - now < minAdvanceHours * 3600000) -> 400 "Cần đặt trước ít nhất X giờ"
+4. Nếu (durationMinutes % 60 !== 0) -> 400 "Thời lượng phải là giờ chẵn (ví dụ 60, 120 phút)"
+5. Nếu (conflictingSession) -> 400 "Mentor đã có buổi học vào thời gian này"
+6. Nếu (mentor.onlyActivatedMentee && user.status !== "ACTIVE") -> 403 "Mentor chỉ nhận mentee đã kích hoạt"
 ```
 
-### 3.2 `PATCH /api/sessions/[id]` - Sua Cancel Logic
+### 3.2 `PATCH /api/sessions/[id]` - Sửa Logic Hủy (Cancel)
 
 **Khi action = "cancel":**
 ```
-1. Calculate minutesBeforeStart
-2. if (minutesBeforeStart <= lateThreshold) -> mark isLateCancellation
-3. Increment user lateCancellationCount
+1. Tính toán số phút còn lại trước khi bắt đầu (minutesBeforeStart)
+2. Nếu (minutesBeforeStart <= lateThreshold) -> đánh dấu hủy muộn (isLateCancellation)
+3. Tăng biến đếm số lần hủy muộn của người dùng (user lateCancellationCount)
 ```
 
-### 3.3 `POST /api/payments/session-fee` - Fix TN Account
+### 3.3 `POST /api/payments/session-fee` - Sửa Tài khoản Thiện nguyện
 
-**Sua:**
+**Sửa lại:**
 ```
-// Lay TN account tu MentorProfile thay vi default
-// Uu tien: charityAccount -> tnAccountNo -> default
+// Lấy tài khoản thiện nguyện từ MentorProfile thay vì mặc định
+// Thứ tự ưu tiên: charityAccount -> tnAccountNo -> default
 ```
 
 ### 3.4 `PUT /api/mentor/profile` - Refactor qua Use Case
 
-**Hien tai:** API goi truc tiep Prisma
-**Sau:** API goi `UpdateMentorProfileUseCase` (co validation + audit)
+**Hiện tại:** API gọi trực tiếp qua Prisma
+**Sau khi sửa:** API sẽ gọi qua `UpdateMentorProfileUseCase` (có kèm validation + lưu vết audit)
 
 ---
 
-## 4. Authentication & Authorization Summary
+## 4. Tóm tắt Xác thực & Phân quyền (Authentication & Authorization)
 
-| Role | Endpoints Access |
+| Vai trò (Role) | Quyền truy cập Endpoints |
 |------|-----------------|
 | **Public** | `/api/auth/*`, `/api/teaching-fields` |
 | **Authenticated** | `/api/users/profile`, `/api/sessions` (GET), `/api/leaderboard`, `/api/mentor/[id]/public-profile` |
 | **Mentee** | `/api/sessions` (POST), `/api/mentor/apply`, `/api/mentee/stats`, `/api/reports` (POST), `/api/sessions/[id]/confirm-completion` |
 | **Mentor** | `/api/mentor/profile`, `/api/mentor/availability`, `/api/mentor/stats`, `/api/sessions/[id]/confirm-completion`, `/api/sessions/[id]/no-show` |
-| **Admin** | `/api/admin/*` (users, fields, mentor-applications, charity-accounts, config, reports) |
+| **Admin** | `/api/admin/*` (người dùng, lĩnh vực giảng dạy, đơn đăng ký mentor, tài khoản thiện nguyện, cấu hình, báo cáo) |
 
 ---
 
-## 5. Error Response Format (Chuan hoa)
+## 5. Định dạng Phản hồi Lỗi (Error Response Format - Chuẩn hóa)
 
-Tat ca API errors tra ve format thong nhat:
+Tất cả các lỗi API trả về theo định dạng thống nhất:
 
 ```json
 {
   "success": false,
   "error": {
     "code": "VALIDATION_ERROR",
-    "message": "Mo ta loi bang tieng Viet",
+    "message": "Mô tả lỗi bằng tiếng Việt",
     "details": {}
   }
 }
 ```
 
-**Error codes chuan:**
-| Code | HTTP Status | Mo ta |
+**Mã lỗi chuẩn (Error codes):**
+| Mã lỗi (Code) | HTTP Status | Mô tả |
 |------|------------|-------|
-| `UNAUTHORIZED` | 401 | Chua dang nhap |
-| `FORBIDDEN` | 403 | Khong co quyen |
-| `NOT_FOUND` | 404 | Resource khong ton tai |
-| `VALIDATION_ERROR` | 400 | Du lieu khong hop le |
-| `CONFLICT` | 409 | Trung lap (vd: da co application) |
-| `BUSINESS_RULE_VIOLATION` | 422 | Vi pham business rule |
-| `INTERNAL_ERROR` | 500 | Loi he thong |
+| `UNAUTHORIZED` | 401 | Chưa đăng nhập |
+| `FORBIDDEN` | 403 | Không có quyền truy cập |
+| `NOT_FOUND` | 404 | Tài nguyên không tồn tại |
+| `VALIDATION_ERROR` | 400 | Dữ liệu không hợp lệ |
+| `CONFLICT` | 409 | Xung đột hoặc trùng lặp (vd: đã có đơn đăng ký) |
+| `BUSINESS_RULE_VIOLATION` | 422 | Vi phạm quy tắc nghiệp vụ |
+| `INTERNAL_ERROR` | 500 | Lỗi hệ thống |

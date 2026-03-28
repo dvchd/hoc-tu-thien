@@ -7,7 +7,6 @@ import { FindMentorClient } from "@/presentation/components/mentee/FindMentorCli
 export default async function FindMentorPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  if (session.user.status !== UserStatus.ACTIVE) redirect("/activation");
 
   // Load mentors with profiles
   const mentors = await prisma.user.findMany({
