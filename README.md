@@ -258,7 +258,7 @@ CANCELLED   CANCELLED
 2. Hệ thống tạo User với status = PENDING_ACTIVATION
 3. Người dùng vào trang /activation
 4. Hệ thống tạo Payment (type=ACTIVATION, amount=10.000 VNĐ)
-   → Sinh mã giao dịch: "HOCTUTHIEN KICHHOAT ABCXYZ"
+   → Sinh mã giao dịch: "HOCTUTHIEN KICHHOAT ABCDEFGH"
    → Tạo QR VietQR để quét chuyển khoản
 5. Người dùng chuyển khoản và bấm "Tôi đã chuyển khoản"
 6. Hệ thống gọi API TN App để xác minh giao dịch
@@ -286,7 +286,7 @@ CANCELLED   CANCELLED
 1. Sau khi buổi học COMPLETED, status → PAYMENT_PENDING
 2. Mentee vào trang Sessions, bấm "Thanh toán học phí"
 3. Hệ thống tạo Payment (type=SESSION_FEE)
-   → Mã giao dịch: "HOCTUTHIEN HOCPHI ABCXYZ"
+   → Mã giao dịch: "HOCTUTHIEN HOCPHI ABCDEFGH"
    → QR VietQR chuyển thẳng đến tài khoản TN App của Mentor
 4. Mentee chuyển khoản và bấm xác nhận
 5. Hệ thống xác minh qua TN App API
@@ -428,33 +428,60 @@ npm run lint
 Tạo file `.env` từ `.env.example` và điền các giá trị:
 
 ```env
-# ─── Database ─────────────────────────────────────────────────────────────────
-# PostgreSQL (bắt buộc — dùng cho cả development và production)
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/hoc_tu_thien"
+# ─── Runtime ──────────────────────────────────────────────────────────────────
+# Nixpacks (Railway / Render) sẽ dùng Node 22 để build
+NIXPACKS_NODE_VERSION=22
 
-# ─── NextAuth ──────────────────────────────────────────────────────────────────
-# Tạo bằng: openssl rand -base64 32
-NEXTAUTH_SECRET="your-strong-random-secret-32-chars"
-NEXTAUTH_URL="http://localhost:3000"
+# ─── Database ─────────────────────────────────────────────────────────────────
+DATABASE_PROVIDER=postgresql
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/hoc_tu_thien
+
+# ─── NextAuth v5 ──────────────────────────────────────────────────────────────
+# NextAuth v5 dùng AUTH_SECRET (thay cho NEXTAUTH_SECRET)
+# Generate với: openssl rand -base64 32
+AUTH_SECRET=REPLACE_WITH_A_STRONG_RANDOM_SECRET_32_CHARS
+# Giữ NEXTAUTH_SECRET để tương thích ngược (code đọc cả hai)
+NEXTAUTH_SECRET=REPLACE_WITH_A_STRONG_RANDOM_SECRET_32_CHARS
+# Production URL (phải khớp với domain thực tế, không có dấu / cuối)
+NEXTAUTH_URL=https://demo.hoctuthien.com
 
 # ─── Google OAuth ──────────────────────────────────────────────────────────────
-# Tạo tại: https://console.cloud.google.com/
-# Authorized redirect URI: http://localhost:3000/api/auth/callback/google
-GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET="your-client-secret"
+# Tạo tại: https://console.cloud.google.com/ → APIs & Services → Credentials
+# QUAN TRỌNG: Thêm Authorized redirect URI sau vào Google Console:
+#   https://demo.hoctuthien.com/api/auth/callback/google
+# (Không có dấu / cuối, phải khớp chính xác với NEXTAUTH_URL)
+GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET
 
 # ─── App Config ────────────────────────────────────────────────────────────────
-NEXT_PUBLIC_APP_NAME="Học Từ Thiện"
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
+NEXT_PUBLIC_APP_NAME=Học Từ Thiện
+NEXT_PUBLIC_APP_URL=https://demo.hoctuthien.com
 
 # ─── Thiện Nguyện App ──────────────────────────────────────────────────────────
-# Số tài khoản TN App dùng cho kích hoạt (nhận 10k activation fee)
-TN_ACTIVATION_ACCOUNT_NO="2000"
-TN_ACTIVATION_ACCOUNT_NAME="QUY THIEN NGUYEN"
+# Tài khoản nhận tiền (kích hoạt Mentee + học phí) được Admin quản lý hoàn toàn
+# qua giao diện: Cài đặt → Tài khoản thiện nguyện → Tạo mới → Đặt làm mặc định.
+# KHÔNG cần env var — mọi cấu hình tài khoản đều lưu trong DB (bảng CharityAccount).
+#
+# Các số tiền (activation, xác thực) cũng do Admin cấu hình qua:
+#   Cài đặt → Cấu hình hệ thống → activation_amount / charity_account_verification_amount
+# Fallback compile-time: 10,000 VND (activation) và 1,000 VND (xác thực charity).
 
 # ─── Seed ─────────────────────────────────────────────────────────────────────
-ADMIN_EMAIL="your-admin@gmail.com"
-DEMO_MENTEE_EMAIL="mentee@demo.com"
+# Email tài khoản Admin đầu tiên (sẽ được tạo khi chạy `prisma db seed`)
+ADMIN_EMAIL=your@gmail.com
+# Email tài khoản Mentee demo (tuỳ chọn)
+DEMO_MENTEE_EMAIL=mentee@demo.com
+
+# ─── E2E / Playwright (KHÔNG bật trên production thật) ───────────────────────
+# Khi = "true": mở route /api/test/generate-token cho Playwright bypass Google OAuth
+# Chỉ set trên môi trường staging/CI khi chạy Playwright tests
+# E2E_TEST_MODE=true
+
+# ─── Proxy (tuỳ chọn) ─────────────────────────────────────────────────────────
+# Nếu server đứng sau corporate proxy, khai báo để Node.js fetch đi qua proxy
+# HTTPS_PROXY=http://proxy.example.com:8080
+# HTTP_PROXY=http://proxy.example.com:8080
+
 ```
 
 ### Hướng dẫn tạo Google OAuth Credentials
@@ -634,8 +661,8 @@ Mọi entity đều kế thừa từ `AuditableEntity` với các trường:
 
 ```typescript
 // Mã giao dịch format
-"HOCTUTHIEN KICHHOAT ABCXYZ"  // Kích hoạt tài khoản
-"HOCTUTHIEN HOCPHI ABCXYZ"    // Học phí buổi học
+"HOCTUTHIEN KICHHOAT ABCDEFGH"  // Kích hoạt tài khoản
+"HOCTUTHIEN HOCPHI ABCDEFGH"    // Học phí buổi học
 
 // Chỉ dùng chữ HOA, không dùng số
 // (TN App ẩn 3 số liên tiếp thành "xxx")
