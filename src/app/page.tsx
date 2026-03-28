@@ -20,14 +20,14 @@ export default async function HomePage() {
       {/* ─── Navbar ─────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 rounded-lg bg-jade-600 flex items-center justify-center">
               <Heart className="w-4 h-4 text-white fill-white" />
             </div>
             <span className="font-display text-lg font-semibold text-stone-800">
               Học Từ Thiện
             </span>
-          </div>
+          </Link>
           <Link
             href="/login"
             className="flex items-center gap-2 px-4 py-2 bg-jade-600 text-white rounded-xl text-sm font-medium hover:bg-jade-700 transition-all hover:shadow-lg hover:shadow-jade-200 hover:-translate-y-0.5"

@@ -1,21 +1,22 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { createUseCases } from "@/lib/container";
+import { UserStatus } from "@/domain/value-objects/UserStatus";
+import { MentorGrid } from "@/presentation/components/mentee/MentorGrid";
+import Link from "next/link";
 import {
   BookOpen,
   Heart,
-  Search,
   Star,
   Clock,
-  Sparkles,
-  ArrowRight,
+  Zap,
 } from "lucide-react";
 
 export default async function MenteeDashboardPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  // Load available mentors (simplified - in real app, filter by MENTOR role)
+  // Load available mentors
   const { listUsers } = createUseCases();
   const { users: mentors } = await listUsers.execute({
     role: "MENTOR" as any,
@@ -40,11 +41,34 @@ export default async function MenteeDashboardPage() {
   ];
 
   const displayMentors = mentors.length > 0
-    ? mentors.map(m => ({ id: m.id, name: m.name || "Mentor", image: m.image, bio: m.bio || "", expertise: "Mentor" }))
+    ? mentors.map((m) => ({ id: m.id, name: m.name || "Mentor", image: m.image, bio: m.bio || "", expertise: "Mentor" }))
     : mockMentors;
+
+  const isPendingActivation = session.user.status === UserStatus.PENDING_ACTIVATION;
 
   return (
     <div className="space-y-8">
+      {/* Activation banner */}
+      {isPendingActivation && (
+        <div className="animate-in p-4 rounded-2xl bg-jade-50 border border-jade-200 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-jade-600 flex items-center justify-center flex-shrink-0">
+            <Zap className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-jade-800 text-sm">Tài khoản chưa được kích hoạt</h3>
+            <p className="text-jade-600 text-xs mt-0.5">
+              Kích hoạt tài khoản để mở khoá đầy đủ tính năng và tham gia cộng đồng Học Từ Thiện.
+            </p>
+          </div>
+          <Link
+            href="/activation"
+            className="flex-shrink-0 px-4 py-2 bg-jade-600 text-white text-sm font-medium rounded-xl hover:bg-jade-700 transition-colors"
+          >
+            Kích hoạt ngay
+          </Link>
+        </div>
+      )}
+
       {/* Header */}
       <div className="animate-in">
         <p className="text-jade-600 text-sm font-medium tracking-wide uppercase mb-1">
@@ -92,68 +116,9 @@ export default async function MenteeDashboardPage() {
         </div>
       </div>
 
-      {/* Find Mentor */}
+      {/* Find Mentor – client component with search + link */}
       <div className="animate-in animate-in-delay-3">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="font-display text-xl font-semibold text-stone-800">
-            Tìm Mentor phù hợp
-          </h2>
-          <button className="flex items-center gap-1.5 text-sm text-jade-600 hover:text-jade-700 font-medium">
-            Xem tất cả
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Search bar */}
-        <div className="relative mb-5">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-          <input
-            placeholder="Tìm kiếm theo chuyên môn, tên mentor..."
-            className="w-full pl-11 pr-4 py-3 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100 transition-all"
-          />
-        </div>
-
-        {/* Mentor cards */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {displayMentors.map((mentor, i) => (
-            <div
-              key={mentor.id}
-              className="p-5 bg-white rounded-2xl border border-stone-100 shadow-sm hover:shadow-lg hover:border-jade-200 transition-all duration-300 hover:-translate-y-1 group"
-            >
-              {/* Avatar */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-11 h-11 rounded-full bg-gradient-to-br from-jade-400 to-emerald-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                  {mentor.name.split(" ").slice(-2).map(n => n[0]).join("")}
-                </div>
-                <div className="min-w-0">
-                  <div className="font-semibold text-stone-800 text-sm truncate">
-                    {mentor.name}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-amber-500" />
-                    <span className="text-amber-600 text-xs">{mentor.expertise}</span>
-                  </div>
-                </div>
-              </div>
-
-              <p className="text-stone-500 text-xs leading-relaxed line-clamp-2 mb-4">
-                {mentor.bio}
-              </p>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={j} className="w-3 h-3 text-amber-400 fill-amber-400" />
-                  ))}
-                  <span className="text-xs text-stone-400 ml-1">4.9</span>
-                </div>
-                <button className="px-3 py-1.5 bg-jade-600 text-white text-xs font-medium rounded-lg hover:bg-jade-700 transition-colors opacity-0 group-hover:opacity-100">
-                  Kết nối
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <MentorGrid mentors={displayMentors} />
       </div>
     </div>
   );

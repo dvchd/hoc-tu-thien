@@ -1,13 +1,27 @@
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import { UserRole } from "@/domain/value-objects/UserRole";
 import { SystemConfigPanel } from "@/presentation/components/admin/SystemConfigPanel";
 
-export default function ConfigAdminPage() {
+export default async function ConfigAdminPage() {
+  const session = await auth();
+  if (!session?.user || session.user.role !== UserRole.ADMIN) {
+    redirect("/dashboard");
+  }
+
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Cấu hình hệ thống</h1>
-        <p className="text-gray-600">Quản lý các thông số vận hành của nền tảng.</p>
+    <div className="space-y-8">
+      <div className="animate-in">
+        <p className="text-jade-600 text-sm font-medium tracking-wide uppercase mb-1">
+          Quản trị viên
+        </p>
+        <h1 className="font-display text-3xl font-bold text-stone-900">
+          Cấu hình hệ thống
+        </h1>
+        <p className="text-stone-500 mt-1">
+          Quản lý các thông số vận hành của nền tảng.
+        </p>
       </div>
-      
       <SystemConfigPanel />
     </div>
   );

@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { UserRole, UserRoleLabels } from "@/domain/value-objects/UserRole";
-import { LayoutDashboard, Users, BookOpen, Heart, Settings, LogOut, Shield, UserCircle, Star, BarChart3, Trophy, Calendar, User, Wallet, Tag, FileText, CreditCard, AlertTriangle, GraduationCap } from "lucide-react";
+import { LayoutDashboard, Users, BookOpen, Heart, Settings, LogOut, Shield, UserCircle, Star, BarChart3, Trophy, Calendar, User, Wallet, Tag, FileText, CreditCard, AlertTriangle, GraduationCap, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface SidebarUser { id: string; name?: string | null; email?: string | null; image?: string | null; role: UserRole; }
+interface SidebarUser { id: string; name?: string | null; email?: string | null; image?: string | null; role: UserRole; status?: string | null; }
 
 const navByRole: Record<UserRole, { label: string; href: string; icon: React.ElementType }[]> = {
   [UserRole.ADMIN]: [
@@ -31,7 +31,6 @@ const navByRole: Record<UserRole, { label: string; href: string; icon: React.Ele
     { label: "Tìm Mentor", href: "/dashboard/mentee/find-mentor", icon: Users },
     { label: "Trở thành Mentor", href: "/dashboard/mentee/apply-mentor", icon: GraduationCap },
     { label: "Buổi học của tôi", href: "/dashboard/mentee/sessions", icon: BookOpen },
-    { label: "Đóng góp", href: "/dashboard/mentee/impact", icon: Heart },
     { label: "Bảng xếp hạng", href: "/dashboard/leaderboard", icon: Trophy },
   ],
 };
@@ -83,6 +82,25 @@ export function Sidebar({ user }: { user: SidebarUser }) {
           </div>
         </div>
       </div>
+
+      {user.status === "PENDING_ACTIVATION" && (
+        <div className="mx-3 mt-3">
+          <Link
+            href="/activation"
+            className="flex items-start gap-3 px-3 py-3 bg-jade-50 border border-jade-200 rounded-xl hover:bg-jade-100 transition-colors group"
+          >
+            <div className="w-7 h-7 rounded-lg bg-jade-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Zap className="w-3.5 h-3.5 text-white" />
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-jade-700">Kích hoạt tài khoản</div>
+              <div className="text-[10px] text-jade-500 mt-0.5 leading-snug">
+                Kích hoạt để mở khoá đầy đủ tính năng
+              </div>
+            </div>
+          </Link>
+        </div>
+      )}
 
       <nav className="flex-1 px-3 py-4 space-y-1">
         <div className="text-stone-400 text-[10px] font-semibold uppercase tracking-wider px-3 mb-2">Menu chính</div>

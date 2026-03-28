@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatVND } from "@/lib/utils";
+import Link from "next/link";
 import {
   Copy,
   CheckCircle2,
@@ -241,13 +242,13 @@ export function ActivationQRPanel({ paymentInfo, userId, sessionId, onSuccess }:
             )}
 
             {/* Bỏ qua / về dashboard */}
-            <a
+            <Link
               href="/dashboard"
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-stone-500 hover:text-stone-700 hover:bg-stone-50 border border-stone-200 transition-colors"
             >
               <Home className="w-3.5 h-3.5" />
-              Về trang chủ (kích hoạt sau)
-            </a>
+              Về dashboard (kích hoạt sau)
+            </Link>
 
             <a
               href="https://thiennguyen.app"

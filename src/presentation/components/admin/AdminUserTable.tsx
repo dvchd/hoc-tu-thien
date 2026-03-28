@@ -16,6 +16,7 @@ import {
   UserX,
   Trash2,
   Shield,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,17 +26,40 @@ interface AdminUserTableProps {
   currentUserId: string;
 }
 
+const ROLE_OPTIONS = [
+  { value: "", label: "Tất cả vai trò" },
+  { value: UserRole.ADMIN, label: "Admin" },
+  { value: UserRole.MENTOR, label: "Mentor" },
+  { value: UserRole.MENTEE, label: "Mentee" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "", label: "Tất cả trạng thái" },
+  { value: UserStatus.ACTIVE, label: "Hoạt động" },
+  { value: UserStatus.PENDING_ACTIVATION, label: "Chờ kích hoạt" },
+  { value: UserStatus.INACTIVE, label: "Không hoạt động" },
+  { value: UserStatus.SUSPENDED, label: "Bị đình chỉ" },
+];
+
 export function AdminUserTable({ users: initialUsers, total, currentUserId }: AdminUserTableProps) {
   const [users, setUsers] = useState(initialUsers);
   const [search, setSearch] = useState("");
+  const [filterRole, setFilterRole] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [showFilter, setShowFilter] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
-  const filtered = users.filter(
-    (u) =>
+  const filtered = users.filter((u) => {
+    const matchesSearch =
       u.name?.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase())
-  );
+      u.email.toLowerCase().includes(search.toLowerCase());
+    const matchesRole = filterRole === "" || u.role === filterRole;
+    const matchesStatus = filterStatus === "" || u.status === filterStatus;
+    return matchesSearch && matchesRole && matchesStatus;
+  });
+
+  const hasActiveFilter = filterRole !== "" || filterStatus !== "";
 
   async function handleRoleChange(userId: string, newRole: UserRole) {
     if (userId === currentUserId) {
@@ -92,6 +116,9 @@ export function AdminUserTable({ users: initialUsers, total, currentUserId }: Ad
           </h2>
           <p className="text-stone-400 text-sm mt-0.5">
             {total.toLocaleString("vi-VN")} người dùng trong hệ thống
+            {filtered.length !== users.length && (
+              <span className="text-jade-600 ml-1">· Đang lọc {filtered.length} kết quả</span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -104,12 +131,68 @@ export function AdminUserTable({ users: initialUsers, total, currentUserId }: Ad
               className="w-full sm:w-60 pl-9 pr-4 py-2 text-sm bg-white border border-stone-200 rounded-xl focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100"
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 text-sm text-stone-600 bg-white border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors">
+          <button
+            onClick={() => setShowFilter(!showFilter)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 text-sm rounded-xl border transition-colors",
+              hasActiveFilter
+                ? "bg-jade-600 text-white border-jade-600 hover:bg-jade-700"
+                : "text-stone-600 bg-white border-stone-200 hover:bg-stone-50"
+            )}
+          >
             <Filter className="w-4 h-4" />
             Lọc
+            {hasActiveFilter && (
+              <span className="w-4 h-4 rounded-full bg-white/30 text-white text-[10px] flex items-center justify-center font-bold">
+                {(filterRole ? 1 : 0) + (filterStatus ? 1 : 0)}
+              </span>
+            )}
           </button>
         </div>
       </div>
+
+      {/* Filter panel */}
+      {showFilter && (
+        <div className="mb-5 p-4 bg-white border border-stone-200 rounded-2xl shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-stone-700">Bộ lọc</span>
+            {hasActiveFilter && (
+              <button
+                onClick={() => { setFilterRole(""); setFilterStatus(""); }}
+                className="text-xs text-stone-400 hover:text-red-500 flex items-center gap-1 transition-colors"
+              >
+                <X className="w-3 h-3" /> Xoá bộ lọc
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-stone-500 mb-1 block">Vai trò</label>
+              <select
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100"
+              >
+                {ROLE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-stone-500 mb-1 block">Trạng thái</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100"
+              >
+                {STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
         {/* Table header */}

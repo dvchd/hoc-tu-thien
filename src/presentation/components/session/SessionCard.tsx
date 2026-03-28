@@ -235,7 +235,7 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
               <input 
                 type="text" 
                 placeholder="Google Meet Link"
-                className="text-xs border rounded px-2 py-1.5 flex-1 min-w-[150px]"
+                className="text-xs bg-stone-50 border border-stone-200 rounded-xl px-3 py-1.5 flex-1 min-w-[150px] focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100 transition-all"
                 value={meetLinkInput}
                 onChange={(e) => setMeetLinkInput(e.target.value)}
               />

@@ -14,19 +14,20 @@ interface SearchParams {
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: SearchParams;
+  searchParams: Promise<SearchParams>;
 }) {
   const session = await auth();
   if (!session?.user || session.user.role !== UserRole.ADMIN) {
     redirect("/dashboard");
   }
 
-  const page = Number(searchParams.page ?? 1);
+  const { page: pageParam, role, status } = await searchParams;
+  const page = Number(pageParam ?? 1);
   const { listUsers } = createUseCases();
 
   const { users, total } = await listUsers.execute({
-    role: searchParams.role as UserRole | undefined,
-    status: searchParams.status as any,
+    role: role as UserRole | undefined,
+    status: status as any,
     page,
     pageSize: 20,
   });

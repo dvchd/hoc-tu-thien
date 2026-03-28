@@ -166,6 +166,7 @@ export function SettingsForm({ user }: { user: SettingsUser }) {
             value={form.bio}
             onChange={handleChange}
             rows={4}
+            maxLength={500}
             placeholder="Chia sẻ đôi điều về bạn, kinh nghiệm và mục tiêu học tập..."
             className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100 transition-all resize-none"
           />

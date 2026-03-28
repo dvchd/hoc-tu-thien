@@ -19,13 +19,21 @@ export default function NotFound() {
         trang chủ.
       </p>
 
-      <Link
-        href="/"
-        className="flex items-center gap-2 px-6 py-3 bg-jade-600 text-white rounded-xl font-medium hover:bg-jade-700 transition-all hover:shadow-lg hover:shadow-jade-200 hover:-translate-y-0.5"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Về trang chủ
-      </Link>
+      <div className="flex flex-col sm:flex-row items-center gap-3">
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-2 px-6 py-3 bg-jade-600 text-white rounded-xl font-medium hover:bg-jade-700 transition-all hover:shadow-lg hover:shadow-jade-200 hover:-translate-y-0.5"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Về Dashboard
+        </Link>
+        <Link
+          href="/"
+          className="flex items-center gap-2 px-6 py-3 bg-white border border-stone-200 text-stone-600 rounded-xl font-medium hover:bg-stone-50 transition-all"
+        >
+          Trang chủ
+        </Link>
+      </div>
     </div>
   );
 }

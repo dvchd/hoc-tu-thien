@@ -1,13 +1,27 @@
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import { UserRole } from "@/domain/value-objects/UserRole";
 import { MentorApplicationsTable } from "@/presentation/components/admin/MentorApplicationsTable";
 
-export default function MentorApplicationsAdminPage() {
+export default async function MentorApplicationsAdminPage() {
+  const session = await auth();
+  if (!session?.user || session.user.role !== UserRole.ADMIN) {
+    redirect("/dashboard");
+  }
+
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Quản lý đơn đăng ký Mentor</h1>
-        <p className="text-gray-600">Xem xét và phê duyệt các ứng viên muốn trở thành mentor.</p>
+    <div className="space-y-8">
+      <div className="animate-in">
+        <p className="text-jade-600 text-sm font-medium tracking-wide uppercase mb-1">
+          Quản trị viên
+        </p>
+        <h1 className="font-display text-3xl font-bold text-stone-900">
+          Đơn đăng ký Mentor
+        </h1>
+        <p className="text-stone-500 mt-1">
+          Xem xét và phê duyệt các ứng viên muốn trở thành mentor.
+        </p>
       </div>
-      
       <MentorApplicationsTable />
     </div>
   );

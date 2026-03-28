@@ -15,7 +15,7 @@ export default async function DashboardLayout({
     <div className="min-h-screen flex bg-stone-50">
       <Sidebar user={session.user} />
       <div className="flex-1 flex flex-col min-w-0">
-        <TopBar user={session.user} />
+        <TopBar user={{ ...session.user, status: session.user.status }} />
         <main className="flex-1 p-6 lg:p-8 overflow-auto">
           {children}
         </main>

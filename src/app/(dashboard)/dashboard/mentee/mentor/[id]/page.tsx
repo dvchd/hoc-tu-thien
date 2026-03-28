@@ -1,25 +1,34 @@
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import { UserRole } from "@/domain/value-objects/UserRole";
 import { MentorPublicProfile } from "@/presentation/components/mentor/MentorPublicProfile";
 import { createUseCases } from "@/lib/container";
 import { notFound } from "next/navigation";
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function MentorPublicProfilePage({ params }: PageProps) {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+
+  const { id } = await params;
   const { getMentorPublicProfile } = createUseCases();
 
   try {
-    // params.id là userId của mentor
-    const mentor = await getMentorPublicProfile.execute(params.id);
+    const mentor = await getMentorPublicProfile.execute(id);
 
     return (
-      <div className="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h2 className="text-sm font-bold text-indigo-600 uppercase tracking-widest mb-1">Hồ sơ Mentor</h2>
-          <p className="text-stone-500">Chi tiết thông tin và chuyên môn của Mentor.</p>
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="animate-in">
+          <p className="text-jade-600 text-sm font-medium tracking-wide uppercase mb-1">
+            Hồ sơ Mentor
+          </p>
+          <p className="text-stone-500">
+            Chi tiết thông tin và chuyên môn của Mentor.
+          </p>
         </div>
-
         <MentorPublicProfile mentor={mentor} />
       </div>
     );

@@ -15,19 +15,19 @@ const ERROR_MESSAGES: Record<string, string> = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { error?: string; hint?: string };
+  searchParams: Promise<{ error?: string; hint?: string }>;
 }) {
   const session = await auth();
   if (session?.user) redirect("/dashboard");
 
-  const errorCode = searchParams.error;
+  const { error: errorCode, hint } = await searchParams;
   const errorMessage = errorCode
     ? (ERROR_MESSAGES[errorCode] ?? ERROR_MESSAGES.Default)
     : null;
 
   // Sau khi kích hoạt tài khoản thành công, user được sign-out và redirect về đây.
   // Tự động trigger Google sign-in để lấy JWT mới với status=ACTIVE.
-  const isPostActivation = searchParams.hint === "activation_complete";
+  const isPostActivation = hint === "activation_complete";
 
   return (
     <div className="min-h-screen flex">
