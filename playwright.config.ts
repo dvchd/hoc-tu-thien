@@ -1,45 +1,66 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from "@playwright/test";
+import path from "path";
 
 /**
- * See https://playwright.dev/docs/test-configuration.
+ * Playwright E2E UI Test Configuration
+ *
+ * - Tự động khởi động Next.js dev server
+ * - global-setup: seed test users vào DB một lần
+ * - global-teardown: dọn dẹp toàn bộ test data
+ * - Chạy tuần tự (workers: 1) để tránh race condition trên DB dùng chung
  */
 export default defineConfig({
-  testDir: './src/__tests__/e2e-ui',
-  /* Run tests in files in parallel */
-  fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
-  use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:3000',
+  testDir: path.join(__dirname, "src/__tests__/e2e-ui"),
+  testMatch: "**/*.spec.ts",
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
+  fullyParallel: false,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 1 : 0,
+  workers: 1,
+
+  reporter: process.env.CI
+    ? "github"
+    : [["list"], ["html", { open: "never" }]],
+
+  globalSetup: path.join(
+    __dirname,
+    "src/__tests__/e2e-ui/global-setup.ts"
+  ),
+  globalTeardown: path.join(
+    __dirname,
+    "src/__tests__/e2e-ui/global-teardown.ts"
+  ),
+
+  use: {
+    baseURL: "http://localhost:3000",
+    trace: "on-first-retry",
+    screenshot: "only-on-failure",
+    video: "on-first-retry",
+    navigationTimeout: 30000,
+    actionTimeout: 15000,
   },
 
-  /* Configure projects for major browsers */
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: "chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        // Dùng executable path của Playwright image v1.43.0
+        launchOptions: {
+          executablePath: "/ms-playwright/chromium-1112/chrome-linux/chrome",
+          args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        },
+      },
     },
-    // Chạy thêm Safari và Firefox nếu cần
-    // { name: 'firefox', use: { ...devices['Desktop Firefox'] }, },
-    // { name: 'webkit', use: { ...devices['Desktop Safari'] }, },
   ],
 
-  /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    command: "E2E_TEST_MODE=true npm run dev",
+    url: "http://localhost:3000",
+    reuseExistingServer: true,
     timeout: 120 * 1000,
+    env: {
+      E2E_TEST_MODE: "true",
+    },
   },
 });
