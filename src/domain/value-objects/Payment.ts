@@ -3,11 +3,13 @@
 export enum PaymentType {
   ACTIVATION = "ACTIVATION",
   SESSION_FEE = "SESSION_FEE",
+  CHARITY_ACCOUNT_VERIFICATION = "CHARITY_ACCOUNT_VERIFICATION",
 }
 
 export const PaymentTypeLabels: Record<PaymentType, string> = {
   [PaymentType.ACTIVATION]: "Kích hoạt tài khoản",
   [PaymentType.SESSION_FEE]: "Học phí buổi học",
+  [PaymentType.CHARITY_ACCOUNT_VERIFICATION]: "Xác thực tài khoản thiện nguyện",
 };
 
 // ─── PaymentStatus ────────────────────────────────────────────────────────────
@@ -51,8 +53,10 @@ export function buildTransactionContent(
   type: PaymentType,
   shortCode: string
 ): string {
-  const prefix =
-    type === PaymentType.ACTIVATION ? "KICHHOAT" : "HOCPHI";
+  let prefix: string;
+  if (type === PaymentType.ACTIVATION) prefix = "KICHHOAT";
+  else if (type === PaymentType.CHARITY_ACCOUNT_VERIFICATION) prefix = "XACTHUC";
+  else prefix = "HOCPHI";
   return `HOCTUTHIEN ${prefix} ${shortCode}`;
 }
 
@@ -82,6 +86,15 @@ export function parseTransactionContent(narrative: string): {
       isHocTuThien: true,
       type: PaymentType.SESSION_FEE,
       shortCode: hocphiMatch[1],
+    };
+  }
+
+  const xacthuMatch = upper.match(/HOCTUTHIEN\s+XACTHUC\s+([A-Z]{4,8})/);
+  if (xacthuMatch) {
+    return {
+      isHocTuThien: true,
+      type: PaymentType.CHARITY_ACCOUNT_VERIFICATION,
+      shortCode: xacthuMatch[1],
     };
   }
 
@@ -186,9 +199,29 @@ export const ReportReasonLabels: Record<ReportReason, string> = {
   [ReportReason.OTHER]: "Lý do khác",
 };
 
+// ─── CharityAccountVerificationStatus ─────────────────────────────────────────
+
+export enum CharityAccountVerificationStatus {
+  UNVERIFIED = "UNVERIFIED",
+  PENDING = "PENDING",
+  VERIFIED = "VERIFIED",
+  FAILED = "FAILED",
+}
+
+export const CharityAccountVerificationStatusLabels: Record<
+  CharityAccountVerificationStatus,
+  string
+> = {
+  [CharityAccountVerificationStatus.UNVERIFIED]: "Chưa xác thực",
+  [CharityAccountVerificationStatus.PENDING]: "Đang chờ xác thực",
+  [CharityAccountVerificationStatus.VERIFIED]: "Đã xác thực",
+  [CharityAccountVerificationStatus.FAILED]: "Xác thực thất bại",
+};
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 export const ACTIVATION_AMOUNT = 10000; // fallback, real value from SystemConfig
+export const CHARITY_ACCOUNT_VERIFICATION_AMOUNT = 1000; // 1,000 VND probe transfer
 export const PAYMENT_EXPIRY_HOURS = 24;
 export const LATE_CANCEL_THRESHOLD_MINUTES = 30;
 export const MIN_ADVANCE_BOOKING_HOURS = 1;

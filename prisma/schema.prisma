@@ -279,9 +279,19 @@ model CharityAccount {
   isDeleted       Boolean   @default(false)
   deletedAt       DateTime?
 
+  // ─── Verification fields ───────────────────────────────────────────────────
+  // Admin gửi 1,000 VND probe transfer tới tài khoản này để xác nhận tính xác thực
+  verificationStatus      String    @default("UNVERIFIED") // UNVERIFIED | PENDING | VERIFIED | FAILED
+  verificationPaymentId   String?   // Payment.id của probe transfer
+  verificationShortCode   String?   // short code trong nội dung chuyển khoản
+  verifiedAt              DateTime?
+  verifiedBy              String?   // adminId trigger xác thực
+  verificationNote        String?   // lý do khi failed
+
   mentorProfiles MentorProfile[]
 
   @@index([isActive, isDeleted])
+  @@index([verificationStatus])
 }
 
 model SystemConfig {

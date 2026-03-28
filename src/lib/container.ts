@@ -41,6 +41,8 @@ import {
   ListCharityAccountsUseCase,
   UpdateCharityAccountUseCase,
   DeleteCharityAccountUseCase,
+  InitiateCharityAccountVerificationUseCase,
+  ConfirmCharityAccountVerificationUseCase,
 } from "../application/use-cases/admin/CharityAccountUseCases";
 import {
   GetSystemConfigUseCase,
@@ -101,6 +103,8 @@ export function createUseCases() {
     listCharityAccounts: new ListCharityAccountsUseCase(uow),
     updateCharityAccount: new UpdateCharityAccountUseCase(uow),
     deleteCharityAccount: new DeleteCharityAccountUseCase(uow),
+    initiateCharityAccountVerification: new InitiateCharityAccountVerificationUseCase(uow),
+    confirmCharityAccountVerification: new ConfirmCharityAccountVerificationUseCase(uow),
     // System Config
     getSystemConfig: new GetSystemConfigUseCase(uow),
     updateSystemConfig: new UpdateSystemConfigUseCase(uow),

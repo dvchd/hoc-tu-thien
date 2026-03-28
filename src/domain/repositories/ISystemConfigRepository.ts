@@ -13,6 +13,7 @@ export interface SystemConfigRecord {
 
 export const SYSTEM_CONFIG_KEYS = {
   ACTIVATION_AMOUNT: "activation_amount",
+  CHARITY_ACCOUNT_VERIFICATION_AMOUNT: "charity_account_verification_amount",
   DEFAULT_CHARITY_ACCOUNT_ID: "default_charity_account_id",
   MIN_BOOKING_ADVANCE_HOURS: "min_booking_advance_hours",
   LATE_CANCEL_THRESHOLD_MINUTES: "late_cancel_threshold_minutes",

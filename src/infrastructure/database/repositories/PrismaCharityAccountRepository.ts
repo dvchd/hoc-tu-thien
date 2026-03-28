@@ -5,6 +5,7 @@ import {
   CreateCharityAccountInput,
   UpdateCharityAccountInput,
 } from "../../../domain/repositories/ICharityAccountRepository";
+import { CharityAccountVerificationStatus } from "../../../domain/value-objects/Payment";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { createId } = require("@paralleldrive/cuid2");
@@ -30,6 +31,13 @@ export class PrismaCharityAccountRepository implements ICharityAccountRepository
       createdBy: a.createdBy,
       isDeleted: a.isDeleted,
       deletedAt: a.deletedAt,
+      // verification fields
+      verificationStatus: a.verificationStatus ?? CharityAccountVerificationStatus.UNVERIFIED,
+      verificationPaymentId: a.verificationPaymentId ?? null,
+      verificationShortCode: a.verificationShortCode ?? null,
+      verifiedAt: a.verifiedAt ?? null,
+      verifiedBy: a.verifiedBy ?? null,
+      verificationNote: a.verificationNote ?? null,
     };
   }
 
@@ -75,6 +83,7 @@ export class PrismaCharityAccountRepository implements ICharityAccountRepository
         isDefault: input.isDefault ?? false,
         usageCount: 0,
         createdBy: input.createdBy ?? null,
+        verificationStatus: CharityAccountVerificationStatus.UNVERIFIED,
       },
     });
     return this.toRecord(created);
@@ -126,5 +135,30 @@ export class PrismaCharityAccountRepository implements ICharityAccountRepository
       where: { isDefault: true },
       data: { isDefault: false },
     });
+  }
+
+  async updateVerificationStatus(
+    id: string,
+    status: string,
+    opts?: {
+      verificationPaymentId?: string;
+      verificationShortCode?: string;
+      verifiedAt?: Date;
+      verifiedBy?: string;
+      verificationNote?: string;
+    }
+  ): Promise<CharityAccountRecord> {
+    const data: Record<string, unknown> = {
+      verificationStatus: status,
+      updatedAt: new Date(),
+    };
+    if (opts?.verificationPaymentId !== undefined) data.verificationPaymentId = opts.verificationPaymentId;
+    if (opts?.verificationShortCode !== undefined) data.verificationShortCode = opts.verificationShortCode;
+    if (opts?.verifiedAt !== undefined) data.verifiedAt = opts.verifiedAt;
+    if (opts?.verifiedBy !== undefined) data.verifiedBy = opts.verifiedBy;
+    if (opts?.verificationNote !== undefined) data.verificationNote = opts.verificationNote;
+
+    const updated = await this.prisma.charityAccount.update({ where: { id }, data });
+    return this.toRecord(updated);
   }
 }

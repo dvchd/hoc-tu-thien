@@ -190,6 +190,7 @@ export function createMockCharityAccountRepository(): jest.Mocked<ICharityAccoun
     delete: jest.fn(),
     getUsageCount: jest.fn(),
     clearDefault: jest.fn(),
+    updateVerificationStatus: jest.fn(),
   };
 }
 

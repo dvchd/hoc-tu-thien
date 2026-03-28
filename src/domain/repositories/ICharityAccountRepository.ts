@@ -15,6 +15,13 @@ export interface CharityAccountRecord {
   createdBy: string | null;
   isDeleted: boolean;
   deletedAt: Date | null;
+  // ─── Verification fields ──────────────────────────────────────────────
+  verificationStatus: string;       // UNVERIFIED | PENDING | VERIFIED | FAILED
+  verificationPaymentId: string | null; // Payment.id của probe transfer
+  verificationShortCode: string | null; // short code của giao dịch xác thực
+  verifiedAt: Date | null;
+  verifiedBy: string | null;        // adminId người trigger xác thực
+  verificationNote: string | null;  // ghi chú khi failed
 }
 
 // ─── Inputs ───────────────────────────────────────────────────────────────────
@@ -54,4 +61,16 @@ export interface ICharityAccountRepository {
   delete(id: string): Promise<void>; // hard delete, chỉ khi usageCount = 0
   getUsageCount(id: string): Promise<number>;
   clearDefault(): Promise<void>; // bỏ isDefault trên tất cả accounts
+  /** Cập nhật trạng thái xác thực tài khoản sau khi probe transfer hoàn tất */
+  updateVerificationStatus(
+    id: string,
+    status: string,
+    opts?: {
+      verificationPaymentId?: string;
+      verificationShortCode?: string;
+      verifiedAt?: Date;
+      verifiedBy?: string;
+      verificationNote?: string;
+    }
+  ): Promise<CharityAccountRecord>;
 }
