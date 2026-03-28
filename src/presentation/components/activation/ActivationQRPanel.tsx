@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatVND } from "@/lib/utils";
 import {
@@ -8,7 +10,6 @@ import {
   CheckCircle2,
   Clock,
   Loader2,
-  RefreshCw,
   ExternalLink,
   QrCode,
   Home,
@@ -56,6 +57,8 @@ function CopyButton({ value, label }: { value: string; label: string }) {
 }
 
 export function ActivationQRPanel({ paymentInfo, userId, sessionId, onSuccess }: Props) {
+  const { update } = useSession();
+  const router = useRouter();
   const [countdown, setCountdown] = useState(
     formatCountdown(paymentInfo.expiresAt)
   );
@@ -86,16 +89,14 @@ export function ActivationQRPanel({ paymentInfo, userId, sessionId, onSuccess }:
 
       if (data.success) {
         toast.success(data.message, { duration: 5000 });
-        setTimeout(() => {
-          if (onSuccess) {
-            onSuccess();
-          } else {
-            // JWT vẫn chứa status=PENDING_ACTIVATION sau khi DB đã update ACTIVE.
-            // Cần force NextAuth re-issue JWT mới. Cách chắc chắn nhất:
-            // sign-out → sign-in lại với Google → JWT mới sẽ có status=ACTIVE từ DB.
-            window.location.href = "/api/auth/signout?callbackUrl=" + encodeURIComponent("/login?hint=activation_complete");
-          }
-        }, 1500);
+        if (onSuccess) {
+          setTimeout(() => onSuccess(), 1500);
+        } else {
+          // Dùng NextAuth update() để refresh JWT tại chỗ (trigger="update"),
+          // không cần sign-out rồi sign-in lại.
+          await update();
+          setTimeout(() => router.push("/dashboard"), 1500);
+        }
       } else {
         toast.error(data.message, { duration: 4000 });
       }

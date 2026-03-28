@@ -37,13 +37,13 @@ export default async function ActivationPage() {
 
         {/* Header */}
         <div className="text-center mb-8 animate-in relative">
-          {/* Nút bỏ qua - góc phải */}
+          {/* Nút bỏ qua - góc phải, rõ hơn */}
           <Link
             href="/dashboard"
-            className="absolute right-0 top-0 flex items-center gap-1.5 text-sm text-stone-400 hover:text-stone-600 transition-colors"
+            className="absolute right-0 top-0 flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-800 bg-white/70 hover:bg-white border border-stone-200 hover:border-stone-300 rounded-lg px-3 py-1.5 transition-all shadow-sm"
           >
-            <X className="w-4 h-4" />
-            Bỏ qua
+            <X className="w-3.5 h-3.5" />
+            Bỏ qua, vào dashboard
           </Link>
 
           <div className="w-14 h-14 rounded-2xl bg-jade-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-jade-200">
