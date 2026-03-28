@@ -10,8 +10,6 @@ import {
   buildVietQRUrl,
   ACTIVATION_AMOUNT,
   PAYMENT_EXPIRY_HOURS,
-  DEFAULT_TN_ACTIVATION_ACCOUNT,
-  DEFAULT_TN_ACTIVATION_ACCOUNT_NAME,
 } from "../../../domain/value-objects/Payment";
 import { SYSTEM_CONFIG_KEYS } from "../../../domain/repositories/ISystemConfigRepository";
 import { UserStatus } from "../../../domain/value-objects/UserStatus";
@@ -71,16 +69,24 @@ export class InitiateActivationUseCase {
       return this.buildPaymentInfo(validPending);
     }
 
-    // Lấy activation amount và default charity account từ SystemConfig
+    // Lấy activation amount, default charity account, và expiry hours đồng thời
     const [activationAmountStr, defaultAccount, expiryHoursNum] = await Promise.all([
       this.uow.systemConfig.get(SYSTEM_CONFIG_KEYS.ACTIVATION_AMOUNT),
       this.uow.charityAccounts.findDefault(),
       this.uow.systemConfig.getNumber(SYSTEM_CONFIG_KEYS.PAYMENT_EXPIRY_HOURS, PAYMENT_EXPIRY_HOURS),
     ]);
 
+    // Tài khoản nhận tiền phải được Admin cấu hình qua CharityAccount (isDefault = true)
+    if (!defaultAccount) {
+      throw new Error(
+        "Chưa có tài khoản thiện nguyện mặc định. Admin vui lòng vào Cài đặt → Tài khoản thiện nguyện " +
+        "và đánh dấu một tài khoản là mặc định trước khi người dùng có thể kích hoạt."
+      );
+    }
+
     const amount = activationAmountStr ? parseInt(activationAmountStr, 10) : ACTIVATION_AMOUNT;
-    const accountNo = defaultAccount?.accountNo ?? DEFAULT_TN_ACTIVATION_ACCOUNT;
-    const accountName = defaultAccount?.name ?? DEFAULT_TN_ACTIVATION_ACCOUNT_NAME;
+    const accountNo = defaultAccount.accountNo;
+    const accountName = defaultAccount.name;
 
     const shortCode = generateShortCode(8);
     const transactionCode = buildTransactionContent(PaymentType.ACTIVATION, shortCode);
@@ -109,7 +115,7 @@ export class InitiateActivationUseCase {
   private buildPaymentInfo(payment: PaymentRecord): ActivationPaymentInfo {
     const qrImageUrl = buildVietQRUrl({
       accountNo: payment.tnAccountNo,
-      accountName: payment.tnAccountName ?? DEFAULT_TN_ACTIVATION_ACCOUNT_NAME,
+      accountName: payment.tnAccountName ?? "",
       amount: payment.amount,
       addInfo: payment.transactionCode,
     });
@@ -120,7 +126,7 @@ export class InitiateActivationUseCase {
       shortCode: payment.shortCode,
       amount: payment.amount,
       tnAccountNo: payment.tnAccountNo,
-      tnAccountName: payment.tnAccountName ?? DEFAULT_TN_ACTIVATION_ACCOUNT_NAME,
+      tnAccountName: payment.tnAccountName ?? "",
       qrImageUrl,
       expiresAt: payment.expiresAt.toISOString(),
     };
@@ -262,11 +268,15 @@ export class InitiateSessionFeePaymentUseCase {
       return this.buildPaymentInfo(sessionPending);
     }
 
-    // Lấy TN account từ MentorProfile (FIX: dùng mentor's charity account thay vì default)
+    // Xác định tài khoản nhận học phí theo thứ tự ưu tiên:
+    // 1. CharityAccount gắn với mentor (charityAccountId trên MentorProfile)
+    // 2. Legacy: tnAccountNo trực tiếp trên MentorProfile (cũ, sẽ deprecated)
+    // 3. Default charity account của hệ thống (Admin đánh dấu isDefault = true)
+    // Không có fallback về env — nếu thiếu cấu hình thì throw rõ ràng.
     const mentorProfileFee = await this.uow.sessions.getMentorProfileFee(session.mentorId);
 
-    let accountNo = DEFAULT_TN_ACTIVATION_ACCOUNT;
-    let accountName = DEFAULT_TN_ACTIVATION_ACCOUNT_NAME;
+    let accountNo: string | null = null;
+    let accountName: string | null = null;
 
     // Priority 1: charityAccount từ CharityAccount table
     if (mentorProfileFee?.charityAccountId) {
@@ -277,17 +287,24 @@ export class InitiateSessionFeePaymentUseCase {
       }
     }
     // Priority 2: legacy tnAccountNo trực tiếp trên MentorProfile
-    else if (mentorProfileFee?.tnAccountNo) {
+    if (!accountNo && mentorProfileFee?.tnAccountNo) {
       accountNo = mentorProfileFee.tnAccountNo;
-      accountName = mentorProfileFee.tnAccountName ?? DEFAULT_TN_ACTIVATION_ACCOUNT_NAME;
+      accountName = mentorProfileFee.tnAccountName ?? null;
     }
-    // Priority 3: default charity account từ SystemConfig
-    else {
+    // Priority 3: default charity account của hệ thống
+    if (!accountNo) {
       const defaultAccount = await this.uow.charityAccounts.findDefault();
       if (defaultAccount) {
         accountNo = defaultAccount.accountNo;
         accountName = defaultAccount.name;
       }
+    }
+
+    if (!accountNo) {
+      throw new Error(
+        "Mentor chưa cấu hình tài khoản nhận học phí và hệ thống chưa có tài khoản thiện nguyện mặc định. " +
+        "Vui lòng liên hệ Admin."
+      );
     }
 
     const expiryHours = await this.uow.systemConfig.getNumber(
@@ -308,7 +325,7 @@ export class InitiateSessionFeePaymentUseCase {
       transactionCode,
       shortCode,
       tnAccountNo: accountNo,
-      tnAccountName: accountName,
+      tnAccountName: accountName ?? undefined,
       expiresAt: expiresAt,
     });
 
@@ -318,7 +335,7 @@ export class InitiateSessionFeePaymentUseCase {
   private buildPaymentInfo(payment: PaymentRecord): ActivationPaymentInfo {
     const qrImageUrl = buildVietQRUrl({
       accountNo: payment.tnAccountNo,
-      accountName: payment.tnAccountName ?? DEFAULT_TN_ACTIVATION_ACCOUNT_NAME,
+      accountName: payment.tnAccountName ?? "",
       amount: payment.amount,
       addInfo: payment.transactionCode,
     });
@@ -329,7 +346,7 @@ export class InitiateSessionFeePaymentUseCase {
       shortCode: payment.shortCode,
       amount: payment.amount,
       tnAccountNo: payment.tnAccountNo,
-      tnAccountName: payment.tnAccountName ?? DEFAULT_TN_ACTIVATION_ACCOUNT_NAME,
+      tnAccountName: payment.tnAccountName ?? "",
       qrImageUrl,
       expiresAt: payment.expiresAt.toISOString(),
     };

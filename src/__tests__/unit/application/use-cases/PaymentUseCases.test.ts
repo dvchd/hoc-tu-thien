@@ -16,6 +16,37 @@ import {
   buildSessionRecord,
   createMockUnitOfWork,
 } from "@/__tests__/helpers";
+import { CharityAccountRecord } from "@/domain/repositories/ICharityAccountRepository";
+import { CharityAccountVerificationStatus } from "@/domain/value-objects/Payment";
+
+// ─── Helper: tạo default CharityAccountRecord ─────────────────────────────────
+function buildDefaultCharityAccount(
+  overrides: Partial<CharityAccountRecord> = {}
+): CharityAccountRecord {
+  return {
+    id: "charity_default_001",
+    name: "Quỹ Thiện Nguyện",
+    accountNo: "2000",
+    bankName: "MB Bank",
+    campaignKeyword: null,
+    description: null,
+    isActive: true,
+    isDefault: true,
+    usageCount: 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    createdBy: "admin_001",
+    isDeleted: false,
+    deletedAt: null,
+    verificationStatus: CharityAccountVerificationStatus.VERIFIED,
+    verificationPaymentId: null,
+    verificationShortCode: null,
+    verifiedAt: new Date(),
+    verifiedBy: "admin_001",
+    verificationNote: null,
+    ...overrides,
+  };
+}
 
 // ─── Mock the TN App client ───────────────────────────────────────────────────
 
@@ -33,11 +64,17 @@ const mockTnClient = tnAppClient as jest.Mocked<typeof tnAppClient>;
 describe("InitiateActivationUseCase", () => {
   it("creates a new activation payment for pending user", async () => {
     const user = buildUser({ status: UserStatus.PENDING_ACTIVATION });
-    const payment = buildPaymentRecord({ type: PaymentType.ACTIVATION });
+    const defaultAccount = buildDefaultCharityAccount();
+    const payment = buildPaymentRecord({
+      type: PaymentType.ACTIVATION,
+      tnAccountNo: defaultAccount.accountNo,
+      tnAccountName: defaultAccount.name,
+    });
 
     const uow = createMockUnitOfWork();
     uow.users.findById.mockResolvedValue(user);
     uow.payments.findPendingByUserId.mockResolvedValue([]);
+    uow.charityAccounts.findDefault.mockResolvedValue(defaultAccount);
     uow.payments.create.mockResolvedValue(payment);
 
     const result = await new InitiateActivationUseCase(uow).execute({
@@ -47,7 +84,22 @@ describe("InitiateActivationUseCase", () => {
     expect(result.amount).toBe(ACTIVATION_AMOUNT);
     expect(result.transactionCode).toContain("HOCTUTHIEN KICHHOAT");
     expect(result.qrImageUrl).toContain("vietqr.io");
+    // Tài khoản nhận lấy từ CharityAccount mặc định
+    expect(result.tnAccountNo).toBe(defaultAccount.accountNo);
+    expect(result.tnAccountName).toBe(defaultAccount.name);
     expect(uow.payments.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("throws khi không có tài khoản thiện nguyện mặc định", async () => {
+    const user = buildUser({ status: UserStatus.PENDING_ACTIVATION });
+    const uow = createMockUnitOfWork();
+    uow.users.findById.mockResolvedValue(user);
+    uow.payments.findPendingByUserId.mockResolvedValue([]);
+    uow.charityAccounts.findDefault.mockResolvedValue(null); // Admin chưa cấu hình
+
+    await expect(
+      new InitiateActivationUseCase(uow).execute({ userId: user.id })
+    ).rejects.toThrow("Chưa có tài khoản thiện nguyện mặc định");
   });
 
   it("throws if user already active", async () => {
@@ -85,6 +137,7 @@ describe("InitiateActivationUseCase", () => {
     const uow = createMockUnitOfWork();
     uow.users.findById.mockResolvedValue(user);
     uow.payments.findPendingByUserId.mockResolvedValue([]);
+    uow.charityAccounts.findDefault.mockResolvedValue(buildDefaultCharityAccount());
 
     let capturedInput: any;
     uow.payments.create.mockImplementation(async (input) => {

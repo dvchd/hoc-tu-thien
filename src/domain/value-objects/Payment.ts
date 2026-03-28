@@ -219,15 +219,15 @@ export const CharityAccountVerificationStatusLabels: Record<
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+//
+// Các hằng số dưới đây là compile-time fallback — chỉ dùng khi DB chưa có giá trị.
+// Giá trị runtime thực tế được Admin cấu hình qua SystemConfig (bảng system_config).
+// KHÔNG dùng env var cho những giá trị này vì Admin cần thay đổi mà không cần redeploy.
 
-export const ACTIVATION_AMOUNT = 10000; // fallback, real value from SystemConfig
-export const CHARITY_ACCOUNT_VERIFICATION_AMOUNT = 1000; // 1,000 VND probe transfer
-export const PAYMENT_EXPIRY_HOURS = 24;
+export const ACTIVATION_AMOUNT = 10000;                  // fallback; ghi đè qua SystemConfig
+export const CHARITY_ACCOUNT_VERIFICATION_AMOUNT = 1000; // fallback; ghi đè qua SystemConfig
+export const PAYMENT_EXPIRY_HOURS = 24;                  // fallback; ghi đè qua SystemConfig
 export const LATE_CANCEL_THRESHOLD_MINUTES = 30;
 export const MIN_ADVANCE_BOOKING_HOURS = 1;
 export const MAX_ACTIVE_BOOKINGS = 1;
 export const VALID_DURATION_HOURS = [1, 2, 3];
-
-// Default TN App account (fallback khi chưa có CharityAccount trong DB)
-export const DEFAULT_TN_ACTIVATION_ACCOUNT = process.env.TN_ACTIVATION_ACCOUNT_NO ?? "2000";
-export const DEFAULT_TN_ACTIVATION_ACCOUNT_NAME = process.env.TN_ACTIVATION_ACCOUNT_NAME ?? "QUY THIEN NGUYEN";
