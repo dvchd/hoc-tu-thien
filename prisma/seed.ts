@@ -19,7 +19,38 @@ const FIELDS = [
 async function main() {
   console.log("🌱 Seeding...\n");
 
-  // Teaching fields
+  // ─── Default CharityAccount ────────────────────────────────────────────────
+  // Bắt buộc phải có trước khi hệ thống hoạt động:
+  // - Kích hoạt tài khoản Mentee cần tài khoản isDefault = true
+  // - Không có → hệ thống throw lỗi rõ ràng, không silent fallback
+  //
+  // Tài khoản mặc định: Hội Chữ Thập Đỏ Việt Nam qua TN App (accountNo "2000")
+  // Admin có thể thay đổi sau qua UI: Cài đặt → Tài khoản thiện nguyện
+  const existingDefault = await prisma.charityAccount.findFirst({
+    where: { isDefault: true, isDeleted: false },
+  });
+  if (!existingDefault) {
+    await prisma.charityAccount.create({
+      data: {
+        id: "charity_default_seed",
+        name: "Hội Chữ Thập Đỏ Việt Nam",
+        accountNo: "2000",
+        bankName: "MB Bank",
+        campaignKeyword: "HOCTUTHIEN",
+        description: "Tài khoản mặc định được tạo tự động khi khởi tạo hệ thống. Admin có thể thay đổi.",
+        isActive: true,
+        isDefault: true,
+        usageCount: 0,
+        createdBy: "seed",
+        verificationStatus: "UNVERIFIED",
+      },
+    });
+    console.log("✅ Default charity account: Hội Chữ Thập Đỏ VN (2000) — chưa xác thực, Admin cần xác thực qua UI");
+  } else {
+    console.log(`⏭️  Default charity account đã tồn tại: ${existingDefault.name} (${existingDefault.accountNo})`);
+  }
+
+  // ─── Teaching fields
   for (const f of FIELDS) {
     const ex = await prisma.teachingField.findUnique({ where: { slug: f.slug } });
     if (!ex) {
