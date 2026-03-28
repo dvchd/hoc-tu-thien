@@ -9,6 +9,7 @@ const config = {
   },
   testMatch: [
     "<rootDir>/src/__tests__/unit/**/*.test.ts",
+    "<rootDir>/src/__tests__/e2e/**/*.test.ts",
   ],
   collectCoverageFrom: [
     "src/domain/**/*.ts",

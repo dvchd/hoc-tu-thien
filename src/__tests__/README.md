@@ -1,4 +1,4 @@
-# 🧪 Hướng dẫn Kiểm thử – Học Từ Thiện
+# Hướng dẫn Kiểm thử – Học Từ Thiện
 
 ## Cài đặt
 
@@ -45,39 +45,58 @@ npm run test:ci
 ```
 src/__tests__/
 ├── helpers.ts                  ← Builders & mock factories dùng chung
+│                                 (buildSessionRecord đầy đủ 100% SessionRecord fields)
 │
 ├── unit/                       ← Không cần DB, không cần network
 │   ├── domain/
 │   │   ├── entities/
-│   │   │   ├── AuditableEntity.test.ts        (9 tests)
-│   │   │   ├── UserEntity.test.ts             (23 tests)
-│   │   │   ├── UserEntityEdgeCases.test.ts    (13 tests)
-│   │   │   └── DomainEvents.test.ts           (9 tests)
+│   │   │   ├── AuditableEntity.test.ts              (9 tests)
+│   │   │   ├── UserEntity.test.ts                   (23 tests)
+│   │   │   ├── UserEntityEdgeCases.test.ts          (13 tests)
+│   │   │   └── DomainEvents.test.ts                 (9 tests)
 │   │   └── value-objects/
-│   │       ├── ValueObjects.test.ts           (21 tests)
-│   │       └── Payment.test.ts                (29 tests)
-│   └── application/
-│       ├── dtos/
-│       │   └── UserDTO.test.ts                (9 tests)
-│       └── use-cases/
-│           ├── UserUseCases.test.ts           (16 tests)
-│           ├── PaymentUseCases.test.ts        (14 tests)
-│           ├── SessionUseCases.test.ts        (22 tests)
-│           ├── MentorUseCases.test.ts         (8 tests)
-│           └── ThienNguyenAppClient.test.ts   (12 tests)
+│   │       ├── ValueObjects.test.ts                 (21 tests)
+│   │       ├── Payment.test.ts                      (29 tests)
+│   │       ├── BookingPolicy.test.ts                (8 tests)
+│   │       └── CancellationPolicy.test.ts           (3 tests)
+│   ├── application/
+│   │   ├── dtos/
+│   │   │   └── UserDTO.test.ts                      (9 tests)
+│   │   └── use-cases/
+│   │       ├── UserUseCases.test.ts                 (16 tests)
+│   │       ├── PaymentUseCases.test.ts              (14 tests)
+│   │       ├── SessionUseCases.test.ts              (22 tests)
+│   │       ├── MentorUseCases.test.ts               (8 tests)
+│   │       ├── StatsUseCases.test.ts                (6 tests)
+│   │       ├── ThienNguyenAppClient.test.ts         (12 tests)
+│   │       └── CharityAccountVerificationUseCases.test.ts (46 tests)
+│   └── infrastructure/
+│       └── repositories/
+│           ├── PrismaUserRepository.test.ts         (19 tests)
+│           ├── PrismaSessionRepository.test.ts      (22 tests)
+│           ├── PrismaMentorProfileRepository.test.ts(17 tests)
+│           ├── PrismaMentorApplicationRepository.test.ts (13 tests)
+│           ├── PrismaCharityAccountRepository.test.ts    (17 tests)
+│           ├── PrismaSystemConfigRepository.test.ts (10 tests)
+│           ├── PrismaReportRepository.test.ts       (12 tests)
+│           ├── PrismaPaymentRepository.test.ts      (14 tests)
+│           ├── PrismaUnitOfWork.test.ts             (10 tests)
+│           └── GoogleMeetAndTeachingField.test.ts   (16 tests)
 │
-├── integration/                ← Cần Prisma + SQLite test DB
+├── integration/                ← Cần Prisma + PostgreSQL test DB
 │   ├── repositories/
 │   │   ├── PrismaUserRepository.test.ts       (17 tests)
 │   │   ├── PrismaUnitOfWork.test.ts           (7 tests)
 │   │   └── PrismaPaymentSessionRepo.test.ts   (21 tests)
 │   └── api/
-│       └── ApiRoutes.test.ts                  (17 tests)
+│       ├── ApiRoutes.test.ts                  (17 tests)
+│       └── CharityAccountVerificationApiRoutes.test.ts (18 tests)
 │
-└── e2e/
-    └── UserJourney.test.ts                    (9 tests)
-                                              ──────────
-                                         Total: ~247 tests
+└── e2e/                        ← Jest-based, mocked external services
+    ├── UserJourney.test.ts                    (9 tests)
+    └── FullFlowTests.test.ts                  (40+ tests – 4 scenarios)
+                                              ──────────────────────────
+                                         Total: 483 tests
 ```
 
 ---
@@ -93,31 +112,49 @@ Kiểm tra logic nghiệp vụ độc lập, không cần DB hay network.
 | `UserEntity` | promoteToMentor, demoteToMentee, suspend, activate, softDelete, immutability |
 | `ValueObjects` | Email validation/normalisation, UserRole labels, UserStatus |
 | `Payment` | generateShortCode(), buildTransactionContent(), parseTransactionContent() round-trip, VietQR URL |
+| `BookingPolicy` | BR03-06, BR09-11: activation check, max bookings, advance time, duration, conflict |
+| `CancellationPolicy` | BR35: late cancellation threshold detection |
 | `UserUseCases` | FindOrCreate, ChangeRole (RBAC), UpdateProfile, SoftDelete |
 | `PaymentUseCases` | Activation initiate, verify (found/not found/expired), session fee |
-| `SessionUseCases` | Book (guards), Confirm (Meet link), Complete (free vs paid), Cancel, Rate, Leaderboard |
+| `SessionUseCases` | Book (guards), Confirm+Meet, Complete (free/paid), Cancel (late), DualConfirm, NoShow, Rate, Leaderboard |
+| `MentorUseCases` | ApplyForMentor, GetMentorSessions |
+| `StatsUseCases` | MenteeLearningStats, MentorTeachingStats |
+| `CharityAccountVerificationUseCases` | Initiate probe, Confirm verification, full cycle, edge cases |
 | `ThienNguyenAppClient` | API call, transaction matching, error handling |
+| `PrismaMentorProfileRepository` | findById, findByUserId, findAll, create/update mapping, rating stats |
+| `PrismaMentorApplicationRepository` | CRUD, findAll + filter, updateStatus |
+| `PrismaCharityAccountRepository` | findAll, usageCount, clearDefault, verificationStatus |
+| `PrismaSystemConfigRepository` | get, getNumber (fallback), set, setMultiple |
+| `PrismaReportRepository` | findAll (status filter), create, updateStatus |
+| `PrismaPaymentRepository` | CRUD, findByShortCode, updateStatus |
+| `PrismaSessionRepository` | findConflicting, updateConfirmation, addRating, getTopMentors/Mentees |
+| `GoogleMeetAndTeachingField` | GoogleMeetService, TeachingFieldRepository, setMentorFields |
+| `PrismaUnitOfWork` | Lazy repos, execute/rollback |
 
-### Integration Tests (real SQLite in-memory)
+### Integration Tests (real PostgreSQL)
 Kiểm tra repository và transaction với database thực.
 
 | File | Điều gì được test |
 |---|---|
 | `PrismaUserRepository` | CRUD, pagination, role filter, optimistic concurrency, soft delete, audit log |
 | `PrismaUnitOfWork` | Transaction commit, rollback on error, nested execute, optimistic lock |
-| `PrismaPaymentSessionRepo` | Payment lifecycle, session status transitions, leaderboard queries |
+| `PrismaPaymentSessionRepo` | Payment lifecycle, session status transitions, updateConfirmation, leaderboard queries |
 | `ApiRoutes` | HTTP status codes, auth guards (401/403), input validation (400), business errors |
+| `CharityAccountVerificationApiRoutes` | POST initiate, PATCH confirm, 403 non-admin, full E2E cycle |
 
-### E2E Scenario Tests
-Kiểm tra luồng nghiệp vụ đầu-cuối với mocked external services.
+### E2E Scenario Tests (Jest-based, mocked external services)
+Kiểm tra luồng nghiệp vụ đầu-cuối với mocked TN App + Google Meet.
 
 | Scenario | Luồng |
 |---|---|
-| User Registration & Activation | Register → Initiate payment → Verify → Activate account |
-| Full Session Lifecycle | Book → Confirm+Meet → Complete → PAYMENT_PENDING → Block re-booking |
-| Free Session | Book → Confirm → Complete (no payment step) → Rate |
-| Admin Role Management | Promote → Demote → Audit logs → Non-admin blocked |
-| Leaderboard | Monthly stats, empty state |
+| **UserJourney**: Registration & Activation | Register → Initiate → Verify → Activate |
+| **UserJourney**: Full Session Lifecycle | Book → Confirm+Meet → Complete → PAYMENT_PENDING |
+| **UserJourney**: Admin Role Management | Promote → Demote → RBAC audit |
+| **UserJourney**: Leaderboard | Monthly stats, empty state |
+| **FullFlow Scenario 1** – Mentee | Đăng ký → Kích hoạt → Book free → Book paid → Payment → Rate → Stats → Report → Cancel |
+| **FullFlow Scenario 2** – Mentor | Apply → Approved → Profile setup → Teaching fields → Confirm → Complete → NoShow → Stats → Public profile |
+| **FullFlow Scenario 3** – Admin | Users → Role change → Applications → Charity accounts → System config → Reports → Leaderboard |
+| **FullFlow Scenario 4** – Cross-role | Admin setup → Mentee register/activate → apply mentor → Admin approve → Mentor setup → Book → Confirm → Complete → Payment → Rate → Report → Admin resolve |
 
 ---
 
