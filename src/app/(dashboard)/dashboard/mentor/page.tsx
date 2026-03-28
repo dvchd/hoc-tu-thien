@@ -1,6 +1,8 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { UserRole } from "@/domain/value-objects/UserRole";
+import { createUseCases } from "@/lib/container";
+import { formatVND } from "@/lib/utils";
 import {
   BookOpen,
   Calendar,
@@ -16,11 +18,14 @@ export default async function MentorDashboardPage() {
     redirect("/dashboard");
   }
 
+  const { getMentorTeachingStats } = createUseCases();
+  const mentorStats = await getMentorTeachingStats.execute(session.user.id);
+
   const stats = [
-    { label: "Mentee đang dạy", value: "12", icon: Users, color: "text-jade-600", bg: "bg-jade-50" },
-    { label: "Buổi học tháng này", value: "48", icon: Calendar, color: "text-amber-600", bg: "bg-amber-50" },
-    { label: "Đã quyên góp", value: "₫12.4M", icon: Heart, color: "text-rose-600", bg: "bg-rose-50" },
-    { label: "Giờ giảng dạy", value: "96h", icon: Clock, color: "text-blue-600", bg: "bg-blue-50" },
+    { label: "Mentee đang dạy", value: mentorStats.totalMentees.toString(), icon: Users, color: "text-jade-600", bg: "bg-jade-50" },
+    { label: "Buổi học tháng này", value: mentorStats.totalSessions.toString(), icon: Calendar, color: "text-amber-600", bg: "bg-amber-50" },
+    { label: "Đã quyên góp", value: `₫${(mentorStats.totalDonations / 1000000).toFixed(1)}M`, icon: Heart, color: "text-rose-600", bg: "bg-rose-50" },
+    { label: "Giờ giảng dạy", value: `${mentorStats.totalHours}h`, icon: Clock, color: "text-blue-600", bg: "bg-blue-50" },
   ];
 
   return (
@@ -104,10 +109,10 @@ export default async function MentorDashboardPage() {
           Thiện Nguyện MBBank:
         </p>
         <div className="font-display text-4xl font-bold text-jade-700">
-          ₫12,400,000
+          {formatVND(mentorStats.totalDonations)}
         </div>
         <p className="text-jade-600 text-sm mt-1">
-          Tương đương ~620 bữa ăn từ thiện 🙏
+          Tương đương ~{Math.floor(mentorStats.totalDonations / 20000)} bữa ăn từ thiện 🙏
         </p>
       </div>
     </div>

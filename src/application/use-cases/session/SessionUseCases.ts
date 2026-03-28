@@ -285,7 +285,30 @@ export class ConfirmCompletionUseCase {
         }
       }
 
-      return uow.sessions.updateConfirmation(sessionId, confirmedBy, { meetLink });
+      const updatedSession = await uow.sessions.updateConfirmation(sessionId, confirmedBy, { meetLink });
+      
+      const newMentorConfirmed = isMentor ? true : (updatedSession as any).mentorConfirmed;
+      const newMenteeConfirmed = isMentee ? true : (updatedSession as any).menteeConfirmed;
+
+      if (newMentorConfirmed && newMenteeConfirmed) {
+        const newStatus = session.fee > 0 ? SessionStatus.PAYMENT_PENDING : SessionStatus.COMPLETED;
+        const finalSession = await uow.sessions.updateStatus(sessionId, newStatus, {});
+        
+        if (newStatus === SessionStatus.COMPLETED) {
+          await uow.mentorProfiles.incrementTotalSessions(session.mentorId);
+        }
+        
+        await uow.users.createAuditLog({
+          userId,
+          action: "SESSION_COMPLETED",
+          newValues: { sessionId, status: newStatus, mentorConfirmed: true, menteeConfirmed: true },
+          performedBy: userId,
+        });
+        
+        return finalSession;
+      }
+
+      return updatedSession;
     });
   }
 }
