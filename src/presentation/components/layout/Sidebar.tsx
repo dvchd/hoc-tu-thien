@@ -13,11 +13,13 @@ const navByRole: Record<UserRole, { label: string; href: string; icon: React.Ele
   [UserRole.ADMIN]: [
     { label: "Tổng quan", href: "/dashboard/admin", icon: LayoutDashboard },
     { label: "Người dùng", href: "/dashboard/admin/users", icon: Users },
-    { label: "Đơn Mentor", href: "/dashboard/admin/mentor-applications", icon: FileText },
+    { label: "Đơn Mentor", href: "/dashboard/admin/applications", icon: FileText },
+    { label: "Buổi học", href: "/dashboard/admin/sessions", icon: BookOpen },
     { label: "TK Thiện nguyện", href: "/dashboard/admin/charity-accounts", icon: CreditCard },
     { label: "Lĩnh vực học", href: "/dashboard/admin/fields", icon: Tag },
     { label: "Cấu hình", href: "/dashboard/admin/config", icon: Settings },
     { label: "Báo cáo", href: "/dashboard/admin/reports", icon: AlertTriangle },
+    { label: "Thống kê", href: "/dashboard/admin/stats", icon: BarChart3 },
     { label: "Bảng xếp hạng", href: "/dashboard/leaderboard", icon: Trophy },
   ],
   [UserRole.MENTOR]: [
