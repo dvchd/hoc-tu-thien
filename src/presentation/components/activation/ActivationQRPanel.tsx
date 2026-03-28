@@ -11,6 +11,7 @@ import {
   RefreshCw,
   ExternalLink,
   QrCode,
+  Home,
 } from "lucide-react";
 import type { ActivationPaymentInfo } from "@/application/use-cases/payment/PaymentUseCases";
 
@@ -237,6 +238,15 @@ export function ActivationQRPanel({ paymentInfo, userId, sessionId, onSuccess }:
                 Đã kiểm tra {checkCount} lần. Nếu vừa chuyển, vui lòng đợi 1-2 phút rồi thử lại.
               </p>
             )}
+
+            {/* Bỏ qua / về dashboard */}
+            <a
+              href="/dashboard"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-stone-500 hover:text-stone-700 hover:bg-stone-50 border border-stone-200 transition-colors"
+            >
+              <Home className="w-3.5 h-3.5" />
+              Về trang chủ (kích hoạt sau)
+            </a>
 
             <a
               href="https://thiennguyen.app"

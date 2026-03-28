@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { UserStatus } from "@/domain/value-objects/UserStatus";
 import { createUseCases } from "@/lib/container";
 import { ActivationQRPanel } from "@/presentation/components/activation/ActivationQRPanel";
-import { CheckCircle2, Heart, Shield } from "lucide-react";
+import { CheckCircle2, Heart, Shield, X } from "lucide-react";
+import Link from "next/link";
 
 export default async function ActivationPage() {
   const session = await auth();
@@ -35,7 +36,16 @@ export default async function ActivationPage() {
       <div className="w-full max-w-2xl">
 
         {/* Header */}
-        <div className="text-center mb-8 animate-in">
+        <div className="text-center mb-8 animate-in relative">
+          {/* Nút bỏ qua - góc phải */}
+          <Link
+            href="/dashboard"
+            className="absolute right-0 top-0 flex items-center gap-1.5 text-sm text-stone-400 hover:text-stone-600 transition-colors"
+          >
+            <X className="w-4 h-4" />
+            Bỏ qua
+          </Link>
+
           <div className="w-14 h-14 rounded-2xl bg-jade-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-jade-200">
             <Heart className="w-7 h-7 text-white fill-white" />
           </div>
@@ -46,6 +56,9 @@ export default async function ActivationPage() {
             Chuyển khoản <span className="font-semibold text-stone-700">10.000₫</span> để kích hoạt
             tài khoản. Số tiền này sẽ được chuyển vào{" "}
             <span className="text-jade-700 font-semibold">Quỹ Thiện Nguyện MBBank</span>.
+          </p>
+          <p className="text-xs text-stone-400 mt-2">
+            Kích hoạt là tuỳ chọn — bạn có thể khám phá nền tảng trước.
           </p>
         </div>
 

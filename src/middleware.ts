@@ -2,7 +2,6 @@ import NextAuth from "next-auth";
 import { authConfig } from "@/auth.config";
 import { NextResponse } from "next/server";
 import { UserRole } from "@/domain/value-objects/UserRole";
-import { UserStatus } from "@/domain/value-objects/UserStatus";
 
 const { auth } = NextAuth(authConfig);
 
@@ -11,11 +10,9 @@ export default auth((req) => {
   const session = req.auth;
   const isLoggedIn = !!session?.user;
   const role = session?.user?.role as string | undefined;
-  const status = session?.user?.status as string | undefined;
 
   const publicRoutes = ["/login", "/"];
   const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
-  const isActivationRoute = nextUrl.pathname === "/activation";
   const isApiRoute = nextUrl.pathname.startsWith("/api");
 
   if (isApiRoute) return NextResponse.next();
@@ -28,18 +25,9 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // Force activation for PENDING_ACTIVATION users
-  // Skip if force-refresh cookie is set (activation just completed, JWT being refreshed)
-  const isForceRefresh = req.cookies.get("next-auth.force-refresh")?.value === "1";
-  if (
-    isLoggedIn &&
-    status === UserStatus.PENDING_ACTIVATION &&
-    !isActivationRoute &&
-    !isPublicRoute &&
-    !isForceRefresh
-  ) {
-    return NextResponse.redirect(new URL("/activation", req.url));
-  }
+  // Kích hoạt tài khoản là tuỳ chọn (không bắt buộc).
+  // Chỉ redirect về /activation nếu user tự điều hướng đến đó,
+  // không cần chặn họ khỏi dashboard hay các route khác.
 
   // Chỉ chặn nếu đã login mà role không đúng
   // Không chặn nếu role chưa load (undefined) — tránh false redirect
