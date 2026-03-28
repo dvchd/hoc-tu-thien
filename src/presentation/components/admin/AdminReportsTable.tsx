@@ -136,6 +136,7 @@ export function AdminReportsTable() {
 
   useEffect(() => {
     fetchReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterStatus]);
 
   const handleConfirm = async (note: string) => {

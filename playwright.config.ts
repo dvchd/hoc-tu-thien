@@ -55,12 +55,14 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "E2E_TEST_MODE=true npm run dev",
+    command: "E2E_TEST_MODE=true NEXTAUTH_URL=http://localhost:3000 NEXT_PUBLIC_APP_URL=http://localhost:3000 npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: true,
     timeout: 120 * 1000,
     env: {
       E2E_TEST_MODE: "true",
+      NEXTAUTH_URL: "http://localhost:3000",
+      NEXT_PUBLIC_APP_URL: "http://localhost:3000",
     },
   },
 });
