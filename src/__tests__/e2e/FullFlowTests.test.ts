@@ -2653,16 +2653,32 @@ describe("Scenario 5 – Edge Cases & Error Flows", () => {
     ).rejects.toThrow("ít nhất 20 ký tự");
   });
 
-  it("Thanh toán hết hạn trả về lỗi", async () => {
+  it("Payment vẫn verify được sau khi quá deadline (BR32 soft deadline)", async () => {
     const uow = createMockUnitOfWork();
     const expiredPayment = buildPaymentRecord({
       id: "pay_expired",
       status: PaymentStatus.PENDING,
-      expiresAt: new Date(Date.now() - 86400000), // hết hạn hôm qua
+      expiresAt: new Date(Date.now() - 86400000), // quá deadline 1 ngày
+      type: PaymentType.SESSION_FEE,
+      sessionId: "sess_001",
     });
 
     uow.payments.findById.mockResolvedValue(expiredPayment);
-    uow.payments.updateStatus.mockResolvedValue({ ...expiredPayment, status: PaymentStatus.FAILED } as any);
+    uow.payments.updateStatus.mockResolvedValue({ ...expiredPayment, status: PaymentStatus.VERIFIED } as any);
+    uow.sessions.findById.mockResolvedValue({
+      ...expiredPayment,
+      id: "sess_001",
+      status: SessionStatus.PAYMENT_PENDING,
+      isNoShow: false,
+      mentorId: "mentor_001",
+    } as any);
+    uow.mentorProfiles.incrementTotalSessions.mockResolvedValue();
+    // Simulate TN App finding the transaction
+    const { tnAppClient } = require("../../infrastructure/external/ThienNguyenAppClient");
+    jest.spyOn(tnAppClient, "findTransactionByCode").mockResolvedValue({
+      found: true,
+      transaction: { id: "tx1", refId: "ref1", transactionAmount: expiredPayment.amount },
+    });
 
     const verifyPayment = new VerifyPaymentUseCase(uow);
     const result = await verifyPayment.execute({
@@ -2670,8 +2686,10 @@ describe("Scenario 5 – Edge Cases & Error Flows", () => {
       triggeredBy: "user_001",
     });
 
-    expect(result.success).toBe(false);
-    expect(result.message).toContain("hết hạn");
+    // BR32: Payment KHÔNG có hard expiry. Mentee có thể thanh toán bất cứ lúc nào.
+    // expiresAt chỉ là soft deadline — BR09 block mentee đặt lịch mới, nhưng verify vẫn hoạt động.
+    expect(result.success).toBe(true);
+    expect(result.message).toContain("thành công");
   });
 
   it("Không thể báo cáo buổi học đang chờ xác nhận", async () => {

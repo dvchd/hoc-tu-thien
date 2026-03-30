@@ -182,16 +182,14 @@ export class VerifyPaymentUseCase {
       return { success: false, message: "Yêu cầu thanh toán đã hết hạn" };
     }
 
-    // Lấy configured expiry hours để hiển thị chính xác trong error message
-    const expiryHours = await this.uow.systemConfig.getNumber(
-      SYSTEM_CONFIG_KEYS.PAYMENT_EXPIRY_HOURS,
-      PAYMENT_EXPIRY_HOURS
-    );
-
-    if (payment.expiresAt < new Date()) {
-      await this.uow.payments.updateStatus(payment.id, PaymentStatus.FAILED);
-      return { success: false, message: `Yêu cầu thanh toán đã hết hạn (${expiryHours}h)` };
-    }
+    // Lấy configured expiry hours để hiển thị deadline cho mentee (soft deadline)
+    // BR32: "Quá thời hạn mà chưa hoàn tất donation thì mentee chưa đủ điều kiện đặt lịch mới"
+    // → Payment KHÔNG có hard expiry. Mentee có thể thanh toán bất cứ lúc nào.
+    // → BR09 (PAYMENT_PENDING) sẽ block mentee đặt lịch mới cho đến khi thanh toán xong.
+    // expiresAt chỉ dùng để hiển thị "deadline khuyến nghị" trên UI.
+    //
+    // Không check expiresAt ở đây — nếu mentee đã chuyển khoản, verify phải thành công
+    // dù vượt deadline. Tiền đã đi vào tài khoản thiện nguyện, không lý do gì reject.
 
     // Sử dụng injected verification service hoặc lazy-load từ infrastructure
     const verificationService = this.verificationService ?? await this.getVerificationService();

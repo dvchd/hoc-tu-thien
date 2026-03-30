@@ -367,21 +367,31 @@ describe("VerifyPaymentUseCase - Session Fee Verification", () => {
     expect(uow.mentorProfiles.incrementTotalSessions).not.toHaveBeenCalled();
   });
 
-  it("should use dynamic expiry hours in error message", async () => {
+  it("does NOT block verification after expiresAt (BR32 soft deadline)", async () => {
     const payment = buildPaymentRecord({
       type: PaymentType.SESSION_FEE,
       status: PaymentStatus.PENDING,
-      expiresAt: new Date(Date.now() - 86400000), // Already expired
+      sessionId: "sess_001",
+      expiresAt: new Date(Date.now() - 86400000), // Expired 1 day ago — but payment still works
     });
     uow.payments.findById.mockResolvedValue(payment);
-    uow.payments.updateStatus.mockResolvedValue(payment);
-    uow.systemConfig.getNumber.mockResolvedValue(48); // 48h expiry
+    uow.payments.updateStatus.mockResolvedValue({ ...payment, status: PaymentStatus.VERIFIED });
+    uow.sessions.findById.mockResolvedValue({
+      id: "sess_001",
+      status: SessionStatus.PAYMENT_PENDING,
+      isNoShow: false,
+      mentorId: "mentor_001",
+    } as any);
+    uow.mentorProfiles.incrementTotalSessions.mockResolvedValue();
+    mockVerificationService.findTransactionByCode.mockResolvedValue({
+      found: true,
+      transaction: { id: "tx1", refId: "ref1", transactionAmount: payment.amount },
+    });
 
     const result = await useCase.execute({ paymentId: "pay_001", triggeredBy: "mentee_001" });
 
-    expect(result.success).toBe(false);
-    expect(result.message).toContain("48h");
-    expect(result.message).not.toContain("24h"); // Should NOT contain hardcoded 24h
+    // BR32: Payment has NO hard expiry. expiresAt is informational only.
+    expect(result.success).toBe(true);
   });
 
   it("should log verification on failure", async () => {

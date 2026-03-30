@@ -6,6 +6,7 @@ import {
 import {
   PaymentType,
   PaymentStatus,
+  SessionStatus,
   ACTIVATION_AMOUNT,
 } from "@/domain/value-objects/Payment";
 import { UserStatus } from "@/domain/value-objects/UserStatus";
@@ -239,29 +240,47 @@ describe("VerifyPaymentUseCase", () => {
     );
   });
 
-  it("returns failure and marks payment FAILED when expired", async () => {
+  it("does NOT reject payment after expiresAt — mentee can pay anytime (BR32 soft deadline)", async () => {
     const expiredPayment = buildPaymentRecord({
       status: PaymentStatus.PENDING,
-      expiresAt: new Date(Date.now() - 1000), // 1 sec ago
+      type: PaymentType.SESSION_FEE, // Session fee — not activation
+      sessionId: "sess_late_pay",
+      expiresAt: new Date(Date.now() - 86400000), // 1 day ago — soft deadline passed
     });
 
     const uow = createMockUnitOfWork();
     uow.payments.findById.mockResolvedValue(expiredPayment);
     uow.payments.updateStatus.mockResolvedValue({
       ...expiredPayment,
-      status: PaymentStatus.FAILED,
+      status: PaymentStatus.VERIFIED,
     } as any);
+    // Mock session for SESSION_FEE payment verification
+    uow.sessions.findById.mockResolvedValue({
+      id: "sess_late_pay",
+      status: SessionStatus.PAYMENT_PENDING,
+      isNoShow: false,
+      mentorId: "mentor_001",
+    } as any);
+    uow.mentorProfiles.incrementTotalSessions.mockResolvedValue();
+    // TN App finds the transaction (mentee did pay, just late)
+    mockTnClient.findTransactionByCode.mockResolvedValue({
+      found: true,
+      transaction: { id: "tx123", refId: "ref123", transactionAmount: expiredPayment.amount },
+    });
 
     const result = await new VerifyPaymentUseCase(uow).execute({
       paymentId: expiredPayment.id,
       triggeredBy: expiredPayment.userId,
     });
 
-    expect(result.success).toBe(false);
-    expect(result.message).toContain("hết hạn");
+    // Payment should be verified even after deadline
+    // (expiresAt is soft deadline only — BR32 says mentee just can't book NEW sessions)
+    expect(result.success).toBe(true);
+    expect(result.message).toContain("thành công");
     expect(uow.payments.updateStatus).toHaveBeenCalledWith(
       expiredPayment.id,
-      PaymentStatus.FAILED
+      PaymentStatus.VERIFIED,
+      expect.any(Object)
     );
   });
 
