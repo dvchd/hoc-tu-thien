@@ -10,7 +10,6 @@ import {
   PaymentStatus,
   CharityAccountVerificationStatus,
   CHARITY_ACCOUNT_VERIFICATION_AMOUNT,
-  PAYMENT_EXPIRY_HOURS,
   generateShortCode,
   buildTransactionContent,
   buildVietQRUrl,
@@ -153,7 +152,6 @@ export interface CharityVerificationPaymentInfo {
   tnAccountNo: string;
   tnAccountName: string;
   qrImageUrl: string;
-  expiresAt: string;
   accountName: string;
   accountNo: string;
 }
@@ -172,40 +170,30 @@ export class InitiateCharityAccountVerificationUseCase {
         throw new Error("Tài khoản này đã được xác thực thành công trước đó");
       }
 
-      // Lấy payment cũ nếu đang PENDING và chưa hết hạn → tái sử dụng
+      // Lấy payment cũ nếu đang PENDING → tái sử dụng (không check expiresAt)
+      // Verification không có deadline — admin xác nhận bất cứ lúc nào.
       if (
         account.verificationStatus === CharityAccountVerificationStatus.PENDING &&
         account.verificationPaymentId
       ) {
         const existingPayment = await uow.payments.findById(account.verificationPaymentId);
-        if (
-          existingPayment &&
-          existingPayment.status === PaymentStatus.PENDING &&
-          existingPayment.expiresAt > new Date()
-        ) {
+        if (existingPayment && existingPayment.status === PaymentStatus.PENDING) {
           return this.buildPaymentInfo(existingPayment, account);
         }
       }
 
       // Tạo probe payment mới
       // Đọc amount từ SystemConfig (admin có thể cấu hình), fallback về constant
-      const [verificationAmount, expiryHours] = await Promise.all([
-        uow.systemConfig.getNumber(
-          SYSTEM_CONFIG_KEYS.CHARITY_ACCOUNT_VERIFICATION_AMOUNT,
-          CHARITY_ACCOUNT_VERIFICATION_AMOUNT
-        ),
-        uow.systemConfig.getNumber(
-          SYSTEM_CONFIG_KEYS.PAYMENT_EXPIRY_HOURS,
-          PAYMENT_EXPIRY_HOURS
-        ),
-      ]);
+      const verificationAmount = await uow.systemConfig.getNumber(
+        SYSTEM_CONFIG_KEYS.CHARITY_ACCOUNT_VERIFICATION_AMOUNT,
+        CHARITY_ACCOUNT_VERIFICATION_AMOUNT
+      );
 
       const shortCode = generateShortCode(8);
       const transactionCode = buildTransactionContent(
         PaymentType.CHARITY_ACCOUNT_VERIFICATION,
         shortCode
       );
-      const expiresAt = new Date(Date.now() + expiryHours * 60 * 60 * 1000);
 
       const payment = await uow.payments.create({
         id: createId(),
@@ -216,7 +204,8 @@ export class InitiateCharityAccountVerificationUseCase {
         shortCode,
         tnAccountNo: account.accountNo, // chuyển đến chính tài khoản cần xác thực
         tnAccountName: account.name,
-        expiresAt,
+        // Verification không có deadline — set far-future để không bao giờ expire
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
       });
 
       // Đánh dấu tài khoản đang PENDING xác thực
@@ -266,7 +255,6 @@ export class InitiateCharityAccountVerificationUseCase {
       tnAccountNo: payment.tnAccountNo,
       tnAccountName: payment.tnAccountName ?? account.name,
       qrImageUrl,
-      expiresAt: payment.expiresAt.toISOString(),
       accountName: account.name,
       accountNo: account.accountNo,
     };
@@ -325,20 +313,6 @@ export class ConfirmCharityAccountVerificationUseCase {
     const payment = await this.uow.payments.findById(account.verificationPaymentId);
     if (!payment) {
       return { success: false, message: "Không tìm thấy thông tin giao dịch xác thực" };
-    }
-
-    // Payment đã hết hạn
-    if (payment.expiresAt < new Date()) {
-      await this.uow.payments.updateStatus(payment.id, PaymentStatus.FAILED);
-      await this.uow.charityAccounts.updateVerificationStatus(
-        input.accountId,
-        CharityAccountVerificationStatus.FAILED,
-        { verificationNote: "Giao dịch xác thực đã hết hạn. Vui lòng khởi tạo lại." }
-      );
-      return {
-        success: false,
-        message: "Giao dịch xác thực đã hết hạn. Vui lòng khởi tạo xác thực mới.",
-      };
     }
 
     // Payment đã được xác nhận trước đó (idempotent)

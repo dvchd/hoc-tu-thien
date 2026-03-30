@@ -255,39 +255,23 @@ describe("InitiateCharityAccountVerificationUseCase", () => {
     expect(result.amount).toBe(CHARITY_ACCOUNT_VERIFICATION_AMOUNT);
   });
 
-  it("tạo payment mới khi payment cũ đã hết hạn", async () => {
+  it("tái sử dụng payment PENDING cũ bất kể expiresAt (verification không có deadline)", async () => {
     const uow = createMockUnitOfWork();
-    const expiredPayment = buildPaymentRecord({
-      id: "probe_expired",
+    const oldPayment = buildPaymentRecord({
+      id: "probe_old",
       type: PaymentType.CHARITY_ACCOUNT_VERIFICATION,
       amount: CHARITY_ACCOUNT_VERIFICATION_AMOUNT,
-      expiresAt: new Date(Date.now() - 3600000), // hết hạn 1 tiếng trước
+      expiresAt: new Date(Date.now() - 86400000), // quá hạn 1 ngày — không quan trọng
       status: PaymentStatus.PENDING,
     });
 
     const account = buildCharityAccountRecord({
       verificationStatus: CharityAccountVerificationStatus.PENDING,
-      verificationPaymentId: expiredPayment.id,
+      verificationPaymentId: oldPayment.id,
     });
-
-    const newPayment = buildPaymentRecord({
-      id: "probe_new_001",
-      type: PaymentType.CHARITY_ACCOUNT_VERIFICATION,
-      amount: CHARITY_ACCOUNT_VERIFICATION_AMOUNT,
-      expiresAt: new Date(Date.now() + 86400000),
-    });
-
-    const pendingAccount = {
-      ...account,
-      verificationPaymentId: newPayment.id,
-    };
 
     uow.charityAccounts.findById.mockResolvedValue(account);
-    uow.payments.findById.mockResolvedValue(expiredPayment);
-    mockConfigGetNumber(uow);
-    uow.payments.create.mockResolvedValue(newPayment);
-    uow.charityAccounts.updateVerificationStatus.mockResolvedValue(pendingAccount);
-    uow.users.createAuditLog.mockResolvedValue(undefined);
+    uow.payments.findById.mockResolvedValue(oldPayment);
 
     const useCase = new InitiateCharityAccountVerificationUseCase(uow);
     const result = await useCase.execute({
@@ -295,9 +279,9 @@ describe("InitiateCharityAccountVerificationUseCase", () => {
       adminId: "admin_001",
     });
 
-    // Tạo payment mới
-    expect(uow.payments.create).toHaveBeenCalledTimes(1);
-    expect(result.paymentId).toBe(newPayment.id);
+    // Tái sử dụng payment cũ — không tạo mới
+    expect(uow.payments.create).not.toHaveBeenCalled();
+    expect(result.paymentId).toBe("probe_old");
   });
 
   it("amount được đọc từ SystemConfig khi admin cấu hình giá trị khác", async () => {
@@ -308,7 +292,7 @@ describe("InitiateCharityAccountVerificationUseCase", () => {
 
     const customAmount = 2000; // admin cấu hình 2,000 VND thay vì 1,000 VND mặc định
 
-    mockConfigGetNumber(uow, customAmount, 48); // 2000 VND, hết hạn sau 48h
+    mockConfigGetNumber(uow, customAmount); // 2000 VND
 
     uow.charityAccounts.findById.mockResolvedValue(account);
     uow.payments.create.mockImplementation(async (input) =>
@@ -332,14 +316,11 @@ describe("InitiateCharityAccountVerificationUseCase", () => {
     expect(uow.payments.create).toHaveBeenCalledWith(
       expect.objectContaining({ amount: customAmount })
     );
-    // SystemConfig được gọi với đúng key
+    // SystemConfig chỉ cần gọi cho CHARITY_ACCOUNT_VERIFICATION_AMOUNT (không còn PAYMENT_EXPIRY_HOURS)
+    expect(uow.systemConfig.getNumber).toHaveBeenCalledTimes(1);
     expect(uow.systemConfig.getNumber).toHaveBeenCalledWith(
       SYSTEM_CONFIG_KEYS.CHARITY_ACCOUNT_VERIFICATION_AMOUNT,
       CHARITY_ACCOUNT_VERIFICATION_AMOUNT
-    );
-    expect(uow.systemConfig.getNumber).toHaveBeenCalledWith(
-      SYSTEM_CONFIG_KEYS.PAYMENT_EXPIRY_HOURS,
-      expect.any(Number)
     );
   });
 
@@ -579,34 +560,36 @@ describe("ConfirmCharityAccountVerificationUseCase", () => {
     expect(result.message).toContain("Không thể kết nối TN App");
   });
 
-  it("payment hết hạn → cập nhật FAILED và trả về lỗi hết hạn", async () => {
+  it("verification không có hard expiry — confirm hoạt động bất kể khi nào", async () => {
     const uow = createMockUnitOfWork();
-    const expiredPayment = buildPaymentRecord({
-      id: "probe_expired_confirm",
+    const payment = buildPaymentRecord({
+      id: "probe_late",
       type: PaymentType.CHARITY_ACCOUNT_VERIFICATION,
       amount: CHARITY_ACCOUNT_VERIFICATION_AMOUNT,
       status: PaymentStatus.PENDING,
-      expiresAt: new Date(Date.now() - 3600000), // đã hết hạn
+      expiresAt: new Date(Date.now() - 86400000), // quá hạn 1 ngày — không quan trọng
     });
 
     const pendingAccount = buildCharityAccountRecord({
       verificationStatus: CharityAccountVerificationStatus.PENDING,
-      verificationPaymentId: expiredPayment.id,
+      verificationPaymentId: payment.id,
     });
 
-    const failedAccount = {
-      ...pendingAccount,
-      verificationStatus: CharityAccountVerificationStatus.FAILED,
-      verificationNote: "Giao dịch xác thực đã hết hạn. Vui lòng khởi tạo lại.",
-    };
-
     uow.charityAccounts.findById.mockResolvedValue(pendingAccount);
-    uow.payments.findById.mockResolvedValue(expiredPayment);
+    uow.payments.findById.mockResolvedValue(payment);
     uow.payments.updateStatus.mockResolvedValue({
-      ...expiredPayment,
-      status: PaymentStatus.FAILED,
+      ...payment,
+      status: PaymentStatus.VERIFIED,
     } as any);
-    uow.charityAccounts.updateVerificationStatus.mockResolvedValue(failedAccount);
+    uow.charityAccounts.updateVerificationStatus.mockResolvedValue({
+      ...pendingAccount,
+      verificationStatus: CharityAccountVerificationStatus.VERIFIED,
+    });
+    // TN App tìm thấy giao dịch
+    mockTnClient.findTransactionByCode.mockResolvedValue({
+      found: true,
+      transaction: { id: "tx1", refId: "ref1", transactionAmount: CHARITY_ACCOUNT_VERIFICATION_AMOUNT },
+    });
 
     const useCase = new ConfirmCharityAccountVerificationUseCase(uow);
     const result = await useCase.execute({
@@ -614,19 +597,11 @@ describe("ConfirmCharityAccountVerificationUseCase", () => {
       adminId: "admin_001",
     });
 
-    expect(result.success).toBe(false);
-    expect(result.message).toContain("hết hạn");
-    expect(uow.payments.updateStatus).toHaveBeenCalledWith(
-      expiredPayment.id,
-      PaymentStatus.FAILED
-    );
-    expect(uow.charityAccounts.updateVerificationStatus).toHaveBeenCalledWith(
-      "charity_001",
-      CharityAccountVerificationStatus.FAILED,
-      expect.objectContaining({ verificationNote: expect.stringContaining("hết hạn") })
-    );
-    // Không gọi TN App API
-    expect(mockTnClient.findTransactionByCode).not.toHaveBeenCalled();
+    // Verification thành công dù vượt deadline — admin xác nhận bất cứ lúc nào
+    expect(result.success).toBe(true);
+    expect(result.message).toContain("thành công");
+    // Gọi TN App API để verify
+    expect(mockTnClient.findTransactionByCode).toHaveBeenCalled();
   });
 
   it("trả về success ngay nếu tài khoản đã VERIFIED", async () => {
