@@ -189,21 +189,7 @@ export class VerifyPaymentUseCase {
     );
 
     if (payment.expiresAt < new Date()) {
-      await this.uow.execute(async (uow) => {
-        await uow.payments.updateStatus(payment.id, PaymentStatus.FAILED);
-
-        // BR09 deadlock fix: Khi payment hết hạn, cũng cần chuyển session
-        // từ PAYMENT_PENDING → CANCELLED để mentee không bị block vĩnh viễn.
-        if (payment.type === PaymentType.SESSION_FEE && payment.sessionId) {
-          const session = await uow.sessions.findById(payment.sessionId);
-          if (session?.status === SessionStatus.PAYMENT_PENDING) {
-            await uow.sessions.updateStatus(payment.sessionId, SessionStatus.CANCELLED, {
-              cancelReason: `Thanh toán hết hạn (${expiryHours}h) — tự động hủy`,
-              cancelledBy: "system",
-            });
-          }
-        }
-      });
+      await this.uow.payments.updateStatus(payment.id, PaymentStatus.FAILED);
       return { success: false, message: `Yêu cầu thanh toán đã hết hạn (${expiryHours}h)` };
     }
 

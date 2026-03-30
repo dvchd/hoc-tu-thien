@@ -68,15 +68,19 @@ Phần còn lại (~15%) bao gồm background jobs, một số UI polish và tí
 
 ---
 
-#### GAP-H: Payment 24h Deadline Enforcement (BR32) *(đã fix)*
+#### GAP-H: Payment 24h Deadline Enforcement (BR32)
 **Business Rules liên quan:** BR32
 **Hiện trạng:**
 - `expiresAt` được set (24h) và check khi user gọi verify ✅
-- Vẫn chưa có background job để auto-expire
+- Session giữ PAYMENT_PENDING khi payment hết hạn → BR09 block mentee đặt lịch mới ✅ (đúng theo BR32)
+- Mentee vẫn có thể re-initiate payment cho cùng session ✅
 
-**Đã làm:**
-- [x] Khi payment hết hạn → session PAYMENT_PENDING tự động chuyển CANCELLED (BR09 deadlock fix)
-- [ ] Cron job / API route scheduled: check expired payments proactively (không cần thiết vì đã fix on-demand)
+**Thiết kế hiện tại đã đúng theo BR32:**
+> "Quá thời hạn mà chưa hoàn tất donation thì mentee chưa đủ điều kiện đặt lịch mới."
+> Giữ PAYMENT_PENDING là cơ chế "jailed to complete" — mentee phải hoàn thành nghĩa vụ thanh toán trước khi tiếp tục.
+
+**Cần làm:**
+- [ ] Cron job / API route scheduled: check expired payments proactively (optional — hiện tại check on-demand khi user verify)
 
 ---
 
@@ -110,12 +114,12 @@ Phần còn lại (~15%) bao gồm background jobs, một số UI polish và tí
 
 | Priority | Số lượng gaps còn lại | Trạng thái |
 |----------|----------------------|-----------|
-| P1 Critical | 1 gap (K) | Teaching slot đơn lẻ |
+| P1 Critical | 2 gaps (H, K) | H: chỉ còn optional background job; K: Teaching slot đơn lẻ |
 | P2 Important | 1 gap (P) | UI display only |
 | P3 Tech Debt | 4 items | Nice to have |
 | **Tổng** | **~6 items** | **~2-3 ngày dev** |
 
-**So với phiên bản trước (v0.1):** Từ 16 gaps → còn 6 items nhỏ. GAP-G và GAP-H đã được fix (30/03/2026).
+**So với phiên bản trước (v0.1):** Từ 16 gaps → còn 6 items nhỏ. GAP-G đã được fix (30/03/2026). GAP-H xác nhận thiết kế hiện tại đã đúng theo BR32.
 
 ---
 
