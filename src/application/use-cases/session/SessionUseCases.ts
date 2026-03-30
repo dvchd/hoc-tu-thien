@@ -97,6 +97,15 @@ export class BookSessionUseCase {
         );
       }
 
+      // 9b. Validate scheduledAt bắt đầu đúng giờ chẵn (BR11 - top of hour)
+      const scheduledDate = new Date(input.scheduledAt);
+      if (scheduledDate.getMinutes() !== 0 || scheduledDate.getSeconds() !== 0) {
+        throw new Error(
+          "Buổi học phải bắt đầu đúng giờ chẵn (VD: 09:00, 14:00, 19:00). " +
+          `Nhận được: ${String(scheduledDate.getHours()).padStart(2, "0")}:${String(scheduledDate.getMinutes()).padStart(2, "0")}.`
+        );
+      }
+
       // 10. Validate không trùng lịch mentor
       const conflict = await uow.sessions.findConflictingSession(
         input.mentorId,
@@ -184,9 +193,20 @@ export class CancelSessionUseCase {
       if (
         session.status === SessionStatus.COMPLETED ||
         session.status === SessionStatus.CANCELLED ||
-        session.status === SessionStatus.NO_SHOW
+        session.status === SessionStatus.NO_SHOW ||
+        session.status === SessionStatus.PAYMENT_PENDING
       ) {
         throw new Error("Không thể huỷ buổi học đã kết thúc hoặc đã bị huỷ");
+      }
+
+      // BR35: Không cho phép hủy sau khi buổi học đã bắt đầu
+      // (CancellationPolicy.ts cũng define rule này; giữ nhất quán giữa domain và use case)
+      const cancelNow = new Date();
+      if (cancelNow >= session.scheduledAt) {
+        throw new Error(
+          "Không thể huỷ buổi học đã qua giờ bắt đầu. " +
+          "Vui lòng đánh dấu vắng mặt (no-show) hoặc liên hệ Admin nếu có tranh chấp."
+        );
       }
 
       // Kiểm tra late cancellation (BR35)
@@ -194,8 +214,7 @@ export class CancelSessionUseCase {
         SYSTEM_CONFIG_KEYS.LATE_CANCEL_THRESHOLD_MINUTES,
         LATE_CANCEL_THRESHOLD_MINUTES
       );
-      const now = new Date();
-      const minutesBeforeStart = (session.scheduledAt.getTime() - now.getTime()) / 60000;
+      const minutesBeforeStart = (session.scheduledAt.getTime() - cancelNow.getTime()) / 60000;
       const isLateCancellation = minutesBeforeStart <= lateThresholdMinutes;
 
       // Update session
@@ -398,7 +417,10 @@ export class RateSessionUseCase {
   }
 }
 
-// ─── ApplyForMentorUseCase ─────────────────────────────────────────────────────
+// ─── ApplyForMentorUseCase (DEPRECATED) ───────────────────────────────────────
+// DEPRECATED: Sử dụng SubmitMentorApplicationUseCase từ MentorApplicationUseCases.ts thay thế.
+// Class này chỉ giữ lại cho backward-compat; không nên dùng cho code mới.
+// @deprecated Use MentorApplicationUseCases.SubmitMentorApplicationUseCase instead.
 
 export interface ApplyForMentorDTO {
   userId: string;

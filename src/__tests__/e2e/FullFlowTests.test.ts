@@ -82,6 +82,7 @@ import {
   buildPaymentRecord,
   buildSessionRecord,
   createMockUnitOfWork,
+  nextTopOfHour,
 } from "@/__tests__/helpers";
 
 // ─── Mock external services ───────────────────────────────────────────────────
@@ -145,7 +146,7 @@ function buildFullSessionRecord(
     title: "Buổi học test",
     description: null,
     status: SessionStatus.PENDING,
-    scheduledAt: new Date(Date.now() + 86400000),
+    scheduledAt: nextTopOfHour(86400000),
     durationMinutes: 60,
     endAt: null,
     meetLink: null,
@@ -360,7 +361,7 @@ describe("Scenario 1 – Mentee Complete Flow", () => {
       menteeId: "mentee_full_001",
       mentorId: mentor.id,
       title: "Tư vấn định hướng nghề nghiệp",
-      scheduledAt: new Date(Date.now() + 86400000),
+      scheduledAt: nextTopOfHour(86400000),
     });
 
     expect(booked.status).toBe(SessionStatus.PENDING);
@@ -409,7 +410,7 @@ describe("Scenario 1 – Mentee Complete Flow", () => {
       menteeId: "mentee_full_001",
       mentorId: mentor.id,
       title: "Học NodeJS nâng cao",
-      scheduledAt: new Date(Date.now() + 172800000),
+      scheduledAt: nextTopOfHour(172800000),
     });
 
     expect(booked.status).toBe(SessionStatus.PENDING);
@@ -2152,7 +2153,7 @@ describe("Scenario 4 – Cross-Role Complete Interaction", () => {
       menteeId: "cross_mentee_002",
       mentorId: "cross_mentee_001",
       title: "Học Python cơ bản",
-      scheduledAt: new Date(Date.now() + 86400000),
+      scheduledAt: nextTopOfHour(86400000),
     });
 
     expect(booked.status).toBe(SessionStatus.PENDING);
@@ -2604,7 +2605,7 @@ describe("Scenario 5 – Edge Cases & Error Flows", () => {
         menteeId: "mentee_conflict",
         mentorId: mentor.id,
         title: "Buổi trùng lịch",
-        scheduledAt: new Date(Date.now() + 86400000),
+        scheduledAt: nextTopOfHour(86400000),
       })
     ).rejects.toThrow("đã có lịch học vào thời điểm này");
   });

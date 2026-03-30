@@ -44,6 +44,7 @@ import {
   buildPaymentRecord,
   buildSessionRecord,
   createMockUnitOfWork,
+  nextTopOfHour,
 } from "@/__tests__/helpers";
 
 jest.mock("@/infrastructure/external/ThienNguyenAppClient", () => ({
@@ -197,7 +198,7 @@ describe("Scenario 2 – Full Session Lifecycle", () => {
       menteeId: "mentee_s2",
       mentorId: mentor.id,
       title: "Học NodeJS cơ bản",
-      scheduledAt: new Date(Date.now() + 86400000),
+      scheduledAt: nextTopOfHour(86400000),
     });
     expect(booked.status).toBe(SessionStatus.PENDING);
 

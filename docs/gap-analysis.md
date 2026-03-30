@@ -14,7 +14,7 @@ Codebase hiện tại đã xây dựng được khoảng **85% MVP** với nền
 - DDD với Entity, Value Object, Domain Events
 - Repository Pattern + Unit of Work
 - Audit Logging + Optimistic Locking
-- **483 test cases** (unit + e2e) – tăng từ 247 test
+- **547 test cases** (unit + e2e) – tăng từ 247 test
 
 Phần còn lại (~15%) bao gồm background jobs, một số UI polish và tính năng phụ.
 
@@ -56,27 +56,27 @@ Phần còn lại (~15%) bao gồm background jobs, một số UI polish và tí
 
 ### 3.1 P1 - Critical (Bắt buộc cho MVP)
 
-#### GAP-G: Session Fee Payment dùng sai TN Account *(còn tồn tại một phần)*
+#### GAP-G: Session Fee Payment dùng sai TN Account *(đã fix)*
 **Business Rules liên quan:** BR08, BR16
 **Hiện trạng:**
 - `CharityAccount` model đã có, mentor có thể chọn charity account (BR08 ✅)
-- Session fee payment đã lấy account từ `MentorProfile.charityAccount`
-- NHƯNG: `InitiateSessionFeePaymentUseCase` cần kiểm tra lại fallback chain
+- Session fee payment đã lấy account từ `MentorProfile.charityAccount` ✅
+- Fallback chain đã được xác nhận: `charityAccount` → `tnAccountNo` → `default account` ✅
 
-**Cần làm:**
-- [ ] Xác nhận lại fallback chain: `charityAccount` → `tnAccountNo` → default account
+**Đã làm:**
+- [x] Xác nhận lại fallback chain: `charityAccount` → `tnAccountNo` → default account
 
 ---
 
-#### GAP-H: Payment 24h Deadline Enforcement (BR32)
+#### GAP-H: Payment 24h Deadline Enforcement (BR32) *(đã fix)*
 **Business Rules liên quan:** BR32
 **Hiện trạng:**
 - `expiresAt` được set (24h) và check khi user gọi verify ✅
 - Vẫn chưa có background job để auto-expire
 
-**Cần làm:**
-- [ ] Cron job / API route scheduled: check expired payments, mark FAILED
-- [ ] Hoặc: check expiry on-demand khi mentee truy cập dashboard / đặt lịch mới
+**Đã làm:**
+- [x] Khi payment hết hạn → session PAYMENT_PENDING tự động chuyển CANCELLED (BR09 deadlock fix)
+- [ ] Cron job / API route scheduled: check expired payments proactively (không cần thiết vì đã fix on-demand)
 
 ---
 
@@ -110,12 +110,12 @@ Phần còn lại (~15%) bao gồm background jobs, một số UI polish và tí
 
 | Priority | Số lượng gaps còn lại | Trạng thái |
 |----------|----------------------|-----------|
-| P1 Critical | 2 gaps (G, H, K) | Phần lớn đã done; còn background job + fallback chain |
+| P1 Critical | 1 gap (K) | Teaching slot đơn lẻ |
 | P2 Important | 1 gap (P) | UI display only |
 | P3 Tech Debt | 4 items | Nice to have |
-| **Tổng** | **~7 items** | **~3-5 ngày dev** |
+| **Tổng** | **~6 items** | **~2-3 ngày dev** |
 
-**So với phiên bản trước (v0.1):** Từ 16 gaps → còn 7 items nhỏ.
+**So với phiên bản trước (v0.1):** Từ 16 gaps → còn 6 items nhỏ. GAP-G và GAP-H đã được fix (30/03/2026).
 
 ---
 

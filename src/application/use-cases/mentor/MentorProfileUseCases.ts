@@ -88,7 +88,7 @@ export class GetMentorPublicProfileUseCase {
         id: user.id,
         name: user.name,
         image: user.image,
-        lateCancellationCount: (user as any).lateCancellationCount ?? 0,
+        lateCancellationCount: user.lateCancellationCount,
       },
       profile: {
         headline: profile.headline,

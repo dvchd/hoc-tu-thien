@@ -152,6 +152,7 @@ export class PrismaSessionRepository implements ISessionRepository {
       isLateCancellation?: boolean;
       isNoShow?: boolean;
       noShowMarkedBy?: string;
+      notes?: string;
     }
   ): Promise<SessionRecord> {
     const s = await this.prisma.learningSession.update({
@@ -167,6 +168,7 @@ export class PrismaSessionRepository implements ISessionRepository {
         isLateCancellation: opts?.isLateCancellation,
         isNoShow: opts?.isNoShow,
         noShowMarkedBy: opts?.noShowMarkedBy,
+        notes: opts?.notes,
         updatedAt: new Date(),
         version: { increment: 1 },
       },

@@ -13,6 +13,7 @@ export interface UserProps {
   status: UserStatus;
   bio: string | null;
   phone: string | null;
+  lateCancellationCount?: number;
 }
 
 export interface CreateUserProps {
@@ -37,6 +38,7 @@ export class UserEntity extends AuditableEntity {
   private _status: UserStatus;
   private _bio: string | null;
   private _phone: string | null;
+  private _lateCancellationCount: number;
 
   private constructor(
     id: string,
@@ -51,6 +53,7 @@ export class UserEntity extends AuditableEntity {
     this._status = props.status;
     this._bio = props.bio;
     this._phone = props.phone;
+    this._lateCancellationCount = props.lateCancellationCount ?? 0;
   }
 
   // ─── Factory Methods ───────────────────────────────────────────────────────
@@ -90,6 +93,7 @@ export class UserEntity extends AuditableEntity {
   get status(): UserStatus { return this._status; }
   get bio(): string | null { return this._bio; }
   get phone(): string | null { return this._phone; }
+  get lateCancellationCount(): number { return this._lateCancellationCount; }
 
   // ─── Domain Behaviors ──────────────────────────────────────────────────────
 
@@ -124,6 +128,7 @@ export class UserEntity extends AuditableEntity {
         status: this._status,
         bio: this._bio,
         phone: this._phone,
+        lateCancellationCount: this._lateCancellationCount,
       },
       {
         ...this.toAuditProps(),
@@ -149,6 +154,7 @@ export class UserEntity extends AuditableEntity {
         status: this._status,
         bio: this._bio,
         phone: this._phone,
+        lateCancellationCount: this._lateCancellationCount,
       },
       {
         ...this.toAuditProps(),
@@ -173,6 +179,7 @@ export class UserEntity extends AuditableEntity {
         status: this._status,
         bio: updates.bio ?? this._bio,
         phone: updates.phone ?? this._phone,
+        lateCancellationCount: this._lateCancellationCount,
       },
       {
         ...this.toAuditProps(),
@@ -194,6 +201,7 @@ export class UserEntity extends AuditableEntity {
         status: UserStatus.SUSPENDED,
         bio: this._bio,
         phone: this._phone,
+        lateCancellationCount: this._lateCancellationCount,
       },
       {
         ...this.toAuditProps(),
@@ -215,6 +223,7 @@ export class UserEntity extends AuditableEntity {
         status: UserStatus.ACTIVE,
         bio: this._bio,
         phone: this._phone,
+        lateCancellationCount: this._lateCancellationCount,
       },
       {
         ...this.toAuditProps(),
@@ -236,6 +245,7 @@ export class UserEntity extends AuditableEntity {
         status: this._status,
         bio: this._bio,
         phone: this._phone,
+        lateCancellationCount: this._lateCancellationCount,
       },
       {
         ...this.toAuditProps(),

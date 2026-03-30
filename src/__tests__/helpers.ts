@@ -1,6 +1,13 @@
 // ─── Test Helpers & Shared Fixtures ──────────────────────────────────────────
 // Reusable builders and mocks for all test suites
 
+/** Create a Date at the top of the hour (minutes=0, seconds=0, ms=0) with an optional offset from now. */
+export function nextTopOfHour(msOffset = 0): Date {
+  const d = new Date(Date.now() + msOffset);
+  d.setMinutes(0, 0, 0);
+  return d;
+}
+
 import { UserEntity } from "@/domain/entities/User";
 import { UserRole } from "@/domain/value-objects/UserRole";
 import { UserStatus } from "@/domain/value-objects/UserStatus";
@@ -74,7 +81,7 @@ export const buildSessionRecord = (overrides: Partial<SessionRecord> = {}): Sess
   title: "Học ReactJS cơ bản",
   description: null,
   status: SessionStatus.PENDING,
-  scheduledAt: new Date(Date.now() + 86400000),
+  scheduledAt: nextTopOfHour(86400000),
   durationMinutes: 60,
   endAt: null,
   meetLink: null,

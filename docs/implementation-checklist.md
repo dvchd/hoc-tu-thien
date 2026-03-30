@@ -301,7 +301,7 @@
 
 ### 4.5 Regression
 
-- [x] Chạy `npm test` - **483 tests pass** (tăng từ 247)
+- [x] Chạy `npm test` - **547 tests pass** (tăng từ 247)
 - [x] Chạy `npm run build` (TypeScript: 0 errors)
 - [x] Chạy `npm run lint` - 0 ESLint warnings/errors
 

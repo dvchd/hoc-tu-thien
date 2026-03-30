@@ -28,6 +28,7 @@ export class PrismaUserRepository implements IUserRepository {
         status: prismaUser.status as UserStatus,
         bio: prismaUser.bio,
         phone: prismaUser.phone,
+        lateCancellationCount: prismaUser.lateCancellationCount ?? 0,
       },
       {
         createdAt: prismaUser.createdAt,

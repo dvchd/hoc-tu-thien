@@ -14,6 +14,7 @@ import {
   buildMentor,
   buildSessionRecord,
   createMockUnitOfWork,
+  nextTopOfHour,
 } from "@/__tests__/helpers";
 
 // ─── Mock Services ──────────────────────────────────────────────────────────
@@ -45,7 +46,7 @@ describe("BookSessionUseCase", () => {
       menteeId: mentee.id,
       mentorId: mentor.id,
       title: "Học ReactJS",
-      scheduledAt: new Date(Date.now() + 86400000),
+      scheduledAt: nextTopOfHour(86400000),
     });
 
     expect(result.id).toBe(session.id);

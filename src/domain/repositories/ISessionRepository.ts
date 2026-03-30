@@ -93,6 +93,7 @@ export interface ISessionRepository {
       isLateCancellation?: boolean;
       isNoShow?: boolean;
       noShowMarkedBy?: string;
+      notes?: string;
     }
   ): Promise<SessionRecord>;
   updateConfirmation(
