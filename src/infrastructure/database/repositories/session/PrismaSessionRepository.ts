@@ -112,6 +112,7 @@ export class PrismaSessionRepository implements ISessionRepository {
         tnAccountName: true,
         tnCampaignKeyword: true,
         charityAccountId: true,
+        onlyActivatedMentee: true,
       },
     });
     return profile as MentorProfileFee | null;
@@ -281,7 +282,7 @@ export class PrismaSessionRepository implements ISessionRepository {
     const [sessions, user] = await Promise.all([
       this.prisma.learningSession.findMany({
         where: { menteeId, status: "COMPLETED" },
-        select: { fee: true, durationMinutes: true },
+        select: { fee: true, durationMinutes: true, rating: true },
       }),
       this.prisma.user.findUnique({
         where: { id: menteeId },
@@ -292,11 +293,17 @@ export class PrismaSessionRepository implements ISessionRepository {
     const totalDonated = sessions.reduce((sum, s) => sum + s.fee, 0);
     const totalHours = sessions.reduce((sum, s) => sum + s.durationMinutes, 0) / 60;
 
+    // Tính avgRatingGiven: trung bình rating của các completed sessions mà mentee đã đánh giá
+    const ratedSessions = sessions.filter((s) => s.rating !== null);
+    const avgRatingGiven = ratedSessions.length > 0
+      ? ratedSessions.reduce((sum, s) => sum + s.rating!, 0) / ratedSessions.length
+      : null;
+
     return {
       totalSessions: sessions.length,
       totalHours,
       totalDonated,
-      avgRatingGiven: null,
+      avgRatingGiven,
       noShowCount: user?.menteeProfile?.noShowCount ?? 0,
       lateCancellationCount: user?.lateCancellationCount ?? 0,
     };

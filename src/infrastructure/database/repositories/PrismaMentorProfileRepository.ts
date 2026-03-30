@@ -10,7 +10,7 @@ export class PrismaMentorProfileRepository implements IMentorProfileRepository {
     return {
       id: profile.id,
       userId: profile.userId,
-      bio: profile.bio,
+      bio: profile.expertise,  // schema field 'expertise' maps to domain 'bio'
       experience: profile.experience,
       headline: profile.headline,
       hourlyRate: Number(profile.hourlyRate ?? 0),
@@ -87,9 +87,11 @@ export class PrismaMentorProfileRepository implements IMentorProfileRepository {
 
   async create(data: any): Promise<MentorProfileRecord> {
     // Map isActive -> isAvailable for schema
-    const { isActive, ...rest } = data;
+    // Map bio -> expertise for schema
+    const { isActive, bio, ...rest } = data;
     const createData: any = { ...rest };
     if (isActive !== undefined) createData.isAvailable = isActive;
+    if (bio !== undefined) createData.expertise = bio;
 
     const profile = await this.prisma.mentorProfile.create({
       data: createData,
@@ -99,10 +101,13 @@ export class PrismaMentorProfileRepository implements IMentorProfileRepository {
   }
 
   async update(id: string, data: Partial<MentorProfileRecord>): Promise<MentorProfileRecord> {
-    const { user, charityAccount, teachingFields, availabilitySlots, totalSessions, averageRating, ratingCount, isActive, ...rest } = data as any;
+    const { user, charityAccount, teachingFields, availabilitySlots, totalSessions, averageRating, ratingCount, isActive, bio, ...rest } = data as any;
     const updateData: any = { ...rest };
     if (isActive !== undefined) {
       updateData.isAvailable = isActive;
+    }
+    if (bio !== undefined) {
+      updateData.expertise = bio;
     }
 
     const profile = await this.prisma.mentorProfile.update({

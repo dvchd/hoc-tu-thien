@@ -1,4 +1,4 @@
-const { createId } = require("@paralleldrive/cuid2");
+import { createId } from "@paralleldrive/cuid2";
 import { IUnitOfWork } from "../../interfaces/IUnitOfWork";
 import {
   PaymentType,
@@ -12,8 +12,27 @@ import {
 } from "../../../domain/value-objects/Payment";
 import { SYSTEM_CONFIG_KEYS } from "../../../domain/repositories/ISystemConfigRepository";
 import { UserStatus } from "../../../domain/value-objects/UserStatus";
-import { tnAppClient } from "../../../infrastructure/external/ThienNguyenAppClient";
 import { PaymentRecord } from "../../../domain/repositories/IPaymentRepository";
+
+// ─── Domain Port: Transaction Verification Service ────────────────────────────
+// Interface defined at application layer to decouple from infrastructure
+export interface ITransactionVerificationService {
+  findTransactionByCode(
+    accountNo: string,
+    shortCode: string,
+    createdAt: Date,
+    expectedAmount: number
+  ): Promise<{
+    found: boolean;
+    transaction: {
+      id: string;
+      refId: string;
+      transactionAmount: number;
+    } | null;
+    rawResponse?: string;
+    error?: string;
+  }>;
+}
 
 // ─── DTOs ─────────────────────────────────────────────────────────────────────
 
@@ -43,10 +62,40 @@ export interface VerifyPaymentResult {
   payment?: PaymentRecord;
 }
 
+// ─── Shared Utility ───────────────────────────────────────────────────────────
+
+/**
+ * Build payment info response from a payment record.
+ * Shared between InitiateActivationUseCase and InitiateSessionFeePaymentUseCase
+ * to avoid code duplication (DRY principle).
+ */
+export function buildPaymentInfoResponse(payment: PaymentRecord): ActivationPaymentInfo {
+  const qrImageUrl = buildVietQRUrl({
+    accountNo: payment.tnAccountNo,
+    accountName: payment.tnAccountName ?? "",
+    amount: payment.amount,
+    addInfo: payment.transactionCode,
+  });
+
+  return {
+    paymentId: payment.id,
+    transactionCode: payment.transactionCode,
+    shortCode: payment.shortCode,
+    amount: payment.amount,
+    tnAccountNo: payment.tnAccountNo,
+    tnAccountName: payment.tnAccountName ?? "",
+    qrImageUrl,
+    expiresAt: payment.expiresAt.toISOString(),
+  };
+}
+
 // ─── InitiateActivationUseCase ─────────────────────────────────────────────────
 
 export class InitiateActivationUseCase {
-  constructor(private readonly uow: IUnitOfWork) {}
+  constructor(
+    private readonly uow: IUnitOfWork,
+    private readonly verificationService?: ITransactionVerificationService,
+  ) {}
 
   async execute(input: InitiateActivationDTO): Promise<ActivationPaymentInfo> {
     const user = await this.uow.users.findById(input.userId);
@@ -65,7 +114,7 @@ export class InitiateActivationUseCase {
       (p) => p.status === PaymentStatus.PENDING && p.expiresAt > new Date()
     );
     if (validPending) {
-      return this.buildPaymentInfo(validPending);
+      return buildPaymentInfoResponse(validPending);
     }
 
     // Lấy activation amount, default charity account, và expiry hours đồng thời
@@ -90,10 +139,9 @@ export class InitiateActivationUseCase {
     const shortCode = generateShortCode(8);
     const transactionCode = buildTransactionContent(PaymentType.ACTIVATION, shortCode);
     const expiresAt = new Date(Date.now() + expiryHoursNum * 60 * 60 * 1000);
-    
-    // Safety check for NaN or invalid dates in tests
+
     if (isNaN(expiresAt.getTime())) {
-       expiresAt.setTime(Date.now() + 24 * 60 * 60 * 1000);
+      expiresAt.setTime(Date.now() + PAYMENT_EXPIRY_HOURS * 60 * 60 * 1000);
     }
 
     const payment = await this.uow.payments.create({
@@ -108,34 +156,17 @@ export class InitiateActivationUseCase {
       expiresAt,
     });
 
-    return this.buildPaymentInfo(payment);
-  }
-
-  private buildPaymentInfo(payment: PaymentRecord): ActivationPaymentInfo {
-    const qrImageUrl = buildVietQRUrl({
-      accountNo: payment.tnAccountNo,
-      accountName: payment.tnAccountName ?? "",
-      amount: payment.amount,
-      addInfo: payment.transactionCode,
-    });
-
-    return {
-      paymentId: payment.id,
-      transactionCode: payment.transactionCode,
-      shortCode: payment.shortCode,
-      amount: payment.amount,
-      tnAccountNo: payment.tnAccountNo,
-      tnAccountName: payment.tnAccountName ?? "",
-      qrImageUrl,
-      expiresAt: payment.expiresAt.toISOString(),
-    };
+    return buildPaymentInfoResponse(payment);
   }
 }
 
 // ─── VerifyPaymentUseCase ──────────────────────────────────────────────────────
 
 export class VerifyPaymentUseCase {
-  constructor(private readonly uow: IUnitOfWork) {}
+  constructor(
+    private readonly uow: IUnitOfWork,
+    private readonly verificationService?: ITransactionVerificationService,
+  ) {}
 
   async execute(input: VerifyPaymentDTO): Promise<VerifyPaymentResult> {
     const payment = await this.uow.payments.findById(input.paymentId);
@@ -151,13 +182,22 @@ export class VerifyPaymentUseCase {
       return { success: false, message: "Yêu cầu thanh toán đã hết hạn" };
     }
 
+    // Lấy configured expiry hours để hiển thị chính xác trong error message
+    const expiryHours = await this.uow.systemConfig.getNumber(
+      SYSTEM_CONFIG_KEYS.PAYMENT_EXPIRY_HOURS,
+      PAYMENT_EXPIRY_HOURS
+    );
+
     if (payment.expiresAt < new Date()) {
       await this.uow.payments.updateStatus(payment.id, PaymentStatus.FAILED);
-      return { success: false, message: "Yêu cầu thanh toán đã hết hạn (24h)" };
+      return { success: false, message: `Yêu cầu thanh toán đã hết hạn (${expiryHours}h)` };
     }
 
+    // Sử dụng injected verification service hoặc lazy-load từ infrastructure
+    const verificationService = this.verificationService ?? await this.getVerificationService();
+
     // Gọi TN App API — bên ngoài transaction (network call có thể chậm)
-    const result = await tnAppClient.findTransactionByCode(
+    const result = await verificationService.findTransactionByCode(
       payment.tnAccountNo,
       payment.shortCode,
       payment.createdAt,
@@ -242,6 +282,16 @@ export class VerifyPaymentUseCase {
       performedBy: "system",
     });
   }
+
+  /**
+   * Lazy-load verification service from infrastructure layer.
+   * This allows existing code that doesn't inject the service to still work,
+   * while new code can properly inject it for clean architecture.
+   */
+  private async getVerificationService(): Promise<ITransactionVerificationService> {
+    const { tnAppClient } = await import("../../../infrastructure/external/ThienNguyenAppClient");
+    return tnAppClient;
+  }
 }
 
 // ─── InitiateSessionFeePaymentUseCase ─────────────────────────────────────────
@@ -264,7 +314,7 @@ export class InitiateSessionFeePaymentUseCase {
       (p) => p.sessionId === sessionId && p.status === PaymentStatus.PENDING && p.expiresAt > new Date()
     );
     if (sessionPending) {
-      return this.buildPaymentInfo(sessionPending);
+      return buildPaymentInfoResponse(sessionPending);
     }
 
     // Xác định tài khoản nhận học phí theo thứ tự ưu tiên:
@@ -315,6 +365,11 @@ export class InitiateSessionFeePaymentUseCase {
     const transactionCode = buildTransactionContent(PaymentType.SESSION_FEE, shortCode);
     const expiresAt = new Date(Date.now() + expiryHours * 60 * 60 * 1000);
 
+    // Guard against NaN from invalid config values
+    if (isNaN(expiresAt.getTime())) {
+      throw new Error("Cấu hình PAYMENT_EXPIRY_HOURS không hợp lệ");
+    }
+
     const payment = await this.uow.payments.create({
       id: createId(),
       userId,
@@ -328,26 +383,6 @@ export class InitiateSessionFeePaymentUseCase {
       expiresAt: expiresAt,
     });
 
-    return this.buildPaymentInfo(payment);
-  }
-
-  private buildPaymentInfo(payment: PaymentRecord): ActivationPaymentInfo {
-    const qrImageUrl = buildVietQRUrl({
-      accountNo: payment.tnAccountNo,
-      accountName: payment.tnAccountName ?? "",
-      amount: payment.amount,
-      addInfo: payment.transactionCode,
-    });
-
-    return {
-      paymentId: payment.id,
-      transactionCode: payment.transactionCode,
-      shortCode: payment.shortCode,
-      amount: payment.amount,
-      tnAccountNo: payment.tnAccountNo,
-      tnAccountName: payment.tnAccountName ?? "",
-      qrImageUrl,
-      expiresAt: payment.expiresAt.toISOString(),
-    };
+    return buildPaymentInfoResponse(payment);
   }
 }

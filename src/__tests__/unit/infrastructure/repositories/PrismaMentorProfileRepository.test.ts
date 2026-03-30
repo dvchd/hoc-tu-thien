@@ -146,7 +146,7 @@ describe("PrismaMentorProfileRepository", () => {
         availabilitySlots: [],
       } as any);
       const data = prisma.mentorProfile.update.mock.calls[0][0].data;
-      expect(data.bio).toBe("Updated bio");
+      expect(data.expertise).toBe("Updated bio"); // bio maps to expertise in schema
       expect(data.user).toBeUndefined();
       expect(data.charityAccount).toBeUndefined();
     });

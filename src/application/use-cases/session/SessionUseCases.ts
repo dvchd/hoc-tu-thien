@@ -1,4 +1,4 @@
-const { createId } = require("@paralleldrive/cuid2");
+import { createId } from "@paralleldrive/cuid2";
 import { IUnitOfWork } from "../../interfaces/IUnitOfWork";
 import {
   SessionStatus,
@@ -10,6 +10,7 @@ import {
 import { UserStatus } from "../../../domain/value-objects/UserStatus";
 import { SYSTEM_CONFIG_KEYS } from "../../../domain/repositories/ISystemConfigRepository";
 import { BookSessionInput, SessionRecord, LeaderboardEntry } from "../../../domain/repositories/ISessionRepository";
+import { meetService } from "../../../infrastructure/external/GoogleMeetService";
 
 // ─── BookSessionUseCase ────────────────────────────────────────────────────────
 
@@ -52,7 +53,7 @@ export class BookSessionUseCase {
         uow.systemConfig.getNumber(SYSTEM_CONFIG_KEYS.MAX_ACTIVE_BOOKINGS, MAX_ACTIVE_BOOKINGS),
       ]);
 
-      // 3. Lấy fee của mentor
+      // 3. Lấy fee của mentor (bao gồm onlyActivatedMentee)
       const mentorProfile = await uow.sessions.getMentorProfileFee(input.mentorId);
       const fee = mentorProfile?.hourlyRate ?? 0;
 
@@ -63,8 +64,8 @@ export class BookSessionUseCase {
         throw new Error("Tài khoản chưa được kích hoạt. Vui lòng kích hoạt tài khoản trước khi đặt buổi học có phí.");
       }
 
-      // Check mentor.onlyActivatedMentee (BR06)
-      if (mentorProfile && (mentorProfile as any).onlyActivatedMentee && mentee.status !== UserStatus.ACTIVE) {
+      // Check mentor.onlyActivatedMentee (BR06) — type-safe access via MentorProfileFee interface
+      if (mentorProfile?.onlyActivatedMentee && mentee.status !== UserStatus.ACTIVE) {
         throw new Error("Mentor này chỉ nhận học viên đã kích hoạt tài khoản.");
       }
 
@@ -152,7 +153,8 @@ export class ConfirmSessionUseCase {
         throw new Error("Buổi học không trong trạng thái chờ xác nhận");
       }
 
-      const finalMeetLink = meetLink || "https://meet.google.com/abc-defg-hij";
+      // Use GoogleMeetService to generate a proper meet link if none provided
+      const finalMeetLink = meetLink ?? (await meetService.createMeetLink(sessionId)).meetLink;
 
       return uow.sessions.updateStatus(sessionId, SessionStatus.CONFIRMED, {
         meetLink: finalMeetLink,
@@ -286,25 +288,26 @@ export class ConfirmCompletionUseCase {
       }
 
       const updatedSession = await uow.sessions.updateConfirmation(sessionId, confirmedBy, { meetLink });
-      
-      const newMentorConfirmed = isMentor ? true : (updatedSession as any).mentorConfirmed;
-      const newMenteeConfirmed = isMentee ? true : (updatedSession as any).menteeConfirmed;
+
+      // Type-safe access: SessionRecord interface defines mentorConfirmed/menteeConfirmed
+      const newMentorConfirmed = isMentor ? true : updatedSession.mentorConfirmed;
+      const newMenteeConfirmed = isMentee ? true : updatedSession.menteeConfirmed;
 
       if (newMentorConfirmed && newMenteeConfirmed) {
         const newStatus = session.fee > 0 ? SessionStatus.PAYMENT_PENDING : SessionStatus.COMPLETED;
         const finalSession = await uow.sessions.updateStatus(sessionId, newStatus, {});
-        
+
         if (newStatus === SessionStatus.COMPLETED) {
           await uow.mentorProfiles.incrementTotalSessions(session.mentorId);
         }
-        
+
         await uow.users.createAuditLog({
           userId,
           action: "SESSION_COMPLETED",
           newValues: { sessionId, status: newStatus, mentorConfirmed: true, menteeConfirmed: true },
           performedBy: userId,
         });
-        
+
         return finalSession;
       }
 

@@ -8,6 +8,7 @@ export interface MentorProfileFee {
   tnAccountName: string | null;
   tnCampaignKeyword: string | null;
   charityAccountId: string | null;
+  onlyActivatedMentee: boolean;
 }
 
 // ─── SessionRecord ─────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-const { createId } = require("@paralleldrive/cuid2");
+import { createId } from "@paralleldrive/cuid2";
 import { IUnitOfWork } from "../../interfaces/IUnitOfWork";
 import {
   CharityAccountRecord,
@@ -16,7 +16,7 @@ import {
   buildVietQRUrl,
 } from "../../../domain/value-objects/Payment";
 import { SYSTEM_CONFIG_KEYS } from "../../../domain/repositories/ISystemConfigRepository";
-import { tnAppClient } from "../../../infrastructure/external/ThienNguyenAppClient";
+import { ITransactionVerificationService } from "../payment/PaymentUseCases";
 
 // ─── CreateCharityAccountUseCase ─────────────────────────────────────────────
 
@@ -289,7 +289,10 @@ export interface ConfirmCharityVerificationResult {
 }
 
 export class ConfirmCharityAccountVerificationUseCase {
-  constructor(private readonly uow: IUnitOfWork) {}
+  constructor(
+    private readonly uow: IUnitOfWork,
+    private readonly verificationService?: ITransactionVerificationService,
+  ) {}
 
   async execute(
     input: ConfirmCharityVerificationDTO
@@ -347,8 +350,11 @@ export class ConfirmCharityAccountVerificationUseCase {
       };
     }
 
+    // Sử dụng injected verification service hoặc lazy-load từ infrastructure
+    const verificationService = this.verificationService ?? await this.getVerificationService();
+
     // Gọi TN App API để tìm giao dịch — ngoài transaction vì network call có thể chậm
-    const result = await tnAppClient.findTransactionByCode(
+    const result = await verificationService.findTransactionByCode(
       payment.tnAccountNo,
       payment.shortCode,
       payment.createdAt,
@@ -419,5 +425,15 @@ export class ConfirmCharityAccountVerificationUseCase {
       message: `✅ Xác thực tài khoản "${account.name}" thành công! Giao dịch đã được ghi nhận qua Thiện Nguyện App.`,
       account: updatedAccount,
     };
+  }
+
+  /**
+   * Lazy-load verification service from infrastructure layer.
+   * This allows existing code that doesn't inject the service to still work,
+   * while new code can properly inject it for clean architecture.
+   */
+  private async getVerificationService(): Promise<ITransactionVerificationService> {
+    const { tnAppClient } = await import("../../../infrastructure/external/ThienNguyenAppClient");
+    return tnAppClient;
   }
 }
