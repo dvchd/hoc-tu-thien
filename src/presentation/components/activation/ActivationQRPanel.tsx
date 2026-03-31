@@ -174,13 +174,11 @@ export function ActivationQRPanel({ paymentInfo, userId, sessionId, onSuccess }:
             <div className="space-y-0 bg-stone-50 rounded-2xl border border-stone-100 overflow-hidden">
 
               {/* Số tài khoản */}
-              <div className="flex items-center justify-between px-4 py-3.5 border-b border-stone-100">
-                <div>
-                  <p className="text-[11px] text-stone-400 uppercase tracking-wide">Số tài khoản</p>
-                  <p className="font-mono text-lg font-bold text-stone-800 tracking-wider">
-                    {paymentInfo.tnAccountNo}
-                  </p>
-                </div>
+              <div className="px-4 py-3.5 border-b border-stone-100">
+                <p className="text-[11px] text-stone-400 uppercase tracking-wide">Số tài khoản</p>
+                <p className="font-mono text-lg font-bold text-stone-800 tracking-wider">
+                  {paymentInfo.tnAccountNo}
+                </p>
                 <CopyButton value={paymentInfo.tnAccountNo} label="Sao chép STK" />
               </div>
 
@@ -202,25 +200,27 @@ export function ActivationQRPanel({ paymentInfo, userId, sessionId, onSuccess }:
 
               {/* Nội dung chuyển khoản — BIG and PROMINENT */}
               <div className="px-4 py-4 bg-amber-50/60">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <Info className="w-3.5 h-3.5 text-amber-600" />
-                      <p className="text-[11px] text-amber-700 uppercase tracking-wide font-semibold">
-                        Nội dung chuyển khoản
-                      </p>
-                    </div>
-                    {/* Large, prominent transaction code — fully visible */}
-                    <p className="font-mono text-xl font-extrabold text-stone-900 break-all leading-relaxed bg-white rounded-xl px-3 py-2.5 border border-amber-200 shadow-sm">
-                      {paymentInfo.transactionCode}
-                    </p>
-                    <p className="text-xs text-amber-700 mt-2 flex items-start gap-1">
-                      <Shield className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                      <span>Nhập <strong>chính xác</strong> nội dung này khi chuyển khoản để hệ thống tự động xác minh.</span>
+                <div>
+                <div className="mb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Info className="w-3.5 h-3.5 text-amber-600" />
+                    <p className="text-[11px] text-amber-700 uppercase tracking-wide font-semibold">
+                      Nội dung chuyển khoản
                     </p>
                   </div>
-                  <CopyButton value={paymentInfo.transactionCode} label="Sao chép" />
                 </div>
+                {/* Large, prominent transaction code — fully visible */}
+                <p className="font-mono text-xl font-extrabold text-stone-900 break-all leading-relaxed bg-white rounded-xl px-3 py-2.5 border border-amber-200 shadow-sm">
+                  {paymentInfo.transactionCode}
+                </p>
+                <p className="text-xs text-amber-700 mt-2 flex items-start gap-1">
+                  <Shield className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  <span>Nhập <strong>chính xác</strong> nội dung này khi chuyển khoản để hệ thống tự động xác minh.</span>
+                </p>
+                <div className="mt-2">
+                  <CopyButton value={paymentInfo.transactionCode} label="Sao chép nội dung" />
+                </div>
+              </div>
               </div>
             </div>
           </div>
