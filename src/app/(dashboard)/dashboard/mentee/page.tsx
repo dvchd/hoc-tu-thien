@@ -22,7 +22,13 @@ interface MentorItem {
 }
 
 export default async function MenteeDashboardPage() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[MenteeDashboard] auth() error (stale cookie):", error);
+    redirect("/login?error=SessionExpired");
+  }
   if (!session?.user) redirect("/login");
 
   const { listUsers, getMenteeLearningStats } = createUseCases();

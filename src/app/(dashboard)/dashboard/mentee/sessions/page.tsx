@@ -5,7 +5,13 @@ import { SessionCard } from "@/presentation/components/session/SessionCard";
 import { BookOpen, Calendar } from "lucide-react";
 
 export default async function MenteeSessionsPage() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[MenteeSessionsPage] auth() error (stale cookie):", error);
+    redirect("/login?error=SessionExpired");
+  }
   if (!session?.user) redirect("/login");
   const { getMentorSessions } = createUseCases();
   const sessions = await getMentorSessions.byMenteeId(session.user.id);

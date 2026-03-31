@@ -4,7 +4,13 @@ import { UserRole } from "@/domain/value-objects/UserRole";
 import { MentorApplicationForm } from "@/presentation/components/mentor/MentorApplicationForm";
 
 export default async function ApplyMentorPage() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[ApplyMentorPage] auth() error (stale cookie):", error);
+    redirect("/login?error=SessionExpired");
+  }
   if (!session?.user) redirect("/login");
 
   // Only MENTEE can apply to become a Mentor

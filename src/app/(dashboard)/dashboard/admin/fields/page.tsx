@@ -5,7 +5,13 @@ import { prisma } from "@/infrastructure/database/prisma/client";
 import { TeachingFieldsManager } from "@/presentation/components/admin/TeachingFieldsManager";
 
 export default async function AdminTeachingFieldsPage() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[AdminTeachingFieldsPage] auth() error (stale cookie):", error);
+    redirect("/login?error=SessionExpired");
+  }
   if (!session?.user || session.user.role !== UserRole.ADMIN) redirect("/dashboard");
 
   const fields = await prisma.teachingField.findMany({

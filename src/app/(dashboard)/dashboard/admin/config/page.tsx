@@ -4,7 +4,13 @@ import { UserRole } from "@/domain/value-objects/UserRole";
 import { SystemConfigPanel } from "@/presentation/components/admin/SystemConfigPanel";
 
 export default async function ConfigAdminPage() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[ConfigAdminPage] auth() error (stale cookie):", error);
+    redirect("/login?error=SessionExpired");
+  }
   if (!session?.user || session.user.role !== UserRole.ADMIN) {
     redirect("/dashboard");
   }

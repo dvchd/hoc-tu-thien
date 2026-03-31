@@ -8,7 +8,18 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    // JWT decryption failed (stale cookie after rebuild/deploy).
+    // Redirect to login — the middleware will also clear the cookie,
+    // but this catch ensures the server component doesn't throw
+    // into the error boundary.
+    console.error("[DashboardLayout] auth() error, redirecting to login:", error);
+    redirect("/login?error=SessionExpired");
+  }
+
   if (!session?.user) redirect("/login");
 
   return (

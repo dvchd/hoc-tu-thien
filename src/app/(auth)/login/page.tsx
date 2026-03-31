@@ -9,6 +9,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   OAuthSignin: "Không thể khởi tạo đăng nhập Google. Vui lòng thử lại.",
   OAuthCallback: "Lỗi callback từ Google. Vui lòng kiểm tra Authorized Redirect URI trong Google Console.",
   OAuthCreateAccount: "Không thể tạo tài khoản. Vui lòng thử lại.",
+  SessionExpired: "Phiên đăng nhập đã hết hạn (có thể do ứng dụng được cập nhật). Vui lòng đăng nhập lại.",
   Default: "Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại.",
 };
 
@@ -17,7 +18,15 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ error?: string; hint?: string }>;
 }) {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    // JWT decryption failed — stale cookie from a previous deployment.
+    // Clearing happens in middleware; here we just skip the redirect.
+    console.error("[LoginPage] auth() error (stale cookie):", error);
+    session = null;
+  }
   if (session?.user) redirect("/dashboard");
 
   const { error: errorCode, hint } = await searchParams;

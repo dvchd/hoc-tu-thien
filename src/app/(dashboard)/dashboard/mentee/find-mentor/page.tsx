@@ -4,7 +4,13 @@ import { prisma } from "@/infrastructure/database/prisma/client";
 import { FindMentorClient } from "@/presentation/components/mentee/FindMentorClient";
 
 export default async function FindMentorPage() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[FindMentorPage] auth() error (stale cookie):", error);
+    redirect("/login?error=SessionExpired");
+  }
   if (!session?.user) redirect("/login");
 
   // Load mentors with profiles

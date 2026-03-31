@@ -10,7 +10,13 @@ interface PageProps {
 }
 
 export default async function MentorPublicProfilePage({ params }: PageProps) {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[MentorPublicProfilePage] auth() error (stale cookie):", error);
+    redirect("/login?error=SessionExpired");
+  }
   if (!session?.user) redirect("/login");
 
   const { id } = await params;

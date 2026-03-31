@@ -4,7 +4,13 @@ import { UserRole } from "@/domain/value-objects/UserRole";
 import { AdminSessionsTable } from "@/presentation/components/admin/AdminSessionsTable";
 
 export default async function AdminSessionsPage() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[AdminSessionsPage] auth() error (stale cookie):", error);
+    redirect("/login?error=SessionExpired");
+  }
   if (!session?.user || session.user.role !== UserRole.ADMIN) {
     redirect("/dashboard");
   }

@@ -3,7 +3,13 @@ import { redirect } from "next/navigation";
 import { SettingsForm } from "@/presentation/components/settings/SettingsForm";
 
 export default async function SettingsPage() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[SettingsPage] auth() error (stale cookie):", error);
+    redirect("/login?error=SessionExpired");
+  }
   if (!session?.user) redirect("/login");
 
   return (

@@ -6,7 +6,13 @@ import { MentorProfileForm } from "@/presentation/components/mentor/MentorProfil
 import { AvailabilityManager } from "@/presentation/components/mentor/AvailabilityManager";
 
 export default async function MentorProfilePage() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[MentorProfilePage] auth() error (stale cookie):", error);
+    redirect("/login?error=SessionExpired");
+  }
   if (!session?.user) redirect("/login");
   if (session.user.role !== UserRole.MENTOR && session.user.role !== UserRole.ADMIN) {
     redirect("/dashboard");

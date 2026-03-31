@@ -6,7 +6,13 @@ import { SessionCard } from "@/presentation/components/session/SessionCard";
 import { Calendar, CheckCircle2, Clock } from "lucide-react";
 
 export default async function MentorSessionsPage() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[MentorSessionsPage] auth() error (stale cookie):", error);
+    redirect("/login?error=SessionExpired");
+  }
   if (!session?.user) redirect("/login");
   if (session.user.role !== UserRole.MENTOR && session.user.role !== UserRole.ADMIN) redirect("/dashboard");
 

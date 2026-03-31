@@ -12,7 +12,15 @@ import {
 } from "lucide-react";
 
 export default async function HomePage() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    // JWT decryption failed — stale cookie from a previous deployment.
+    // Treat as no session so the landing page renders normally.
+    console.error("[HomePage] auth() error (stale cookie):", error);
+    session = null;
+  }
   if (session?.user) redirect("/dashboard");
 
   return (

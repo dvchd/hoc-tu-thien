@@ -4,7 +4,13 @@ import { UserRole } from "@/domain/value-objects/UserRole";
 import { MentorApplicationsTable } from "@/presentation/components/admin/MentorApplicationsTable";
 
 export default async function MentorApplicationsAdminPage() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[MentorApplicationsAdminPage] auth() error (stale cookie):", error);
+    redirect("/login?error=SessionExpired");
+  }
   if (!session?.user || session.user.role !== UserRole.ADMIN) {
     redirect("/dashboard");
   }

@@ -7,7 +7,13 @@ import { CheckCircle2, Heart, Shield, X } from "lucide-react";
 import Link from "next/link";
 
 export default async function ActivationPage() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[ActivationPage] auth() error (stale cookie):", error);
+    redirect("/login?error=SessionExpired");
+  }
   if (!session?.user) redirect("/login");
 
   // Nếu đã active (theo JWT) → redirect về dashboard

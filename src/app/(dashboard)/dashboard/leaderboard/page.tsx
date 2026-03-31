@@ -5,7 +5,13 @@ import { Trophy, Medal, Star, Heart, Users, TrendingUp } from "lucide-react";
 import { formatVND } from "@/lib/utils";
 
 export default async function LeaderboardPage() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[LeaderboardPage] auth() error (stale cookie):", error);
+    redirect("/login?error=SessionExpired");
+  }
   if (!session?.user) redirect("/login");
   const { getLeaderboard } = createUseCases();
   const now = new Date();

@@ -14,7 +14,13 @@ import {
 } from "lucide-react";
 
 export default async function MentorDashboardPage() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[MentorDashboardPage] auth() error (stale cookie):", error);
+    redirect("/login?error=SessionExpired");
+  }
   if (!session?.user || (session.user.role !== UserRole.MENTOR && session.user.role !== UserRole.ADMIN)) {
     redirect("/dashboard");
   }

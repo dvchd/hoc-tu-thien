@@ -6,7 +6,13 @@ import { AdminStatsCards } from "@/presentation/components/admin/AdminStatsCards
 import { AdminUserTable } from "@/presentation/components/admin/AdminUserTable";
 
 export default async function AdminDashboardPage() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[AdminDashboardPage] auth() error (stale cookie):", error);
+    redirect("/login?error=SessionExpired");
+  }
   if (!session?.user || session.user.role !== UserRole.ADMIN) {
     redirect("/dashboard");
   }
