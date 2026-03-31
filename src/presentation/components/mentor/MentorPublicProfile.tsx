@@ -118,10 +118,10 @@ export function MentorPublicProfile({ mentor }: MentorPublicProfileProps) {
         {/* Cover/Header Area */}
         <div className="h-32 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
 
-        <div className="px-8 pb-8 -mt-16">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="px-8 pb-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 -mt-16">
             <div className="flex flex-col md:flex-row items-center md:items-end gap-6">
-              <div className="w-32 h-32 rounded-3xl border-4 border-white overflow-hidden bg-stone-100 shadow-lg">
+              <div className="w-32 h-32 rounded-3xl border-4 border-white overflow-hidden bg-stone-100 shadow-lg flex-shrink-0">
                 {mentor.user.image ? (
                   <img src={mentor.user.image} alt={mentor.user.name ?? "Mentor"} className="w-full h-full object-cover" />
                 ) : (
@@ -130,7 +130,7 @@ export function MentorPublicProfile({ mentor }: MentorPublicProfileProps) {
                   </div>
                 )}
               </div>
-              <div className="text-center md:text-left pb-2">
+              <div className="text-center md:text-left">
                 <h1 className="text-3xl font-bold text-stone-900">{mentor.user.name}</h1>
                 <p className="text-stone-500 font-medium">{mentor.profile.headline || "Mentor tại Học Từ Thiện"}</p>
                 <div className="flex items-center justify-center md:justify-start gap-3 mt-2">

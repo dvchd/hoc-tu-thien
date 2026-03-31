@@ -17,10 +17,6 @@ const CONFIG_DEFAULTS: Record<SystemConfigKey, { value: string; description: str
     value: "1000",
     description: "Số tiền probe transfer để xác thực tài khoản thiện nguyện (VNĐ). Admin chuyển 1,000đ để xác nhận sở hữu tài khoản.",
   },
-  [SYSTEM_CONFIG_KEYS.DEFAULT_CHARITY_ACCOUNT_ID]: {
-    value: "",
-    description: "ID của tài khoản thiện nguyện mặc định dùng cho kích hoạt tài khoản Mentee. Admin có thể đổi qua UI.",
-  },
   [SYSTEM_CONFIG_KEYS.MIN_BOOKING_ADVANCE_HOURS]: {
     value: "1",
     description: "Số giờ tối thiểu trước giờ bắt đầu buổi học mà Mentee được phép đặt lịch. Đặt lịch muộn hơn sẽ bị từ chối.",
@@ -93,13 +89,11 @@ export class UpdateSystemConfigUseCase {
       }
     }
 
-    // Validate value types
+    // Validate value types — all configs must be positive integers
     for (const config of configs) {
-      if (config.key !== SYSTEM_CONFIG_KEYS.DEFAULT_CHARITY_ACCOUNT_ID) {
-        const num = parseInt(config.value, 10);
-        if (isNaN(num) || num <= 0) {
-          throw new Error(`Giá trị không hợp lệ cho ${config.key}: phải là số nguyên dương`);
-        }
+      const num = parseInt(config.value, 10);
+      if (isNaN(num) || num <= 0) {
+        throw new Error(`Giá trị không hợp lệ cho ${config.key}: phải là số nguyên dương`);
       }
     }
 

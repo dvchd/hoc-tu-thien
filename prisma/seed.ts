@@ -28,11 +28,6 @@ const DEFAULT_SYSTEM_CONFIGS = [
     description: "Số tiền probe transfer để xác thực tài khoản thiện nguyện (VNĐ). Admin chuyển 1,000đ để xác nhận sở hữu tài khoản.",
   },
   {
-    key: "default_charity_account_id",
-    value: "charity_default_seed",
-    description: "ID của tài khoản thiện nguyện mặc định dùng cho kích hoạt tài khoản Mentee. Admin có thể đổi qua UI.",
-  },
-  {
     key: "min_booking_advance_hours",
     value: "1",
     description: "Số giờ tối thiểu trước giờ bắt đầu buổi học mà Mentee được phép đặt lịch. Đặt lịch muộn hơn sẽ bị từ chối.",
