@@ -113,10 +113,10 @@ describe("GetMentorPublicProfileUseCase", () => {
     expect(result.profile.headline).toBe("Senior React Developer");
   });
 
-  it("should handle experience as string and parse to number", async () => {
+  it("should return experience as number", async () => {
     uow.users.findById.mockResolvedValue(buildMentor());
     uow.mentorProfiles.findByUserId.mockResolvedValue(
-      buildMentorProfileRecord({ experience: "3" })
+      buildMentorProfileRecord({ experience: 3 })
     );
 
     const result = await useCase.execute("mentor_001");

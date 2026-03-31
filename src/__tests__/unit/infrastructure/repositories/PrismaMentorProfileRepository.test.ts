@@ -17,7 +17,7 @@ const profileRow = {
   id: "prof_001",
   userId: "mentor_001",
   bio: "Experienced dev",
-  experience: "5 years",
+  experience: 5,
   headline: "Senior Dev",
   hourlyRate: 0,
   charityAccountId: "acc_001",

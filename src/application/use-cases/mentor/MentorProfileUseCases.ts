@@ -93,9 +93,7 @@ export class GetMentorPublicProfileUseCase {
       profile: {
         headline: profile.headline,
         expertise: profile.bio,
-        experience: typeof profile.experience === "string"
-          ? parseInt(profile.experience) || null
-          : (profile.experience as number | null),
+        experience: profile.experience,
         hourlyRate: profile.hourlyRate,
         isAvailable: profile.isActive,
         totalSessions: profile.totalSessions ?? 0,
@@ -151,7 +149,7 @@ export class UpdateMentorProfileUseCase {
         const newProfile = await uow.mentorProfiles.create({
           userId: input.userId,
           bio: input.expertise ?? null,
-          experience: input.experience != null ? String(input.experience) : null,
+          experience: input.experience ?? null,
           headline: input.headline ?? null,
           hourlyRate: input.hourlyRate ?? 0,
           charityAccountId: input.charityAccountId ?? null,
@@ -165,7 +163,7 @@ export class UpdateMentorProfileUseCase {
         const updateData: Record<string, unknown> = {};
         if (input.headline !== undefined) updateData.headline = input.headline;
         if (input.expertise !== undefined) updateData.bio = input.expertise;
-        if (input.experience !== undefined) updateData.experience = String(input.experience);
+        if (input.experience !== undefined) updateData.experience = input.experience;
         if (input.hourlyRate !== undefined) updateData.hourlyRate = input.hourlyRate;
         if (input.charityAccountId !== undefined) updateData.charityAccountId = input.charityAccountId;
         if (input.onlyActivatedMentee !== undefined) updateData.onlyActivatedMentee = input.onlyActivatedMentee;

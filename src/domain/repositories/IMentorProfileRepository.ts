@@ -10,7 +10,7 @@ export interface MentorProfileRecord {
   id: string;
   userId: string;
   bio: string | null;
-  experience: string | null;
+  experience: number | null;
   headline: string | null;
   hourlyRate: number;
   charityAccountId: string | null;
