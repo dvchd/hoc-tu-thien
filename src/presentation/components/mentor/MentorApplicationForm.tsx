@@ -87,8 +87,14 @@ export function MentorApplicationForm() {
 
       if (res.ok) {
         toast.success("Đơn đăng ký đã được gửi thành công!");
-        const data = await res.json();
-        setApplication(data);
+        // Re-fetch the full application object instead of using POST response,
+        // which only returns { applicationId } and would crash when
+        // STATUS_CONFIG[undefined].icon is accessed during render.
+        const fetchRes = await fetch("/api/mentor/apply");
+        if (fetchRes.ok) {
+          const fetched = await fetchRes.json();
+          setApplication(fetched);
+        }
         setShowForm(false);
       } else {
         const error = await res.json();
