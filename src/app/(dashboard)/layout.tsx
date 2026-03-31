@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { prisma } from "@/infrastructure/database/prisma/client";
 import { Sidebar } from "@/presentation/components/layout/Sidebar";
 import { TopBar } from "@/presentation/components/layout/TopBar";
 
@@ -21,6 +22,32 @@ export default async function DashboardLayout({
   }
 
   if (!session?.user) redirect("/login");
+
+  // Verify the user still exists in the database.
+  // In test/staging environments the DB may be periodically wiped, leaving
+  // stale JWTs that contain valid-looking user IDs. Without this check,
+  // every child page that queries by session.user.id would throw
+  // "Không tìm thấy người dùng" into the error boundary.
+  //
+  // Redirecting to /login triggers a fresh Google sign-in, which calls
+  // findOrCreateUser to recreate the user record.
+  try {
+    const exists = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true },
+    });
+    if (!exists) {
+      console.warn(
+        `[DashboardLayout] User ${session.user.id} not found in DB. ` +
+        "Redirecting to login to re-authenticate.",
+      );
+      redirect("/login?error=SessionExpired");
+    }
+  } catch (dbError) {
+    // DB is unreachable — let the child pages handle their own errors
+    // rather than blocking the entire dashboard.
+    console.error("[DashboardLayout] DB check failed:", dbError);
+  }
 
   return (
     <div className="min-h-screen flex bg-stone-50">
