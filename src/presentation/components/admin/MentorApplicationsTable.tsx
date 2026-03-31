@@ -121,7 +121,7 @@ export function MentorApplicationsTable() {
 
   const fetchApplications = async () => {
     try {
-      const res = await fetch("/api/admin/mentor-applications");
+      const res = await fetch("/api/admin/applications");
       if (res.ok) {
         const data = await res.json();
         setApplications(data.applications ?? data);
@@ -148,7 +148,7 @@ export function MentorApplicationsTable() {
 
     setProcessingId(app.id);
     try {
-      const res = await fetch(`/api/admin/mentor-applications/${app.id}`, {
+      const res = await fetch(`/api/admin/applications/${app.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
