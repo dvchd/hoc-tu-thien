@@ -11,7 +11,7 @@ interface MentorApplication {
   status: "PENDING" | "APPROVED" | "REJECTED";
   motivation: string;
   experience: string;
-  linkedinUrl: string | null;
+  contactInfo: string | null;
   reviewNote: string | null;
   createdAt: string;
 }
@@ -50,7 +50,8 @@ export function MentorApplicationForm() {
   const [formData, setFormData] = useState({
     motivation: "",
     experience: "",
-    linkedinUrl: "",
+    facebook: "",
+    zalo: "",
   });
 
   useEffect(() => {
@@ -74,6 +75,10 @@ export function MentorApplicationForm() {
     e.preventDefault();
     if (!formData.motivation.trim() || !formData.experience.trim()) {
       toast.error("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+    if (!formData.facebook.trim() && !formData.zalo.trim()) {
+      toast.error("Vui lòng nhập ít nhất Facebook hoặc Zalo để Admin có thể liên hệ");
       return;
     }
     setLoading(true);
@@ -277,22 +282,48 @@ export function MentorApplicationForm() {
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-stone-700 mb-1.5">
-          LinkedIn URL <span className="text-stone-400 font-normal">(tuỳ chọn)</span>
-        </label>
-        <input
-          type="url"
-          className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100 transition-all"
-          placeholder="https://linkedin.com/in/yourprofile"
-          value={formData.linkedinUrl}
-          onChange={(e) => setFormData({ ...formData, linkedinUrl: e.target.value })}
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="flex items-center gap-1.5 block text-sm font-medium text-stone-700 mb-1.5">
+            Facebook
+            <span className="text-amber-500 text-[10px] font-normal">(bắt buộc 1 trong 2)</span>
+          </label>
+          <input
+            type="text"
+            className={cn(
+              "w-full px-4 py-3 bg-stone-50 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all",
+              !formData.zalo.trim()
+                ? "border-amber-200 focus:border-amber-400 focus:ring-amber-100"
+                : "border-stone-200 focus:border-jade-400 focus:ring-jade-100"
+            )}
+            placeholder="https://facebook.com/yourprofile"
+            value={formData.facebook}
+            onChange={(e) => setFormData({ ...formData, facebook: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="flex items-center gap-1.5 block text-sm font-medium text-stone-700 mb-1.5">
+            Zalo
+            <span className="text-amber-500 text-[10px] font-normal">(bắt buộc 1 trong 2)</span>
+          </label>
+          <input
+            type="text"
+            className={cn(
+              "w-full px-4 py-3 bg-stone-50 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all",
+              !formData.facebook.trim()
+                ? "border-amber-200 focus:border-amber-400 focus:ring-amber-100"
+                : "border-stone-200 focus:border-jade-400 focus:ring-jade-100"
+            )}
+            placeholder="Số điện thoại Zalo"
+            value={formData.zalo}
+            onChange={(e) => setFormData({ ...formData, zalo: e.target.value })}
+          />
+        </div>
       </div>
 
       <button
         type="submit"
-        disabled={loading || !formData.motivation.trim() || !formData.experience.trim()}
+        disabled={loading || !formData.motivation.trim() || !formData.experience.trim() || (!formData.facebook.trim() && !formData.zalo.trim())}
         className="w-full py-3 bg-jade-600 text-white rounded-xl text-sm font-semibold hover:bg-jade-700 transition-colors disabled:bg-stone-200 disabled:text-stone-400 flex items-center justify-center gap-2"
       >
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GraduationCap className="w-4 h-4" />}

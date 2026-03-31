@@ -10,7 +10,7 @@ interface MentorApplication {
   status: "PENDING" | "APPROVED" | "REJECTED";
   motivation: string;
   experience: string;
-  linkedinUrl: string | null;
+  contactInfo: string | null;
   createdAt: string;
   user: {
     name: string | null;
@@ -278,17 +278,29 @@ export function MentorApplicationsTable() {
                       {app.experience}
                     </p>
                   </div>
-                  {app.linkedinUrl && (
-                    <a
-                      href={app.linkedinUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      LinkedIn Profile
-                    </a>
-                  )}
+                  {app.contactInfo && (() => {
+                    try {
+                      const contact = JSON.parse(app.contactInfo);
+                      return (
+                        <div className="flex flex-wrap gap-2">
+                          {contact.facebook && (
+                            <span className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg font-medium">
+                              <ExternalLink className="w-3 h-3" />
+                              Facebook
+                            </span>
+                          )}
+                          {contact.zalo && (
+                            <span className="inline-flex items-center gap-1.5 text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-lg font-medium">
+                              <ExternalLink className="w-3 h-3" />
+                              Zalo: {contact.zalo}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    } catch {
+                    return null;
+                  }
+                  })()}  
                 </div>
               )}
             </div>

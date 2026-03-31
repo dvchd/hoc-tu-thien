@@ -6,8 +6,12 @@ import { z } from "zod";
 const schema = z.object({
   motivation: z.string().min(50).max(2000),
   experience: z.string().min(20).max(2000),
-  linkedinUrl: z.string().url().optional().or(z.literal("")),
-});
+  facebook: z.string().optional(),
+  zalo: z.string().optional(),
+}).refine(
+  (data) => data.facebook?.trim() || data.zalo?.trim(),
+  { message: "Phải nhập ít nhất Facebook hoặc Zalo để Admin có thể liên hệ" },
+);
 
 export async function GET() {
   try {
@@ -49,7 +53,7 @@ export async function POST(req: NextRequest) {
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Dữ liệu không hợp lệ", details: parsed.error.flatten(), message: "Vui lòng kiểm tra lại thông tin (động lực ≥ 50 ký tự, kinh nghiệm ≥ 20 ký tự)" },
+        { error: "Dữ liệu không hợp lệ", details: parsed.error.flatten(), message: "Vui lòng kiểm tra lại thông tin (động lực ≥ 50 ký tự, kinh nghiệm ≥ 20 ký tự, ít nhất Facebook hoặc Zalo)" },
         { status: 400 }
       );
     }
@@ -59,7 +63,10 @@ export async function POST(req: NextRequest) {
       userId: session.user.id,
       motivation: parsed.data.motivation,
       experience: parsed.data.experience,
-      linkedinUrl: parsed.data.linkedinUrl || undefined,
+      contactInfo: {
+        facebook: parsed.data.facebook?.trim() || undefined,
+        zalo: parsed.data.zalo?.trim() || undefined,
+      },
     });
 
     return NextResponse.json(result, { status: 201 });
