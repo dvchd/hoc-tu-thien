@@ -25,6 +25,7 @@ const navByRole: Record<UserRole, { label: string; href: string; icon: React.Ele
   [UserRole.MENTOR]: [
     { label: "Tổng quan", href: "/dashboard/mentor", icon: LayoutDashboard },
     { label: "Buổi học", href: "/dashboard/mentor/sessions", icon: BookOpen },
+    { label: "Lịch trống", href: "/dashboard/mentor/schedule", icon: Calendar },
     { label: "Hồ sơ Mentor", href: "/dashboard/mentor/profile", icon: User },
     { label: "Bảng xếp hạng", href: "/dashboard/leaderboard", icon: Trophy },
   ],

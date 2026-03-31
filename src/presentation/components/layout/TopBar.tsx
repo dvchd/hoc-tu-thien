@@ -2,7 +2,7 @@
 
 import { signOut } from "next-auth/react";
 import { UserRole, UserRoleLabels } from "@/domain/value-objects/UserRole";
-import { Bell, LogOut, Settings, ChevronDown, Heart, Menu, X, LayoutDashboard, Users, BookOpen, Trophy, GraduationCap, FileText, CreditCard, Tag, AlertTriangle, User } from "lucide-react";
+import { Bell, LogOut, Settings, ChevronDown, Heart, Menu, X, LayoutDashboard, Users, BookOpen, Trophy, GraduationCap, FileText, CreditCard, Tag, AlertTriangle, User, Calendar } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -31,6 +31,7 @@ const navByRole: Record<UserRole, { label: string; href: string; icon: React.Ele
   [UserRole.MENTOR]: [
     { label: "Tổng quan", href: "/dashboard/mentor", icon: LayoutDashboard },
     { label: "Buổi học", href: "/dashboard/mentor/sessions", icon: BookOpen },
+    { label: "Lịch trống", href: "/dashboard/mentor/schedule", icon: Calendar },
     { label: "Hồ sơ Mentor", href: "/dashboard/mentor/profile", icon: User },
     { label: "Bảng xếp hạng", href: "/dashboard/leaderboard", icon: Trophy },
   ],

@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { UserRole } from "@/domain/value-objects/UserRole";
 import { prisma } from "@/infrastructure/database/prisma/client";
 import { MentorProfileForm } from "@/presentation/components/mentor/MentorProfileForm";
-import { AvailabilityManager } from "@/presentation/components/mentor/AvailabilityManager";
 
 export default async function MentorProfilePage() {
   let session;
@@ -23,7 +22,6 @@ export default async function MentorProfilePage() {
       where: { userId: session.user.id },
       include: {
         teachingFields: { include: { teachingField: true } },
-        availabilitySlots: true,
         charityAccount: {
           select: { id: true, name: true, accountNo: true, bankName: true },
         },
@@ -65,12 +63,6 @@ export default async function MentorProfilePage() {
         allFields={allFields}
         selectedFieldIds={selectedFieldIds}
         charityAccounts={charityAccounts}
-      />
-
-      <AvailabilityManager
-        userId={session.user.id}
-        slots={mentorProfile?.availabilitySlots ?? []}
-        mentorProfileId={mentorProfile?.id ?? null}
       />
     </div>
   );
