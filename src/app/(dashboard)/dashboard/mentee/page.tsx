@@ -109,23 +109,25 @@ export default async function MenteeDashboardPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       {isPendingActivation && (
-        <div className="animate-in p-4 rounded-2xl bg-jade-50 border border-jade-200 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-jade-600 flex items-center justify-center flex-shrink-0">
-            <Zap className="w-5 h-5 text-white" />
+        <Link
+          href="/activation"
+          className="animate-in block p-4 rounded-2xl bg-jade-50 border border-jade-200 hover:bg-jade-100 hover:border-jade-300 transition-all group cursor-pointer"
+        >
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 rounded-xl bg-jade-600 flex items-center justify-center flex-shrink-0">
+              <Zap className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-jade-800 text-sm">Tài khoản chưa được kích hoạt</h3>
+              <p className="text-jade-600 text-xs mt-0.5">
+                Kích hoạt tài khoản để mở khoá đầy đủ tính năng và tham gia cộng đồng Học Từ Thiện.
+              </p>
+            </div>
+            <div className="flex-shrink-0 px-4 py-2 bg-jade-600 group-hover:bg-jade-700 text-white text-sm font-medium rounded-xl transition-colors">
+              Kích hoạt ngay →
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-jade-800 text-sm">Tài khoản chưa được kích hoạt</h3>
-            <p className="text-jade-600 text-xs mt-0.5">
-              Kích hoạt tài khoản để mở khoá đầy đủ tính năng và tham gia cộng đồng Học Từ Thiện.
-            </p>
-          </div>
-          <Link
-            href="/activation"
-            className="flex-shrink-0 px-4 py-2 bg-jade-600 text-white text-sm font-medium rounded-xl hover:bg-jade-700 transition-colors"
-          >
-            Kích hoạt ngay
-          </Link>
-        </div>
+        </Link>
       )}
 
       <div className="animate-in">
