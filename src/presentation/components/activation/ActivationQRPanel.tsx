@@ -94,9 +94,10 @@ export function ActivationQRPanel({ paymentInfo, userId, sessionId, onSuccess }:
           setTimeout(() => onSuccess(), 1500);
         } else {
           // Dùng NextAuth update() để refresh JWT tại chỗ (trigger="update"),
-          // không cần sign-out rồi sign-in lại.
+          // sau đó dùng full reload thay vì router.push() để đảm bảo
+          // server-side auth() đọc được cookie JWT mới nhất.
           await update();
-          setTimeout(() => router.push("/dashboard"), 1500);
+          window.location.href = "/dashboard";
         }
       } else {
         toast.error(data.message, { duration: 4000 });

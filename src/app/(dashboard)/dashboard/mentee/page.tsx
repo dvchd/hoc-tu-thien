@@ -26,13 +26,28 @@ export default async function MenteeDashboardPage() {
   if (!session?.user) redirect("/login");
 
   const { listUsers, getMenteeLearningStats } = createUseCases();
-  const [{ users: mentors }, menteeStats] = await Promise.all([
-    listUsers.execute({
-      role: "MENTOR" as any,
-      pageSize: 6,
-    }),
-    getMenteeLearningStats.execute(session.user.id)
-  ]);
+
+  // Fetch mentors and mentee stats — handle gracefully if user was deleted
+  // (e.g. DB was reset/cleared) to avoid crashing the page.
+  let mentors: any[] = [];
+  let menteeStats = { totalSessions: 0, totalHours: 0, totalDonated: 0, avgRatingGiven: null as number | null };
+
+  try {
+    const results = await Promise.all([
+      listUsers.execute({ role: "MENTOR" as any, pageSize: 6 }),
+      getMenteeLearningStats.execute(session.user.id),
+    ]);
+    mentors = results[0].users;
+    menteeStats = results[1];
+  } catch (error) {
+    console.error("[MenteeDashboard] Error loading data:", error);
+    // User may have been deleted from DB — redirect to login to re-create
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("Không tìm thấy người dùng")) {
+      redirect("/login");
+    }
+    // For other errors (network, etc.), render page with empty stats
+  }
 
   const stats = [
     { 
