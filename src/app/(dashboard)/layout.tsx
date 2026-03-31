@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/infrastructure/database/prisma/client";
 import { Sidebar } from "@/presentation/components/layout/Sidebar";
 import { TopBar } from "@/presentation/components/layout/TopBar";
+import { SessionRefresher } from "@/presentation/components/layout/SessionRefresher";
 
 export default async function DashboardLayout({
   children,
@@ -20,23 +21,32 @@ export default async function DashboardLayout({
 
   if (!session?.user) redirect("/login");
 
-  // Verify the user still exists in the database.
+  // Verify the user still exists in the database and fetch fresh role/status.
   // In test/staging environments the DB may be periodically wiped, leaving
   // stale JWTs that contain valid-looking user IDs. Without this check,
   // every child page that queries by session.user.id would throw
   // "Không tìm thấy người dùng" into the error boundary.
   //
+  // We also read the current role & status from DB so the Sidebar/TopBar
+  // always reflect the latest values (e.g. after admin approves Mentor
+  // application, the role changes from MENTEE → MENTOR immediately).
+  //
   // IMPORTANT: redirect() must NOT be inside this try-catch because
   // redirect() throws internally in Next.js and would be caught here.
   // Instead, we capture the result and redirect OUTSIDE the try-catch.
   let userExists = true;
+  let dbRole: string | undefined;
+  let dbStatus: string | null | undefined;
   try {
-    const exists = await prisma.user.findUnique({
+    const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { id: true },
+      select: { id: true, role: true, status: true },
     });
-    if (!exists) {
+    if (!dbUser) {
       userExists = false;
+    } else {
+      dbRole = dbUser.role;
+      dbStatus = dbUser.status;
     }
   } catch (dbError) {
     // DB is unreachable — let the child pages handle their own errors
@@ -52,15 +62,26 @@ export default async function DashboardLayout({
     redirect("/login?error=SessionExpired");
   }
 
+  // Merge DB-fresh role/status into the user object for navigation components.
+  // This ensures menu items update immediately after role changes (e.g. MENTEE → MENTOR).
+  const freshUser = {
+    ...session.user,
+    role: (dbRole as any) ?? session.user.role,
+    status: dbStatus ?? session.user.status,
+  };
+
   return (
-    <div className="min-h-screen flex bg-stone-50">
-      <Sidebar user={session.user} />
-      <div className="flex-1 flex flex-col min-w-0">
-        <TopBar user={{ ...session.user, status: session.user.status }} />
-        <main className="flex-1 p-6 lg:p-8 overflow-auto">
-          {children}
-        </main>
+    <>
+      <SessionRefresher dbRole={freshUser.role} dbStatus={freshUser.status} />
+      <div className="min-h-screen flex bg-stone-50">
+        <Sidebar user={freshUser} />
+        <div className="flex-1 flex flex-col min-w-0">
+          <TopBar user={freshUser} />
+          <main className="flex-1 p-6 lg:p-8 overflow-auto">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

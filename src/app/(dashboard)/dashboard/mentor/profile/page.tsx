@@ -18,17 +18,25 @@ export default async function MentorProfilePage() {
     redirect("/dashboard");
   }
 
-  const [mentorProfile, allFields] = await Promise.all([
+  const [mentorProfile, allFields, charityAccounts] = await Promise.all([
     prisma.mentorProfile.findUnique({
       where: { userId: session.user.id },
       include: {
         teachingFields: { include: { teachingField: true } },
         availabilitySlots: true,
+        charityAccount: {
+          select: { id: true, name: true, accountNo: true, bankName: true },
+        },
       },
     }),
     prisma.teachingField.findMany({
       where: { isActive: true, isDeleted: false },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    }),
+    prisma.charityAccount.findMany({
+      where: { isActive: true, isDeleted: false },
+      select: { id: true, name: true, accountNo: true, bankName: true, campaignKeyword: true, verificationStatus: true },
+      orderBy: { name: "asc" },
     }),
   ]);
 
@@ -56,6 +64,7 @@ export default async function MentorProfilePage() {
         profile={mentorProfile}
         allFields={allFields}
         selectedFieldIds={selectedFieldIds}
+        charityAccounts={charityAccounts}
       />
 
       <AvailabilityManager

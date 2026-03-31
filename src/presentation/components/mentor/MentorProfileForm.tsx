@@ -3,9 +3,18 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Save, User, DollarSign, Star, Link2, Wallet, CheckCircle2, Info, Loader2 } from "lucide-react";
+import { Save, Wallet, CheckCircle2, Info, Loader2 } from "lucide-react";
 
 interface TeachingField { id: string; name: string; icon: string | null; description: string | null; }
+
+interface CharityAccount {
+  id: string;
+  name: string;
+  accountNo: string;
+  bankName: string | null;
+  campaignKeyword: string | null;
+  verificationStatus: string;
+}
 
 interface Props {
   userId: string;
@@ -14,18 +23,17 @@ interface Props {
   profile: any;
   allFields: TeachingField[];
   selectedFieldIds: string[];
+  charityAccounts: CharityAccount[];
 }
 
-export function MentorProfileForm({ userId, userName, userImage, profile, allFields, selectedFieldIds }: Props) {
+export function MentorProfileForm({ userId, userName, userImage, profile, allFields, selectedFieldIds, charityAccounts }: Props) {
   const [form, setForm] = useState({
     headline: profile?.headline ?? "",
     expertise: profile?.expertise ?? "",
     experience: profile?.experience?.toString() ?? "",
     hourlyRate: profile?.hourlyRate?.toString() ?? "0",
     isAvailable: profile?.isAvailable ?? true,
-    tnAccountNo: profile?.tnAccountNo ?? "",
-    tnAccountName: profile?.tnAccountName ?? "",
-    tnCampaignKeyword: profile?.tnCampaignKeyword ?? "",
+    charityAccountId: profile?.charityAccountId ?? "",
   });
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set(selectedFieldIds));
   const [saving, setSaving] = useState(false);
@@ -46,9 +54,12 @@ export function MentorProfileForm({ userId, userName, userImage, profile, allFie
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...form,
+          headline: form.headline,
+          expertise: form.expertise,
           experience: parseInt(form.experience) || 0,
           hourlyRate: parseInt(form.hourlyRate) || 0,
+          isAvailable: form.isAvailable,
+          charityAccountId: form.charityAccountId || null,
           fieldIds: Array.from(selectedFields),
         }),
       });
@@ -94,7 +105,7 @@ export function MentorProfileForm({ userId, userName, userImage, profile, allFie
         </div>
       </section>
 
-      {/* TN App Account */}
+      {/* Charity Account Selection */}
       <section className="bg-white rounded-2xl border border-amber-100 shadow-sm p-6">
         <div className="flex items-center gap-2 pb-3 border-b border-amber-50 mb-5">
           <Wallet className="w-4 h-4 text-amber-600" />
@@ -102,22 +113,76 @@ export function MentorProfileForm({ userId, userName, userImage, profile, allFie
         </div>
         <div className="p-3 rounded-xl bg-amber-50 border border-amber-100 mb-5 flex gap-2">
           <Info className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-700">Học phí của Mentee sẽ được chuyển vào tài khoản TN App này. Nhập số tài khoản 4 số từ Thiện Nguyện App (MBBank).</p>
+          <p className="text-xs text-amber-700">
+            Học phí của Mentee sẽ được chuyển vào tài khoản TN App được Admin cấu hình sẵn.
+            Chọn một tài khoản từ danh sách bên dưới.
+          </p>
         </div>
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-stone-700">Số tài khoản TN App (4 số)</label>
-            <input value={form.tnAccountNo} onChange={(e) => setForm({ ...form, tnAccountNo: e.target.value.replace(/\D/g, "").slice(0, 4) })} placeholder="VD: 2000" maxLength={4} className={`${inputCls} font-mono text-lg tracking-widest`} />
+        {charityAccounts.length === 0 ? (
+          <div className="text-center py-6">
+            <p className="text-stone-400 text-sm">Chưa có tài khoản thiện nguyện nào được cấu hình.</p>
+            <p className="text-stone-400 text-xs mt-1">Vui lòng liên hệ Admin để thêm tài khoản.</p>
           </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-stone-700">Tên tài khoản TN App</label>
-            <input value={form.tnAccountName} onChange={(e) => setForm({ ...form, tnAccountName: e.target.value.toUpperCase() })} placeholder="VD: NGUYEN VAN A" className={`${inputCls} uppercase`} />
+        ) : (
+          <div className="space-y-3">
+            {charityAccounts.map((account) => {
+              const isSelected = form.charityAccountId === account.id;
+              const isVerified = account.verificationStatus === "VERIFIED";
+              const isPending = account.verificationStatus === "PENDING";
+              const isDefault = (account as any).isDefault === true;
+
+              return (
+                <button
+                  key={account.id}
+                  type="button"
+                  onClick={() => setForm({ ...form, charityAccountId: account.id })}
+                  className={cn(
+                    "w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all",
+                    isSelected
+                      ? "bg-jade-50 border-jade-400 ring-2 ring-jade-100"
+                      : "bg-stone-50 border-stone-200 hover:border-jade-300 hover:bg-jade-50/50"
+                  )}
+                >
+                  <div className={cn(
+                    "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all",
+                    isSelected ? "border-jade-600 bg-jade-600" : "border-stone-300"
+                  )}>
+                    {isSelected && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-sm text-stone-800">{account.name}</span>
+                      {isVerified && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-green-100 text-green-700">
+                          <CheckCircle2 className="w-3 h-3" /> Đã xác minh
+                        </span>
+                      )}
+                      {isPending && (
+                        <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-yellow-100 text-yellow-700">
+                          Chờ xác minh
+                        </span>
+                      )}
+                      {isDefault && (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-700">
+                          Mặc định
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-stone-500 mt-0.5">
+                      STK: <span className="font-mono">{account.accountNo}</span>
+                      {account.bankName && <span> · {account.bankName}</span>}
+                      {account.campaignKeyword && <span> · Từ khóa: {account.campaignKeyword}</span>}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-stone-700">Keyword chiến dịch (tuỳ chọn)</label>
-            <input value={form.tnCampaignKeyword} onChange={(e) => setForm({ ...form, tnCampaignKeyword: e.target.value })} placeholder="Nhập nếu bạn có chiến dịch riêng trên TN App" className={inputCls} />
-          </div>
-        </div>
+        )}
       </section>
 
       {/* Teaching Fields */}
