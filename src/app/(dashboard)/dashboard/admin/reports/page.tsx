@@ -16,7 +16,7 @@ export default async function AdminReportsPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="max-w-7xl mx-auto p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Báo cáo vi phạm</h1>
         <p className="text-gray-600">Xem xét và xử lý các báo cáo từ người dùng.</p>

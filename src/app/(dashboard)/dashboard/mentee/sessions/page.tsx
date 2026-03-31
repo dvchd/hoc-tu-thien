@@ -19,7 +19,7 @@ export default async function MenteeSessionsPage() {
   const past = sessions.filter((s) => !upcoming.includes(s));
 
   return (
-    <div className="max-w-3xl space-y-8">
+    <div className="max-w-3xl mx-auto space-y-8">
       <div className="animate-in">
         <p className="text-jade-600 text-sm font-medium tracking-wide uppercase mb-1">Người học</p>
         <h1 className="font-display text-3xl font-bold text-stone-900">Buổi học của tôi</h1>

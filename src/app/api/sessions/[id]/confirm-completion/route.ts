@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { createUseCases } from "@/lib/container";
 import { z } from "zod";
+import { withAllowedMethods } from "@/lib/api-utils";
 
 const schema = z.object({
   meetLink: z.string().url().optional(),
 });
 
-export async function POST(
+export const POST = withAllowedMethods(["POST"], async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -39,4 +40,4 @@ export async function POST(
     const msg = error instanceof Error ? error.message : "Lỗi hệ thống";
     return NextResponse.json({ error: msg }, { status: 400 });
   }
-}
+});

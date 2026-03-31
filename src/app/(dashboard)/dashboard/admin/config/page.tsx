@@ -16,7 +16,7 @@ export default async function ConfigAdminPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-7xl mx-auto space-y-8">
       <div className="animate-in">
         <p className="text-jade-600 text-sm font-medium tracking-wide uppercase mb-1">
           Quản trị viên

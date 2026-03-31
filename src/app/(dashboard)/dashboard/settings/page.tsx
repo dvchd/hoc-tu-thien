@@ -13,7 +13,7 @@ export default async function SettingsPage() {
   if (!session?.user) redirect("/login");
 
   return (
-    <div className="max-w-2xl space-y-8">
+    <div className="max-w-2xl mx-auto space-y-8">
       <div className="animate-in">
         <p className="text-jade-600 text-sm font-medium tracking-wide uppercase mb-1">
           Tài khoản

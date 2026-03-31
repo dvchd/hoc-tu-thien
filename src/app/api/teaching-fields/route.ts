@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { createUseCases } from "@/lib/container";
+import { withAllowedMethods } from "@/lib/api-utils";
 
-export async function GET() {
+export const GET = withAllowedMethods(["GET"], async function GET() {
   try {
     const session = await auth();
     if (!session?.user) {
@@ -15,4 +16,4 @@ export async function GET() {
   } catch {
     return NextResponse.json({ error: "Lỗi hệ thống" }, { status: 500 });
   }
-}
+});

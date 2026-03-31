@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { UserRole } from "@/domain/value-objects/UserRole";
 import { prisma } from "@/infrastructure/database/prisma/client";
 import { z } from "zod";
+import { withAllowedMethods } from "@/lib/api-utils";
 
 const slotSchema = z.object({
   slots: z.array(z.object({
@@ -12,7 +13,7 @@ const slotSchema = z.object({
   })),
 });
 
-export async function POST(req: NextRequest) {
+export const POST = withAllowedMethods(["POST"], async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (session.user.role !== UserRole.MENTOR && session.user.role !== UserRole.ADMIN) {
@@ -42,4 +43,4 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ success: true });
-}
+});

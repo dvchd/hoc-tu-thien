@@ -98,7 +98,7 @@ export default async function MenteeDashboardPage() {
   const lastName = session.user.name?.split(" ").at(-1) || "bạn";
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-7xl mx-auto space-y-8">
       {isPendingActivation && (
         <div className="animate-in p-4 rounded-2xl bg-jade-50 border border-jade-200 flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="w-10 h-10 rounded-xl bg-jade-600 flex items-center justify-center flex-shrink-0">

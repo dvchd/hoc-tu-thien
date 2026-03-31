@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { UserRole } from "@/domain/value-objects/UserRole";
 import { prisma } from "@/lib/prisma";
+import { withAllowedMethods } from "@/lib/api-utils";
 
-export async function GET() {
+export const GET = withAllowedMethods(["GET"], async function GET() {
   try {
     const session = await auth();
     if (!session?.user || session.user.role !== UserRole.ADMIN) {
@@ -27,4 +28,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+});

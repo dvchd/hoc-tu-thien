@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/infrastructure/database/prisma/client";
+import { withAllowedMethods } from "@/lib/api-utils";
 
 /**
  * GET /api/auth/refresh-session
@@ -13,7 +14,7 @@ import { prisma } from "@/infrastructure/database/prisma/client";
  * We sign the user out then redirect to Google sign-in so NextAuth issues
  * a completely fresh JWT with status=ACTIVE from DB.
  */
-export async function GET(req: NextRequest) {
+export const GET = withAllowedMethods(["GET"], async function GET(req: NextRequest) {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -48,4 +49,4 @@ export async function GET(req: NextRequest) {
   });
 
   return res;
-}
+});

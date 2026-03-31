@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { encode } from "@auth/core/jwt";
 import { prisma } from "@/infrastructure/database/prisma/client";
+import { withAllowedMethods } from "@/lib/api-utils";
 
 /**
  * API route CHỈ dùng trong môi trường E2E test.
  * Tạo JWT session token để Playwright có thể set cookie và bypass Google OAuth.
  * Bị block hoàn toàn ở production (khi không có E2E_TEST_MODE).
  */
-export async function POST(req: NextRequest) {
+export const POST = withAllowedMethods(["POST"], async function POST(req: NextRequest) {
   if (process.env.NODE_ENV === "production" && !process.env.E2E_TEST_MODE) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -44,4 +45,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ token });
-}
+});

@@ -41,7 +41,7 @@ export default async function MentorDashboardPage() {
   const lastName = session.user.name?.split(" ").at(-1) || "bạn";
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-7xl mx-auto space-y-8">
       <div className="animate-in">
         <p className="text-amber-600 text-sm font-medium tracking-wide uppercase mb-1">
           Người hướng dẫn

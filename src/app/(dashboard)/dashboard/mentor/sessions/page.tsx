@@ -24,7 +24,7 @@ export default async function MentorSessionsPage() {
   const past = sessions.filter((s) => ["COMPLETED", "CANCELLED", "PAYMENT_PENDING"].includes(s.status));
 
   return (
-    <div className="max-w-3xl space-y-8">
+    <div className="max-w-3xl mx-auto space-y-8">
       <div className="animate-in">
         <p className="text-amber-600 text-sm font-medium tracking-wide uppercase mb-1">Mentor</p>
         <h1 className="font-display text-3xl font-bold text-stone-900">Quản lý buổi học</h1>

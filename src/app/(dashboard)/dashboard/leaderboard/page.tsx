@@ -19,7 +19,7 @@ export default async function LeaderboardPage() {
   const monthName = new Intl.DateTimeFormat("vi-VN", { month: "long", year: "numeric" }).format(now);
 
   return (
-    <div className="max-w-4xl space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8">
       <div className="animate-in">
         <p className="text-jade-600 text-sm font-medium tracking-wide uppercase mb-1">Bảng xếp hạng</p>
         <h1 className="font-display text-3xl font-bold text-stone-900">Thành tích tháng này 🏆</h1>

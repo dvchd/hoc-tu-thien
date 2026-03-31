@@ -3,13 +3,14 @@ import { auth } from "@/auth";
 import { createUseCases } from "@/lib/container";
 import { UserRole } from "@/domain/value-objects/UserRole";
 import { z } from "zod";
+import { withAllowedMethods } from "@/lib/api-utils";
 
 const schema = z.object({
   status: z.enum(["REVIEWED", "RESOLVED", "DISMISSED"]),
   reviewNote: z.string().min(1).max(1000),
 });
 
-export async function PATCH(
+export const PATCH = withAllowedMethods(["PATCH"], async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -38,4 +39,4 @@ export async function PATCH(
     const msg = error instanceof Error ? error.message : "Lỗi hệ thống";
     return NextResponse.json({ error: msg }, { status: 400 });
   }
-}
+});

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { createUseCases } from "@/lib/container";
+import { withAllowedMethods } from "@/lib/api-utils";
 
-export async function GET(
+export const GET = withAllowedMethods(["GET"], async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -24,4 +25,4 @@ export async function GET(
         : 400;
     return NextResponse.json({ error: msg }, { status });
   }
-}
+});

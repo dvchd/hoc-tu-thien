@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { createUseCases } from "@/lib/container";
 import { z } from "zod";
+import { withAllowedMethods } from "@/lib/api-utils";
 
 const schema = z.object({ paymentId: z.string().min(1) });
 
-export async function POST(req: NextRequest) {
+export const POST = withAllowedMethods(["POST"], async function POST(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
@@ -32,4 +33,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

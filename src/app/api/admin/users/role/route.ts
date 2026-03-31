@@ -3,13 +3,14 @@ import { auth } from "@/auth";
 import { UserRole } from "@/domain/value-objects/UserRole";
 import { createUseCases } from "@/lib/container";
 import { z } from "zod";
+import { withAllowedMethods } from "@/lib/api-utils";
 
 const changeRoleSchema = z.object({
   userId: z.string().min(1),
   newRole: z.enum([UserRole.MENTOR, UserRole.MENTEE]),
 });
 
-export async function PATCH(req: NextRequest) {
+export const PATCH = withAllowedMethods(["PATCH"], async function PATCH(req: NextRequest) {
   try {
     const session = await auth();
 
@@ -42,4 +43,4 @@ export async function PATCH(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

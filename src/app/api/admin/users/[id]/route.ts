@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { UserRole } from "@/domain/value-objects/UserRole";
 import { createUseCases } from "@/lib/container";
+import { withAllowedMethods } from "@/lib/api-utils";
 
-export async function DELETE(
+export const DELETE = withAllowedMethods(["DELETE"], async function DELETE(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -32,4 +33,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-}
+});
