@@ -291,7 +291,7 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
       {/* Payment modal */}
       {showPayment && paymentInfo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-auto">
+          <div className="w-full max-w-4xl max-h-[90vh] overflow-auto">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-display text-xl font-bold text-white">Thanh toán học phí</h2>
               <button onClick={() => setShowPayment(false)} className="text-white/70 hover:text-white">
