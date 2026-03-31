@@ -206,13 +206,32 @@ export function MentorApplicationForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-stone-700 mb-1.5">
-          Động lực của bạn <span className="text-red-500">*</span>
-        </label>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-sm font-medium text-stone-700">
+            Động lực của bạn <span className="text-red-500">*</span>
+          </label>
+          <span className={cn(
+            "text-xs tabular-nums",
+            formData.motivation.length < 50 ? "text-amber-500" : formData.motivation.length > 2000 ? "text-red-500" : "text-stone-400",
+          )}>
+            {formData.motivation.length}/2000
+            {formData.motivation.length < 50 && (
+              <span className="ml-1">(tối thiểu 50)</span>
+            )}
+          </span>
+        </div>
         <textarea
           required
           rows={4}
-          className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100 transition-all resize-none"
+          maxLength={2000}
+          className={cn(
+            "w-full px-4 py-3 bg-stone-50 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none",
+            formData.motivation.length < 50
+              ? "border-amber-200 focus:border-amber-400 focus:ring-amber-100"
+              : formData.motivation.length > 2000
+                ? "border-red-200 focus:border-red-400 focus:ring-red-100"
+                : "border-stone-200 focus:border-jade-400 focus:ring-jade-100",
+          )}
           placeholder="Tại sao bạn muốn trở thành mentor tại Học Từ Thiện?"
           value={formData.motivation}
           onChange={(e) => setFormData({ ...formData, motivation: e.target.value })}
@@ -220,13 +239,32 @@ export function MentorApplicationForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-stone-700 mb-1.5">
-          Kinh nghiệm chuyên môn <span className="text-red-500">*</span>
-        </label>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-sm font-medium text-stone-700">
+            Kinh nghiệm chuyên môn <span className="text-red-500">*</span>
+          </label>
+          <span className={cn(
+            "text-xs tabular-nums",
+            formData.experience.length < 20 ? "text-amber-500" : formData.experience.length > 2000 ? "text-red-500" : "text-stone-400",
+          )}>
+            {formData.experience.length}/2000
+            {formData.experience.length < 20 && (
+              <span className="ml-1">(tối thiểu 20)</span>
+            )}
+          </span>
+        </div>
         <textarea
           required
           rows={4}
-          className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100 transition-all resize-none"
+          maxLength={2000}
+          className={cn(
+            "w-full px-4 py-3 bg-stone-50 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none",
+            formData.experience.length < 20
+              ? "border-amber-200 focus:border-amber-400 focus:ring-amber-100"
+              : formData.experience.length > 2000
+                ? "border-red-200 focus:border-red-400 focus:ring-red-100"
+                : "border-stone-200 focus:border-jade-400 focus:ring-jade-100",
+          )}
           placeholder="Tóm tắt kinh nghiệm và kỹ năng bạn có thể chia sẻ."
           value={formData.experience}
           onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
