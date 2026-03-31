@@ -106,17 +106,23 @@ export function Sidebar({ user }: { user: SidebarUser }) {
 
       <nav className="flex-1 px-3 py-4 space-y-1">
         <div className="text-stone-400 text-[10px] font-semibold uppercase tracking-wider px-3 mb-2">Menu chính</div>
-        {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-          return (
-            <Link key={item.href} href={item.href}
-              className={cn("flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
-                isActive ? "bg-jade-600 text-white shadow-sm" : "text-stone-600 hover:bg-stone-50 hover:text-stone-900")}>
-              <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-white" : "text-stone-400")} />
-              {item.label}
-            </Link>
-          );
-        })}
+        {/* Use longest-prefix matching to avoid highlighting parent + child simultaneously */}
+        {(() => {
+          const matchedHref = navItems
+            .filter((item) => pathname === item.href || pathname.startsWith(item.href + "/"))
+            .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+          return navItems.map((item) => {
+            const isActive = item.href === matchedHref;
+            return (
+              <Link key={item.href} href={item.href}
+                className={cn("flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+                  isActive ? "bg-jade-600 text-white shadow-sm" : "text-stone-600 hover:bg-stone-50 hover:text-stone-900")}>
+                <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-white" : "text-stone-400")} />
+                {item.label}
+              </Link>
+            );
+          });
+        })()}
       </nav>
 
       <div className="px-3 py-4 border-t border-stone-50 space-y-1">

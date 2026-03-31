@@ -92,7 +92,7 @@ export function MentorApplicationForm() {
         setShowForm(false);
       } else {
         const error = await res.json();
-        toast.error(error.message || "Có lỗi xảy ra khi gửi đơn.");
+        toast.error(error.message || error.error || "Có lỗi xảy ra khi gửi đơn.");
       }
     } catch (error) {
       toast.error("Lỗi kết nối server.");
