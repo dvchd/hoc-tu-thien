@@ -26,10 +26,31 @@ export default async function MentorDashboardPage() {
   }
 
   const { getMentorTeachingStats, getMentorSessions } = createUseCases();
-  const [mentorStats, sessions] = await Promise.all([
-    getMentorTeachingStats.execute(session.user.id),
-    getMentorSessions.upcomingByMentorId(session.user.id),
-  ]);
+
+  // Fetch mentor stats and sessions — handle gracefully if user was deleted
+  // from DB (test environment wipe). redirect() must NOT be inside try-catch.
+  let mentorStats = { totalMentees: 0, totalSessions: 0, totalDonations: 0, totalHours: 0 };
+  let sessions: any[] = [];
+  let shouldRedirectToLogin = false;
+
+  try {
+    const results = await Promise.all([
+      getMentorTeachingStats.execute(session.user.id),
+      getMentorSessions.upcomingByMentorId(session.user.id),
+    ]);
+    mentorStats = results[0];
+    sessions = results[1];
+  } catch (error) {
+    console.error("[MentorDashboard] Error loading data:", error);
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("Không tìm thấy người dùng")) {
+      shouldRedirectToLogin = true;
+    }
+  }
+
+  if (shouldRedirectToLogin) {
+    redirect("/login?error=SessionExpired");
+  }
 
   const stats = [
     { label: "Mentee đang dạy", value: mentorStats.totalMentees.toString(), icon: Users, color: "text-jade-600", bg: "bg-jade-50" },

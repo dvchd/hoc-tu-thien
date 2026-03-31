@@ -17,7 +17,22 @@ export default async function MentorSessionsPage() {
   if (session.user.role !== UserRole.MENTOR && session.user.role !== UserRole.ADMIN) redirect("/dashboard");
 
   const { getMentorSessions } = createUseCases();
-  const sessions = await getMentorSessions.byMentorId(session.user.id);
+
+  let sessions: any[] = [];
+  let shouldRedirectToLogin = false;
+  try {
+    sessions = await getMentorSessions.byMentorId(session.user.id);
+  } catch (error) {
+    console.error("[MentorSessions] Error loading sessions:", error);
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("Không tìm thấy người dùng")) {
+      shouldRedirectToLogin = true;
+    }
+  }
+
+  if (shouldRedirectToLogin) {
+    redirect("/login?error=SessionExpired");
+  }
 
   const pending = sessions.filter((s) => s.status === "PENDING");
   const upcoming = sessions.filter((s) => s.status === "CONFIRMED" && new Date(s.scheduledAt) > new Date());

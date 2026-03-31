@@ -14,7 +14,22 @@ export default async function MenteeSessionsPage() {
   }
   if (!session?.user) redirect("/login");
   const { getMentorSessions } = createUseCases();
-  const sessions = await getMentorSessions.byMenteeId(session.user.id);
+
+  let sessions: any[] = [];
+  let shouldRedirectToLogin = false;
+  try {
+    sessions = await getMentorSessions.byMenteeId(session.user.id);
+  } catch (error) {
+    console.error("[MenteeSessions] Error loading sessions:", error);
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("Không tìm thấy người dùng")) {
+      shouldRedirectToLogin = true;
+    }
+  }
+
+  if (shouldRedirectToLogin) {
+    redirect("/login?error=SessionExpired");
+  }
   const upcoming = sessions.filter((s) => ["PENDING","CONFIRMED"].includes(s.status) && new Date(s.scheduledAt) > new Date());
   const past = sessions.filter((s) => !upcoming.includes(s));
 

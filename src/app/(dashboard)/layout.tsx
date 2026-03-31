@@ -14,9 +14,6 @@ export default async function DashboardLayout({
     session = await auth();
   } catch (error) {
     // JWT decryption failed (stale cookie after rebuild/deploy).
-    // Redirect to login — the middleware will also clear the cookie,
-    // but this catch ensures the server component doesn't throw
-    // into the error boundary.
     console.error("[DashboardLayout] auth() error, redirecting to login:", error);
     redirect("/login?error=SessionExpired");
   }
@@ -29,24 +26,30 @@ export default async function DashboardLayout({
   // every child page that queries by session.user.id would throw
   // "Không tìm thấy người dùng" into the error boundary.
   //
-  // Redirecting to /login triggers a fresh Google sign-in, which calls
-  // findOrCreateUser to recreate the user record.
+  // IMPORTANT: redirect() must NOT be inside this try-catch because
+  // redirect() throws internally in Next.js and would be caught here.
+  // Instead, we capture the result and redirect OUTSIDE the try-catch.
+  let userExists = true;
   try {
     const exists = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { id: true },
     });
     if (!exists) {
-      console.warn(
-        `[DashboardLayout] User ${session.user.id} not found in DB. ` +
-        "Redirecting to login to re-authenticate.",
-      );
-      redirect("/login?error=SessionExpired");
+      userExists = false;
     }
   } catch (dbError) {
     // DB is unreachable — let the child pages handle their own errors
     // rather than blocking the entire dashboard.
     console.error("[DashboardLayout] DB check failed:", dbError);
+  }
+
+  if (!userExists) {
+    console.warn(
+      `[DashboardLayout] User ${session.user.id} not found in DB. ` +
+      "Redirecting to login to re-authenticate.",
+    );
+    redirect("/login?error=SessionExpired");
   }
 
   return (

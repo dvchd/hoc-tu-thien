@@ -35,8 +35,13 @@ export default async function MenteeDashboardPage() {
 
   // Fetch mentors and mentee stats — handle gracefully if user was deleted
   // (e.g. DB was reset/cleared) to avoid crashing the page.
+  //
+  // IMPORTANT: redirect() must NOT be called inside this try-catch because
+  // redirect() throws internally in Next.js and would be swallowed by catch.
+  // Instead, capture the intent and redirect OUTSIDE the try-catch.
   let mentors: any[] = [];
   let menteeStats = { totalSessions: 0, totalHours: 0, totalDonated: 0, avgRatingGiven: null as number | null };
+  let shouldRedirectToLogin = false;
 
   try {
     const results = await Promise.all([
@@ -50,9 +55,13 @@ export default async function MenteeDashboardPage() {
     // User may have been deleted from DB — redirect to login to re-create
     const message = error instanceof Error ? error.message : "";
     if (message.includes("Không tìm thấy người dùng")) {
-      redirect("/login");
+      shouldRedirectToLogin = true;
     }
     // For other errors (network, etc.), render page with empty stats
+  }
+
+  if (shouldRedirectToLogin) {
+    redirect("/login?error=SessionExpired");
   }
 
   const stats = [
