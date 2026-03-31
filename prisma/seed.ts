@@ -16,8 +16,67 @@ const FIELDS = [
   { name: "Soft Skills", slug: "soft-skills", icon: "🤝", description: "Communication, Leadership, Presentation", sortOrder: 12 },
 ];
 
+const DEFAULT_SYSTEM_CONFIGS = [
+  {
+    key: "activation_amount",
+    value: "10000",
+    description: "Số tiền kích hoạt tài khoản (VNĐ). Mentee phải chuyển khoản thiện nguyện số tiền này để kích hoạt tài khoản.",
+  },
+  {
+    key: "charity_account_verification_amount",
+    value: "1000",
+    description: "Số tiền probe transfer để xác thực tài khoản thiện nguyện (VNĐ). Admin chuyển 1,000đ để xác nhận sở hữu tài khoản.",
+  },
+  {
+    key: "default_charity_account_id",
+    value: "charity_default_seed",
+    description: "ID của tài khoản thiện nguyện mặc định dùng cho kích hoạt tài khoản Mentee. Admin có thể đổi qua UI.",
+  },
+  {
+    key: "min_booking_advance_hours",
+    value: "1",
+    description: "Số giờ tối thiểu trước giờ bắt đầu buổi học mà Mentee được phép đặt lịch. Đặt lịch muộn hơn sẽ bị từ chối.",
+  },
+  {
+    key: "late_cancel_threshold_minutes",
+    value: "30",
+    description: "Ngưỵ thời gian (phút) trước giờ bắt đầu buổi học. Nếu hủy trong khoảng thời gian này sẽ bị đánh dấu hủy muộn.",
+  },
+  {
+    key: "payment_expiry_hours",
+    value: "24",
+    description: "Thời hạn thanh toán (giờ) kể từ khi tạo yêu cầu. Sau thời hạn này, yêu cầu thanh toán được xem là quá hạn.",
+  },
+  {
+    key: "max_active_bookings",
+    value: "3",
+    description: "Số buổi học đang hoạt động tối đa mà mỗi Mentee được phép đặt đồng thời. Đặt lịch mới sẽ bị từ chối nếu vượt quá.",
+  },
+];
+
 async function main() {
   console.log("🌱 Seeding...\n");
+
+  // ─── SystemConfig defaults ────────────────────────────────────────────────
+  // Các config này ảnh hưởng trực tiếp đến nghiệp vụ (activation, booking, payment, v.v.)
+  // Nếu DB chưa có → tạo mới. Nếu đã có → giữ nguyên (không ghi đè giá trị Admin đã chỉnh).
+  for (const config of DEFAULT_SYSTEM_CONFIGS) {
+    const existing = await prisma.systemConfig.findUnique({ where: { key: config.key } });
+    if (!existing) {
+      await prisma.systemConfig.create({
+        data: {
+          id: `config_${config.key}`,
+          key: config.key,
+          value: config.value,
+          description: config.description,
+          updatedBy: "seed",
+        },
+      });
+      console.log(`  ✅ SystemConfig: ${config.key} = ${config.value}`);
+    } else {
+      console.log(`  ⏭️  SystemConfig: ${config.key} (đã tồn tại, giữ nguyên)`);
+    }
+  }
 
   // ─── Default CharityAccount ────────────────────────────────────────────────
   // Bắt buộc phải có trước khi hệ thống hoạt động:

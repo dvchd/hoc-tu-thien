@@ -29,7 +29,7 @@ export interface ISystemConfigRepository {
   get(key: string): Promise<string | null>;
   getNumber(key: string, fallback: number): Promise<number>;
   getAll(): Promise<SystemConfigRecord[]>;
-  set(key: string, value: string, updatedBy?: string): Promise<void>;
+  set(key: string, value: string, updatedBy?: string, description?: string | null): Promise<void>;
   setMultiple(
     configs: { key: string; value: string }[],
     updatedBy?: string

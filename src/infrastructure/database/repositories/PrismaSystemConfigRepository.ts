@@ -41,11 +41,11 @@ export class PrismaSystemConfigRepository implements ISystemConfigRepository {
     return results.map((c) => this.toRecord(c));
   }
 
-  async set(key: string, value: string, updatedBy?: string): Promise<void> {
+  async set(key: string, value: string, updatedBy?: string, description?: string | null): Promise<void> {
     await this.prisma.systemConfig.upsert({
       where: { key },
       update: { value, updatedBy: updatedBy ?? null },
-      create: { id: createId(), key, value, updatedBy: updatedBy ?? null },
+      create: { id: createId(), key, value, description: description ?? null, updatedBy: updatedBy ?? null },
     });
   }
 
