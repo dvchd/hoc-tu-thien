@@ -21,7 +21,6 @@ import {
   ConfirmCompletionUseCase,
   MarkNoShowUseCase,
   RateSessionUseCase,
-  ApplyForMentorUseCase,
   GetLeaderboardUseCase,
   GetMentorSessionsUseCase,
 } from "../application/use-cases/session/SessionUseCases";
@@ -86,7 +85,6 @@ export function createUseCases() {
     confirmCompletion: new ConfirmCompletionUseCase(uow),
     markNoShow: new MarkNoShowUseCase(uow),
     rateSession: new RateSessionUseCase(uow),
-    applyForMentor: new ApplyForMentorUseCase(uow),
     getLeaderboard: new GetLeaderboardUseCase(uow),
     getMentorSessions: new GetMentorSessionsUseCase(uow),
     // Mentor Application

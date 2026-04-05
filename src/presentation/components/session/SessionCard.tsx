@@ -14,6 +14,7 @@ import { formatVND, cn } from "@/lib/utils";
 import {
   Video, Clock, DollarSign, CheckCircle2,
   X, Star, ExternalLink, CreditCard, Loader2, ChevronDown, ChevronUp,
+  Flag, Send, AlertTriangle,
 } from "lucide-react";
 import { ActivationQRPanel } from "@/presentation/components/activation/ActivationQRPanel";
 
@@ -34,6 +35,13 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
   const [showPayment, setShowPayment] = useState(false);
   const [rating, setRating] = useState(session.rating ?? 0);
   const [hoverRating, setHoverRating] = useState(0);
+  const [showReport, setShowReport] = useState(false);
+  const [reported, setReported] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDescription, setReportDescription] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
+
+  const reportedUserId = viewAs === "mentee" ? session.mentorId : session.menteeId;
 
   async function confirmCompletion() {
     setLoading(true);
@@ -119,6 +127,47 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
   const statusLabel = SessionStatusLabels[localStatus as SessionStatus] ?? localStatus;
   const scheduledDate = new Date(session.scheduledAt);
   const isPast = scheduledDate < new Date();
+
+  const reportReasons = [
+    { value: "INAPPROPRIATE", label: "Hành vi không phù hợp" },
+    { value: "MISCONDUCT", label: "Vi phạm quy định" },
+    { value: "NO_SHOW_DISPUTE", label: "Tranh chấp vắng mặt" },
+    { value: "OTHER", label: "Khác" },
+  ] as const;
+
+  async function submitReport() {
+    if (!reportReason) {
+      toast.error("Vui lòng chọn lý do báo cáo");
+      return;
+    }
+    if (reportDescription.trim().length < 20) {
+      toast.error("Mô tả phải có ít nhất 20 ký tự");
+      return;
+    }
+    setReportLoading(true);
+    try {
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportedUserId,
+          sessionId: session.id,
+          reason: reportReason,
+          description: reportDescription.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success("Đã gửi báo cáo. Cảm ơn bạn!");
+      setReported(true);
+      setShowReport(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Có lỗi xảy ra";
+      toast.error(msg);
+    } finally {
+      setReportLoading(false);
+    }
+  }
 
   return (
     <>
@@ -277,6 +326,23 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
             </button>
           )}
 
+          {/* Report (confirmed, completed, cancelled) */}
+          {["CONFIRMED", "COMPLETED", "CANCELLED"].includes(localStatus) && (
+            <button
+              onClick={() => { setShowReport(true); setReportReason(""); setReportDescription(""); }}
+              disabled={reported}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-medium transition-colors",
+                reported
+                  ? "bg-stone-100 text-stone-400 cursor-not-allowed"
+                  : "bg-white border border-stone-200 text-stone-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+              )}
+            >
+              <Flag className="w-3 h-3" />
+              {reported ? "Đã báo cáo" : "Báo cáo"}
+            </button>
+          )}
+
           {/* Cancel (both) */}
           {["PENDING", "CONFIRMED"].includes(localStatus) && !isPast && (
             <button onClick={() => doAction("cancel", { cancelReason: "Người dùng huỷ" })} disabled={loading}
@@ -287,6 +353,78 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
           )}
         </div>
       </div>
+
+      {/* Report modal */}
+      {showReport && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={(e) => e.target === e.currentTarget && setShowReport(false)}
+        >
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+                <h3 className="font-semibold text-stone-800">Báo cáo buổi học</h3>
+              </div>
+              <button
+                onClick={() => setShowReport(false)}
+                className="p-1.5 rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <p className="text-sm text-stone-500">Báo cáo này sẽ được gửi đến quản trị viên để xem xét.</p>
+
+              {/* Reason select */}
+              <div>
+                <label className="text-sm font-medium text-stone-700 mb-1.5 block">Lý do <span className="text-red-500">*</span></label>
+                <select
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100"
+                >
+                  <option value="">-- Chọn lý do --</option>
+                  {reportReasons.map((r) => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="text-sm font-medium text-stone-700 mb-1.5 block">Mô tả chi tiết <span className="text-red-500">*</span></label>
+                <textarea
+                  value={reportDescription}
+                  onChange={(e) => setReportDescription(e.target.value)}
+                  placeholder="Mô tả tình huống... (ít nhất 20 ký tự)"
+                  rows={4}
+                  className="w-full px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100 resize-none"
+                />
+                <p className={cn("text-xs mt-1", reportDescription.trim().length > 0 && reportDescription.trim().length < 20 ? "text-red-500" : "text-stone-400")}>
+                  {reportDescription.trim().length}/20 ký tự tối thiểu
+                </p>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-stone-100 flex items-center gap-3 bg-stone-50/60">
+              <button
+                onClick={() => setShowReport(false)}
+                className="px-4 py-2 border border-stone-200 text-stone-600 rounded-xl text-sm font-medium hover:bg-stone-100 transition-colors"
+              >
+                Huỷ
+              </button>
+              <button
+                onClick={submitReport}
+                disabled={reportLoading || !reportReason || reportDescription.trim().length < 20}
+                className="flex-1 flex items-center justify-center gap-2 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition-all disabled:bg-stone-200 disabled:text-stone-400"
+              >
+                {reportLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {reportLoading ? "Đang gửi..." : "Gửi báo cáo"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Payment modal */}
       {showPayment && paymentInfo && (
@@ -302,7 +440,7 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
               paymentInfo={paymentInfo}
               userId={currentUserId}
               sessionId={session.id}
-              onSuccess={() => { setShowPayment(false); setLocalStatus(SessionStatus.COMPLETED); }}
+              onSuccess={() => { setShowPayment(false); setLocalStatus(localStatus); }}
             />
           </div>
         </div>

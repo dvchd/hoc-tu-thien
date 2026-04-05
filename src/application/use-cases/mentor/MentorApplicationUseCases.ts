@@ -42,6 +42,7 @@ export class SubmitMentorApplicationUseCase {
       }
 
       // Kiểm tra đã có application pending/approved chưa
+      // REJECTED applications are allowed to be re-submitted
       const existing = await uow.mentorApplications.findByUserId(input.userId);
       if (existing) {
         if (existing.status === "PENDING") {
@@ -50,7 +51,7 @@ export class SubmitMentorApplicationUseCase {
         if (existing.status === "APPROVED") {
           throw new Error("Đơn đăng ký của bạn đã được phê duyệt trước đó.");
         }
-        throw new Error("Đơn đăng ký trước đây của bạn đã bị từ chối. Vui lòng liên hệ Admin để được hỗ trợ.");
+        // REJECTED / WITHDRAWN: allow re-submission (fall through to create new)
       }
 
       const contactInfoStr = input.contactInfo

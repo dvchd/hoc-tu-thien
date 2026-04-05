@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Search, Star, Sparkles, ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface MentorItem {
   id: string;
@@ -10,6 +11,8 @@ interface MentorItem {
   image?: string | null;
   bio: string;
   expertise: string;
+  averageRating?: number | null;
+  ratingCount?: number;
 }
 
 export function MentorGrid({ mentors }: { mentors: MentorItem[] }) {
@@ -86,10 +89,23 @@ export function MentorGrid({ mentors }: { mentors: MentorItem[] }) {
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={j} className="w-3 h-3 text-amber-400 fill-amber-400" />
-                  ))}
-                  <span className="text-xs text-stone-400 ml-1">4.9</span>
+                  {(mentor.ratingCount ?? 0) > 0 ? (
+                    <>
+                      {[...Array(5)].map((_, j) => (
+                        <Star key={j} className={cn(
+                          "w-3 h-3",
+                          j < Math.round(mentor.averageRating ?? 0)
+                            ? "text-amber-400 fill-amber-400"
+                            : "text-stone-200"
+                        )} />
+                      ))}
+                      <span className="text-xs text-stone-400 ml-1">
+                        {(mentor.averageRating ?? 0).toFixed(1)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-xs text-stone-400">Chưa có đánh giá</span>
+                  )}
                 </div>
                 <span className="px-3 py-1.5 bg-jade-600 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
                   Kết nối

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Star, Clock, User, BookOpen, GraduationCap, Calendar, Linkedin, Video, Loader2, X, DollarSign } from "lucide-react";
+import { Star, Clock, User, BookOpen, GraduationCap, Calendar, Linkedin, Video, Loader2, X, DollarSign, CheckCircle2 } from "lucide-react";
 import { formatVND } from "@/lib/utils";
 import { format, addDays } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -47,7 +47,7 @@ interface MentorPublicProfileProps {
 export function MentorPublicProfile({ mentor }: MentorPublicProfileProps) {
   const [showBooking, setShowBooking] = useState(false);
   const [booking, setBooking] = useState({
-    dayOfWeek: -1, slotIndex: -1, title: "", description: "", notes: "",
+    dayOfWeek: -1, slotIndex: -1, selectedFieldId: "", title: "", description: "", notes: "",
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -71,6 +71,10 @@ export function MentorPublicProfile({ mentor }: MentorPublicProfileProps) {
       toast.error("Vui lòng chọn khung giờ học");
       return;
     }
+    if (!booking.selectedFieldId) {
+      toast.error("Vui lòng chọn lĩnh vực học");
+      return;
+    }
     if (!booking.title.trim()) {
       toast.error("Vui lòng nhập chủ đề buổi học");
       return;
@@ -92,6 +96,7 @@ export function MentorPublicProfile({ mentor }: MentorPublicProfileProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mentorId: mentor.user.id,
+          teachingFieldId: booking.selectedFieldId,
           title: booking.title,
           description: booking.description,
           notes: booking.notes,
@@ -103,7 +108,7 @@ export function MentorPublicProfile({ mentor }: MentorPublicProfileProps) {
       if (!res.ok) throw new Error(data.error);
       toast.success("Đã đặt lịch thành công! Mentor sẽ xác nhận sớm.");
       setShowBooking(false);
-      setBooking({ dayOfWeek: -1, slotIndex: -1, title: "", description: "", notes: "" });
+      setBooking({ dayOfWeek: -1, slotIndex: -1, selectedFieldId: "", title: "", description: "", notes: "" });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Có lỗi xảy ra";
       toast.error(msg);
@@ -283,17 +288,35 @@ export function MentorPublicProfile({ mentor }: MentorPublicProfileProps) {
                 </div>
               </div>
 
-              {/* Teaching fields */}
-              {mentor.teachingFields.length > 0 && (
+              {/* Teaching field selection */}
+              {mentor.teachingFields.length > 0 ? (
                 <div>
-                  <p className="text-sm font-medium text-stone-700 mb-2">Lĩnh vực</p>
-                  <div className="flex flex-wrap gap-2">
+                  <p className="text-sm font-medium text-stone-700 mb-2 flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-jade-600" />
+                    Chọn lĩnh vực muốn học <span className="text-red-500">*</span>
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {mentor.teachingFields.map((f) => (
-                      <span key={f.id} className="px-2.5 py-1.5 bg-jade-50 text-jade-700 text-xs rounded-lg font-medium">
-                        {f.icon ?? "📚"} {f.name}
-                      </span>
+                      <button key={f.id} type="button"
+                        onClick={() => setBooking({ ...booking, selectedFieldId: booking.selectedFieldId === f.id ? "" : f.id })}
+                        className={cn("flex items-center gap-2 p-3 rounded-xl border text-sm font-medium transition-all text-left",
+                          booking.selectedFieldId === f.id
+                            ? "bg-jade-600 border-jade-600 text-white"
+                            : "bg-stone-50 border-stone-200 text-stone-600 hover:border-jade-300 hover:bg-jade-50")}>
+                        {booking.selectedFieldId === f.id && <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />}
+                        <span>{f.icon ?? "📚"}</span>
+                        <span className="truncate">{f.name}</span>
+                      </button>
                     ))}
                   </div>
+                  {!booking.selectedFieldId && (
+                    <p className="text-xs text-stone-400 mt-2">Vui lòng chọn ít nhất một lĩnh vực</p>
+                  )}
+                </div>
+              ) : (
+                <div className="py-6 text-center text-stone-400 bg-stone-50 rounded-xl">
+                  <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-sm">Mentor chưa cập nhật lĩnh vực giảng dạy</p>
                 </div>
               )}
 
@@ -389,7 +412,7 @@ export function MentorPublicProfile({ mentor }: MentorPublicProfileProps) {
               </button>
               <button
                 onClick={handleBook}
-                disabled={submitting || booking.slotIndex < 0 || !booking.title.trim()}
+                disabled={submitting || booking.slotIndex < 0 || !booking.selectedFieldId || !booking.title.trim()}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-jade-600 text-white rounded-xl text-sm font-semibold hover:bg-jade-700 transition-all disabled:bg-stone-200 disabled:text-stone-400"
               >
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}

@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { createUseCases } from "@/lib/container";
+import { prisma } from "@/infrastructure/database/prisma/client";
 import { UserStatus } from "@/domain/value-objects/UserStatus";
 import { MentorGrid } from "@/presentation/components/mentee/MentorGrid";
 import Link from "next/link";
@@ -19,6 +20,8 @@ interface MentorItem {
   image: string | null;
   bio: string;
   expertise: string;
+  averageRating: number | null;
+  ratingCount: number;
 }
 
 export default async function MenteeDashboardPage() {
@@ -31,9 +34,9 @@ export default async function MenteeDashboardPage() {
   }
   if (!session?.user) redirect("/login");
 
-  const { listUsers, getMenteeLearningStats } = createUseCases();
+  const { getMenteeLearningStats } = createUseCases();
 
-  // Fetch mentors and mentee stats — handle gracefully if user was deleted
+  // Fetch mentors with profile ratings and mentee stats — handle gracefully if user was deleted
   // (e.g. DB was reset/cleared) to avoid crashing the page.
   //
   // IMPORTANT: redirect() must NOT be called inside this try-catch because
@@ -45,10 +48,15 @@ export default async function MenteeDashboardPage() {
 
   try {
     const results = await Promise.all([
-      listUsers.execute({ role: "MENTOR" as any, pageSize: 6 }),
+      prisma.user.findMany({
+        where: { role: "MENTOR", status: "ACTIVE", isDeleted: false },
+        include: { mentorProfile: { select: { rating: true, ratingCount: true } } },
+        take: 6,
+        orderBy: { createdAt: "desc" },
+      }),
       getMenteeLearningStats.execute(session.user.id),
     ]);
-    mentors = results[0].users;
+    mentors = results[0];
     menteeStats = results[1];
   } catch (error) {
     console.error("[MenteeDashboard] Error loading data:", error);
@@ -95,12 +103,14 @@ export default async function MenteeDashboardPage() {
     },
   ];
 
-  const displayMentors: MentorItem[] = mentors.map((m) => ({
+  const displayMentors: MentorItem[] = mentors.map((m: any) => ({
     id: m.id,
     name: m.name || "Mentor",
     image: m.image,
     bio: m.bio || "",
     expertise: "Mentor",
+    averageRating: m.mentorProfile?.rating ?? null,
+    ratingCount: m.mentorProfile?.ratingCount ?? 0,
   }));
 
   const isPendingActivation = session.user.status === UserStatus.PENDING_ACTIVATION;

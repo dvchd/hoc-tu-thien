@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { applyForMentor } = createUseCases();
-    const result = await applyForMentor.execute({
+    const { submitMentorApplication } = createUseCases();
+    const result = await submitMentorApplication.execute({
       userId: session.user.id,
       motivation: parsed.data.motivation,
       experience: parsed.data.experience,

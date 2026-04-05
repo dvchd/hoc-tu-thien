@@ -16,6 +16,7 @@ import {
   Home,
   Info,
   Shield,
+  RefreshCw,
 } from "lucide-react";
 import type { ActivationPaymentInfo } from "@/application/use-cases/payment/PaymentUseCases";
 
@@ -144,7 +145,14 @@ export function ActivationQRPanel({ paymentInfo, userId, sessionId, onSuccess }:
               <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
                 <div className="text-center">
                   <Clock className="w-8 h-8 text-red-400 mx-auto mb-1" />
-                  <p className="text-red-500 text-xs font-medium">QR đã hết hạn</p>
+                  <p className="text-red-500 text-xs font-medium mb-3">QR đã hết hạn</p>
+                  <button
+                    onClick={() => router.refresh()}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-jade-600 text-white text-xs rounded-lg hover:bg-jade-700 transition-colors font-medium"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    Lấy mã QR mới
+                  </button>
                 </div>
               </div>
             )}
