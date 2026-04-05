@@ -1,5 +1,5 @@
 import { UserCount } from "@/domain/repositories/IUserRepository";
-import { Users, Shield, Star, UserCircle, TrendingUp, Activity } from "lucide-react";
+import { Users, Shield, Star, UserCircle, AlertTriangle, Activity } from "lucide-react";
 
 interface AdminStatsCardsProps {
   stats: UserCount;
@@ -55,7 +55,7 @@ export function AdminStatsCards({ stats }: AdminStatsCardsProps) {
     {
       label: "Bị đình chỉ",
       value: stats.byStatus.SUSPENDED,
-      icon: TrendingUp,
+      icon: AlertTriangle,
       color: "text-orange-600",
       bg: "bg-orange-50",
       border: "border-orange-100",

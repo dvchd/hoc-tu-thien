@@ -110,11 +110,11 @@ test.describe("Admin Dashboard", () => {
       },
     });
 
-    // Gọi API approve
-    const apiRes = await page.request.post(
-      `/api/admin/mentor-applications/${app.id}/approve`,
+    // Gọi API approve — dùng PATCH /api/admin/applications/[id]
+    const apiRes = await page.request.patch(
+      `/api/admin/applications/${app.id}`,
       {
-        data: { reviewNote: "Approved by E2E test" },
+        data: { action: "approve", reviewNote: "Approved by E2E test" },
       }
     );
 

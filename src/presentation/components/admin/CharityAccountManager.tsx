@@ -68,7 +68,7 @@ export function CharityAccountManager() {
         fetchAccounts();
       } else {
         const error = await res.json();
-        toast.error(error.message || "Thêm thất bại");
+        toast.error(error.error || "Thêm thất bại");
       }
     } catch (error) {
       toast.error("Lỗi kết nối");
@@ -112,7 +112,7 @@ export function CharityAccountManager() {
         fetchAccounts();
       } else {
         const error = await res.json();
-        toast.error(error.message || "Xóa thất bại");
+        toast.error(error.error || "Xóa thất bại");
       }
     } catch (error) {
       toast.error("Lỗi kết nối");

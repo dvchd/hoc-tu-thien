@@ -163,7 +163,7 @@ export function MentorApplicationsTable() {
         fetchApplications();
       } else {
         const error = await res.json();
-        toast.error(error.message || "Thao tác thất bại");
+        toast.error(error.error || "Thao tác thất bại");
       }
     } catch {
       toast.error("Lỗi kết nối");

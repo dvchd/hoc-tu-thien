@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { UserRole } from "@/domain/value-objects/UserRole";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/infrastructure/database/prisma/client";
 import { withAllowedMethods } from "@/lib/api-utils";
 
 export const GET = withAllowedMethods(["GET"], async function GET() {
   try {
     const session = await auth();
     if (!session?.user || session.user.role !== UserRole.ADMIN) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
      const sessions = await prisma.learningSession.findMany({

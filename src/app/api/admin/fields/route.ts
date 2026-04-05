@@ -52,6 +52,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
+  const session = await auth();
+  if (!session?.user || session.user.role !== UserRole.ADMIN) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const fields = await prisma.teachingField.findMany({
     where: { isDeleted: false },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],

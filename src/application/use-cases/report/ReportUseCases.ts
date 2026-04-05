@@ -1,4 +1,4 @@
-const { createId } = require("@paralleldrive/cuid2");
+import { createId } from "@paralleldrive/cuid2";
 import { IUnitOfWork } from "../../interfaces/IUnitOfWork";
 import { ReportRecord } from "../../../domain/repositories/IReportRepository";
 import { SessionStatus } from "../../../domain/value-objects/Payment";

@@ -9,7 +9,7 @@ const buildMentorProfileRecord = (overrides: Partial<MentorProfileRecord> = {}):
   id: "prof_001",
   userId: "mentor_001",
   bio: "React expert with 5 years experience",
-  experience: "5",
+  experience: 5,
   headline: "Senior React Developer",
   hourlyRate: 50000,
   charityAccountId: "charity_001",

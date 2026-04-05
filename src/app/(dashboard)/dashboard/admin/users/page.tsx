@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { UserRole } from "@/domain/value-objects/UserRole";
+import { UserStatus } from "@/domain/value-objects/UserStatus";
 import { createUseCases } from "@/lib/container";
 import { AdminUserTable } from "@/presentation/components/admin/AdminUserTable";
 
@@ -29,11 +30,14 @@ export default async function AdminUsersPage({
 
   const { page: pageParam, role, status } = await searchParams;
   const page = Number(pageParam ?? 1);
+  const VALID_STATUSES = new Set<string>(Object.values(UserStatus));
+  const validatedStatus = status && VALID_STATUSES.has(status) ? (status as UserStatus) : undefined;
+
   const { listUsers } = createUseCases();
 
   const { users, total } = await listUsers.execute({
     role: role as UserRole | undefined,
-    status: status as any,
+    status: validatedStatus,
     page,
     pageSize: 20,
   });

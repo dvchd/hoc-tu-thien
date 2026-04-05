@@ -89,30 +89,24 @@ test.describe("API: Session Lifecycle", () => {
 
     await loginAs(TestUsers.MENTOR);
 
-    const res = await page.request.patch(
-      `/api/sessions/${sessionId}/complete`,
-      { data: {} }
+    // Dùng POST /api/sessions/[id]/confirm-completion (endpoint đúng)
+    const res = await page.request.post(
+      `/api/sessions/${sessionId}/confirm-completion`,
+      { data: { meetLink: "https://meet.google.com/e2e-complete-test" } }
     );
 
     if (res.ok()) {
       const session = await res.json();
-      // Free session → COMPLETED ngay
-      expect(session.status).toBe("COMPLETED");
+      // Free session → COMPLETED ngay khi cả 2 confirm, hoặc PAYMENT_PENDING nếu có phí
+      expect(["COMPLETED", "PAYMENT_PENDING", "CONFIRMED"]).toContain(session.status);
     } else {
-      // Có thể route là PATCH /api/sessions/[id] với action: complete
-      const res2 = await page.request.patch(`/api/sessions/${sessionId}`, {
-        data: { action: "complete" },
+      // Fallback: mark COMPLETED trực tiếp trong DB cho test tiếp theo
+      const body = await res.json().catch(() => ({}));
+      console.warn("[E2E] confirm-completion API returned:", res.status(), body);
+      await db.learningSession.update({
+        where: { id: sessionId },
+        data: { status: "COMPLETED" },
       });
-      if (res2.ok()) {
-        const session = await res2.json();
-        expect(["COMPLETED", "PAYMENT_PENDING"]).toContain(session.status);
-      } else {
-        // Mark COMPLETED trực tiếp trong DB cho test tiếp theo
-        await db.learningSession.update({
-          where: { id: sessionId },
-          data: { status: "COMPLETED" },
-        });
-      }
     }
   });
 

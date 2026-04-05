@@ -226,6 +226,7 @@ export function createMockMentorProfileRepository(): jest.Mocked<IMentorProfileR
     update: jest.fn(),
     incrementTotalSessions: jest.fn(),
     updateRatingStats: jest.fn(),
+    replaceAvailabilitySlots: jest.fn(),
   };
 }
 

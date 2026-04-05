@@ -35,6 +35,10 @@ function GoogleProviderWithHardcodedEndpoints(): OAuthConfig<Record<string, unkn
     jwks_endpoint: "https://www.googleapis.com/oauth2/v3/certs",
     clientId: process.env.GOOGLE_CLIENT_ID!,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    // allowDangerousEmailAccountLinking: Required — without this, NextAuth refuses to link a
+    // new Google OAuth account to an existing local account with the same email, causing
+    // sign-in failures for users who originally signed up via email/password or a
+    // different provider. This is intentional and necessary for the platform's OAuth flow.
     allowDangerousEmailAccountLinking: true,
     // Use "state" only — pkce requires additional cookies that can be lost
     // behind reverse proxies (Coolify/Nginx), causing InvalidCheck errors.

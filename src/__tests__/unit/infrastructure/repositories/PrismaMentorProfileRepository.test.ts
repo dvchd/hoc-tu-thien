@@ -10,6 +10,10 @@ function makePrisma() {
       update: jest.fn(),
       updateMany: jest.fn(),
     },
+    availabilitySlot: {
+      deleteMany: jest.fn(),
+      createMany: jest.fn(),
+    },
   } as any;
 }
 
@@ -195,6 +199,51 @@ describe("PrismaMentorProfileRepository", () => {
       prisma.mentorProfile.findUnique.mockResolvedValue(null);
       await repo.updateRatingStats("mentor_001", 5);
       expect(prisma.mentorProfile.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("replaceAvailabilitySlots", () => {
+    it("calls deleteMany then createMany for non-empty slots", async () => {
+      prisma.availabilitySlot.deleteMany.mockResolvedValue({ count: 3 });
+      prisma.availabilitySlot.createMany.mockResolvedValue({ count: 2 });
+
+      const slots = [
+        { dayOfWeek: 1, startTime: "09:00", endTime: "11:00", isRecurring: true },
+        { dayOfWeek: 3, startTime: "14:00", endTime: "16:00", isRecurring: true },
+      ];
+
+      await repo.replaceAvailabilitySlots("prof_001", slots);
+
+      expect(prisma.availabilitySlot.deleteMany).toHaveBeenCalledWith({
+        where: { mentorProfileId: "prof_001" },
+      });
+      expect(prisma.availabilitySlot.createMany).toHaveBeenCalledWith({
+        data: slots.map((s) => ({ ...s, mentorProfileId: "prof_001" })),
+      });
+    });
+
+    it("only calls deleteMany when slots are empty", async () => {
+      prisma.availabilitySlot.deleteMany.mockResolvedValue({ count: 5 });
+
+      await repo.replaceAvailabilitySlots("prof_001", []);
+
+      expect(prisma.availabilitySlot.deleteMany).toHaveBeenCalledWith({
+        where: { mentorProfileId: "prof_001" },
+      });
+      expect(prisma.availabilitySlot.createMany).not.toHaveBeenCalled();
+    });
+
+    it("passes correct data with mentorProfileId for each slot", async () => {
+      prisma.availabilitySlot.deleteMany.mockResolvedValue({ count: 0 });
+      prisma.availabilitySlot.createMany.mockResolvedValue({ count: 1 });
+
+      const slot = { dayOfWeek: 2, startTime: "08:00", endTime: "09:30", isRecurring: true };
+      await repo.replaceAvailabilitySlots("profile-abc", [slot]);
+
+      const createCallData = prisma.availabilitySlot.createMany.mock.calls[0][0].data;
+      expect(createCallData).toEqual([
+        { ...slot, mentorProfileId: "profile-abc" },
+      ]);
     });
   });
 });

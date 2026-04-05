@@ -19,10 +19,29 @@ export default async function AdminDashboardPage() {
 
   const { listUsers, uow } = createUseCases();
 
-  const [{ users, total }, stats] = await Promise.all([
-    listUsers.execute({ pageSize: 20 }),
-    uow.users.getUserStats(),
-  ]);
+  let users: Awaited<ReturnType<typeof listUsers.execute>>["users"] = [];
+  let total = 0;
+  let stats: Awaited<ReturnType<typeof uow.users.getUserStats>> = {
+    total: 0,
+    byRole: { ADMIN: 0, MENTOR: 0, MENTEE: 0 },
+    byStatus: { PENDING_ACTIVATION: 0, ACTIVE: 0, INACTIVE: 0, SUSPENDED: 0 },
+  };
+
+  try {
+    const result = await Promise.all([
+      listUsers.execute({ pageSize: 20 }),
+      uow.users.getUserStats(),
+    ]);
+    users = result[0].users;
+    total = result[0].total;
+    stats = result[1];
+  } catch (error) {
+    console.error("[AdminDashboardPage] data fetch error:", error);
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("Không tìm thấy người dùng")) {
+      redirect("/login?error=SessionExpired");
+    }
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
