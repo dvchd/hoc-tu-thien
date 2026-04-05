@@ -53,4 +53,6 @@ export interface IMentorProfileRepository {
   incrementTotalSessions(mentorUserId: string): Promise<void>;
   /** Cập nhật averageRating và ratingCount sau khi mentee đánh giá */
   updateRatingStats(mentorUserId: string, newRating: number): Promise<void>;
+  /** Thay thế toàn bộ availability slots — atomic replace (gọi trong transaction) */
+  replaceAvailabilitySlots(mentorProfileId: string, slots: Omit<AvailabilitySlotRecord, "id">[]): Promise<void>;
 }

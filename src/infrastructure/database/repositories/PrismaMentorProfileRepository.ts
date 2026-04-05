@@ -146,4 +146,16 @@ export class PrismaMentorProfileRepository implements IMentorProfileRepository {
       },
     });
   }
+
+  async replaceAvailabilitySlots(mentorProfileId: string, slots: Omit<AvailabilitySlotRecord, "id">[]): Promise<void> {
+    await this.prisma.availabilitySlot.deleteMany({ where: { mentorProfileId } });
+    if (slots.length > 0) {
+      await this.prisma.availabilitySlot.createMany({
+        data: slots.map((s) => ({
+          ...s,
+          mentorProfileId,
+        })),
+      });
+    }
+  }
 }

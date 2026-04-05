@@ -35,6 +35,7 @@ import {
   SetTeachingFieldsUseCase,
   GetMentorPublicProfileUseCase,
 } from "../application/use-cases/mentor/MentorProfileUseCases";
+import { SetAvailabilitySlotsUseCase } from "../application/use-cases/mentor/SetAvailabilitySlotsUseCase";
 import {
   CreateCharityAccountUseCase,
   ListCharityAccountsUseCase,
@@ -96,6 +97,7 @@ export function createUseCases() {
     updateMentorProfile: new UpdateMentorProfileUseCase(uow),
     setTeachingFields: new SetTeachingFieldsUseCase(uow),
     getMentorPublicProfile: new GetMentorPublicProfileUseCase(uow),
+    setAvailabilitySlots: new SetAvailabilitySlotsUseCase(uow),
     // Charity Accounts
     createCharityAccount: new CreateCharityAccountUseCase(uow),
     listCharityAccounts: new ListCharityAccountsUseCase(uow),
