@@ -24,7 +24,7 @@ export enum PaymentStatus {
 export const PaymentStatusLabels: Record<PaymentStatus, string> = {
   [PaymentStatus.PENDING]: "Chờ xác nhận",
   [PaymentStatus.VERIFIED]: "Đã xác nhận",
-  [PaymentStatus.FAILED]: "Thất bại / Hết hạn",
+  [PaymentStatus.FAILED]: "Thất bại",
   [PaymentStatus.REFUNDED]: "Đã hoàn tiền",
 };
 
@@ -226,7 +226,6 @@ export const CharityAccountVerificationStatusLabels: Record<
 
 export const ACTIVATION_AMOUNT = 10000;                  // fallback; ghi đè qua SystemConfig
 export const CHARITY_ACCOUNT_VERIFICATION_AMOUNT = 1000; // fallback; ghi đè qua SystemConfig
-export const PAYMENT_EXPIRY_HOURS = 24;                  // fallback; ghi đè qua SystemConfig
 export const LATE_CANCEL_THRESHOLD_MINUTES = 30;
 export const MIN_ADVANCE_BOOKING_HOURS = 1;
 export const MAX_ACTIVE_BOOKINGS = 1;

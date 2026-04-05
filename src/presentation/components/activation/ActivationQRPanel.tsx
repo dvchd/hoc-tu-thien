@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -9,14 +9,11 @@ import Link from "next/link";
 import {
   Copy,
   CheckCircle2,
-  Clock,
   Loader2,
   ExternalLink,
-  QrCode,
   Home,
   Info,
   Shield,
-  RefreshCw,
 } from "lucide-react";
 import type { ActivationPaymentInfo } from "@/application/use-cases/payment/PaymentUseCases";
 
@@ -25,15 +22,6 @@ interface Props {
   userId: string;
   sessionId?: string; // nếu là session fee payment
   onSuccess?: () => void;
-}
-
-function formatCountdown(expiresAt: string): string {
-  const diff = new Date(expiresAt).getTime() - Date.now();
-  if (diff <= 0) return "Đã hết hạn";
-  const h = Math.floor(diff / 3_600_000);
-  const m = Math.floor((diff % 3_600_000) / 60_000);
-  const s = Math.floor((diff % 60_000) / 1_000);
-  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
 function CopyButton({ value, label }: { value: string; label: string }) {
@@ -63,20 +51,9 @@ function CopyButton({ value, label }: { value: string; label: string }) {
 export function ActivationQRPanel({ paymentInfo, userId, sessionId, onSuccess }: Props) {
   const { update } = useSession();
   const router = useRouter();
-  const [countdown, setCountdown] = useState(
-    formatCountdown(paymentInfo.expiresAt)
-  );
   const [verifying, setVerifying] = useState(false);
   const [checkCount, setCheckCount] = useState(0);
   const [qrLoaded, setQrLoaded] = useState(false);
-
-  // Countdown timer
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown(formatCountdown(paymentInfo.expiresAt));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [paymentInfo.expiresAt]);
 
   async function handleVerify() {
     setVerifying(true);
@@ -109,8 +86,6 @@ export function ActivationQRPanel({ paymentInfo, userId, sessionId, onSuccess }:
     }
   }
 
-  const isExpired = new Date(paymentInfo.expiresAt) < new Date();
-
   return (
     <div className="bg-white rounded-3xl border border-stone-100 shadow-xl shadow-stone-200/40 overflow-hidden">
       <div className="grid md:grid-cols-2 gap-0">
@@ -141,29 +116,10 @@ export function ActivationQRPanel({ paymentInfo, userId, sessionId, onSuccess }:
               onLoad={() => setQrLoaded(true)}
               onError={() => setQrLoaded(true)}
             />
-            {isExpired && (
-              <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
-                <div className="text-center">
-                  <Clock className="w-8 h-8 text-red-400 mx-auto mb-1" />
-                  <p className="text-red-500 text-xs font-medium mb-3">QR đã hết hạn</p>
-                  <button
-                    onClick={() => router.refresh()}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-jade-600 text-white text-xs rounded-lg hover:bg-jade-700 transition-colors font-medium"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    Lấy mã QR mới
-                  </button>
-                </div>
-              </div>
-            )}
+
           </div>
 
-          {/* Countdown */}
-          <div className={`mt-5 flex items-center gap-2 text-base font-mono font-bold ${isExpired ? "text-red-500" : "text-stone-600"}`}>
-            <Clock className="w-4 h-4" />
-            {countdown}
-          </div>
-          <p className="text-xs text-stone-400 mt-1">QR hết hạn sau 24 giờ</p>
+
         </div>
 
         {/* ── Right: Info & Action ── */}
@@ -237,7 +193,7 @@ export function ActivationQRPanel({ paymentInfo, userId, sessionId, onSuccess }:
           <div className="mt-5 space-y-2.5">
             <button
               onClick={handleVerify}
-              disabled={verifying || isExpired}
+              disabled={verifying}
               className="w-full flex items-center justify-center gap-2.5 py-4 rounded-xl font-bold text-sm transition-all bg-jade-600 text-white hover:bg-jade-700 hover:shadow-lg hover:shadow-jade-200 disabled:bg-stone-200 disabled:text-stone-400 disabled:cursor-not-allowed"
             >
               {verifying ? (

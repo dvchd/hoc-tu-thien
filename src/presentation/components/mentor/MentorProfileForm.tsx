@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Save, Wallet, CheckCircle2, Info, Loader2 } from "lucide-react";
+import { Save, Wallet, CheckCircle2, Info, Loader2, Eye } from "lucide-react";
+import Link from "next/link";
 
 interface TeachingField { id: string; name: string; icon: string | null; description: string | null; }
 
@@ -209,11 +210,21 @@ export function MentorProfileForm({ userId, userName, userImage, profile, allFie
         <p className="text-xs text-stone-400 mt-3">Đã chọn {selectedFields.size} lĩnh vực</p>
       </section>
 
-      <button type="submit" disabled={saving}
-        className="flex items-center gap-2 px-6 py-3 bg-jade-600 text-white rounded-xl font-semibold hover:bg-jade-700 transition-all disabled:bg-stone-200 disabled:text-stone-400">
-        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-        {saving ? "Đang lưu..." : "Lưu hồ sơ"}
-      </button>
+      <div className="flex items-center gap-3">
+        <button type="submit" disabled={saving}
+          className="flex items-center gap-2 px-6 py-3 bg-jade-600 text-white rounded-xl font-semibold hover:bg-jade-700 transition-all disabled:bg-stone-200 disabled:text-stone-400">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {saving ? "Đang lưu..." : "Lưu hồ sơ"}
+        </button>
+        <Link
+          href={`/dashboard/mentee/mentor/${userId}`}
+          target="_blank"
+          className="flex items-center gap-2 px-6 py-3 bg-white text-stone-700 rounded-xl font-semibold border border-stone-200 hover:border-jade-300 hover:bg-jade-50 transition-all"
+        >
+          <Eye className="w-4 h-4" />
+          Xem hồ sơ công khai
+        </Link>
+      </div>
     </form>
   );
 }

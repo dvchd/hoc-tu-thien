@@ -25,10 +25,6 @@ const CONFIG_DEFAULTS: Record<SystemConfigKey, { value: string; description: str
     value: "30",
     description: "Ngưỵ thời gian (phút) trước giờ bắt đầu buổi học. Nếu hủy trong khoảng thời gian này sẽ bị đánh dấu hủy muộn.",
   },
-  [SYSTEM_CONFIG_KEYS.PAYMENT_EXPIRY_HOURS]: {
-    value: "24",
-    description: "Thời hạn thanh toán (giờ) kể từ khi tạo yêu cầu. Sau thời hạn này, yêu cầu thanh toán được xem là quá hạn.",
-  },
   [SYSTEM_CONFIG_KEYS.MAX_ACTIVE_BOOKINGS]: {
     value: "3",
     description: "Số buổi học đang hoạt động tối đa mà mỗi Mentee được phép đặt đồng thời. Đặt lịch mới sẽ bị từ chối nếu vượt quá.",

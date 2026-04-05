@@ -8,7 +8,6 @@ import {
   buildTransactionContent,
   buildVietQRUrl,
   ACTIVATION_AMOUNT,
-  PAYMENT_EXPIRY_HOURS,
 } from "../../../domain/value-objects/Payment";
 import { SYSTEM_CONFIG_KEYS } from "../../../domain/repositories/ISystemConfigRepository";
 import { UserStatus } from "../../../domain/value-objects/UserStatus";
@@ -105,23 +104,23 @@ export class InitiateActivationUseCase {
       throw new Error("Tài khoản đã được kích hoạt");
     }
 
-    // Kiểm tra payment PENDING chưa hết hạn
+    // Kiểm tra payment PENDING đang tồn tại — nếu có thì tái sử dụng
+    // Không cần kiểm tra expiresAt: nếu chưa thanh toán (PENDING) thì không được đặt lịch mới (BR09)
     const existingPending = await this.uow.payments.findPendingByUserId(
       input.userId,
       PaymentType.ACTIVATION
     );
     const validPending = existingPending.find(
-      (p) => p.status === PaymentStatus.PENDING && p.expiresAt > new Date()
+      (p) => p.status === PaymentStatus.PENDING
     );
     if (validPending) {
       return buildPaymentInfoResponse(validPending);
     }
 
-    // Lấy activation amount, default charity account, và expiry hours đồng thời
-    const [activationAmountStr, defaultAccount, expiryHoursNum] = await Promise.all([
+    // Lấy activation amount và default charity account đồng thời
+    const [activationAmountStr, defaultAccount] = await Promise.all([
       this.uow.systemConfig.get(SYSTEM_CONFIG_KEYS.ACTIVATION_AMOUNT),
       this.uow.charityAccounts.findDefault(),
-      this.uow.systemConfig.getNumber(SYSTEM_CONFIG_KEYS.PAYMENT_EXPIRY_HOURS, PAYMENT_EXPIRY_HOURS),
     ]);
 
     // Tài khoản nhận tiền phải được Admin cấu hình qua CharityAccount (isDefault = true)
@@ -138,11 +137,6 @@ export class InitiateActivationUseCase {
 
     const shortCode = generateShortCode(8);
     const transactionCode = buildTransactionContent(PaymentType.ACTIVATION, shortCode);
-    const expiresAt = new Date(Date.now() + expiryHoursNum * 60 * 60 * 1000);
-
-    if (isNaN(expiresAt.getTime())) {
-      expiresAt.setTime(Date.now() + PAYMENT_EXPIRY_HOURS * 60 * 60 * 1000);
-    }
 
     const payment = await this.uow.payments.create({
       id: createId(),
@@ -153,7 +147,7 @@ export class InitiateActivationUseCase {
       shortCode,
       tnAccountNo: accountNo,
       tnAccountName: accountName,
-      expiresAt,
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 năm — chỉ để tương thích DB, không dùng để block
     });
 
     return buildPaymentInfoResponse(payment);
@@ -182,14 +176,9 @@ export class VerifyPaymentUseCase {
       return { success: false, message: "Yêu cầu thanh toán đã hết hạn" };
     }
 
-    // Lấy configured expiry hours để hiển thị deadline cho mentee (soft deadline)
-    // BR32: "Quá thời hạn mà chưa hoàn tất donation thì mentee chưa đủ điều kiện đặt lịch mới"
-    // → Payment KHÔNG có hard expiry. Mentee có thể thanh toán bất cứ lúc nào.
-    // → BR09 (PAYMENT_PENDING) sẽ block mentee đặt lịch mới cho đến khi thanh toán xong.
-    // expiresAt chỉ dùng để hiển thị "deadline khuyến nghị" trên UI.
-    //
-    // Không check expiresAt ở đây — nếu mentee đã chuyển khoản, verify phải thành công
-    // dù vượt deadline. Tiền đã đi vào tài khoản thiện nguyện, không lý do gì reject.
+    // Payment không có hard expiry.
+    // Nếu mentee đã chuyển khoản, verify phải thành công bất kể khi nào.
+    // BR09 (PAYMENT_PENDING) sẽ block mentee đặt lịch mới cho đến khi thanh toán xong.
 
     // Sử dụng injected verification service hoặc lazy-load từ infrastructure
     const verificationService = this.verificationService ?? await this.getVerificationService();
@@ -317,10 +306,10 @@ export class InitiateSessionFeePaymentUseCase {
       throw new Error("Buổi học không trong trạng thái chờ thanh toán");
     }
 
-    // Reuse existing pending payment nếu còn hợp lệ
+    // Tái sử dụng existing pending payment nếu có — không cần kiểm tra expiresAt
     const existingPending = await this.uow.payments.findPendingByUserId(userId, PaymentType.SESSION_FEE);
     const sessionPending = existingPending.find(
-      (p) => p.sessionId === sessionId && p.status === PaymentStatus.PENDING && p.expiresAt > new Date()
+      (p) => p.sessionId === sessionId && p.status === PaymentStatus.PENDING
     );
     if (sessionPending) {
       return buildPaymentInfoResponse(sessionPending);
@@ -365,19 +354,8 @@ export class InitiateSessionFeePaymentUseCase {
       );
     }
 
-    const expiryHours = await this.uow.systemConfig.getNumber(
-      SYSTEM_CONFIG_KEYS.PAYMENT_EXPIRY_HOURS,
-      PAYMENT_EXPIRY_HOURS
-    );
-
     const shortCode = generateShortCode(8);
     const transactionCode = buildTransactionContent(PaymentType.SESSION_FEE, shortCode);
-    const expiresAt = new Date(Date.now() + expiryHours * 60 * 60 * 1000);
-
-    // Guard against NaN from invalid config values
-    if (isNaN(expiresAt.getTime())) {
-      throw new Error("Cấu hình PAYMENT_EXPIRY_HOURS không hợp lệ");
-    }
 
     const payment = await this.uow.payments.create({
       id: createId(),
@@ -389,7 +367,7 @@ export class InitiateSessionFeePaymentUseCase {
       shortCode,
       tnAccountNo: accountNo,
       tnAccountName: accountName ?? undefined,
-      expiresAt: expiresAt,
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 năm — chỉ để tương thích DB, không dùng để block
     });
 
     return buildPaymentInfoResponse(payment);

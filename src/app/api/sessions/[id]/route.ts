@@ -4,7 +4,7 @@ import { createUseCases } from "@/lib/container";
 import { z } from "zod";
 
 const actionSchema = z.object({
-  action: z.enum(["confirm", "confirm_completion", "cancel", "rate"]),
+  action: z.enum(["confirm", "cancel", "rate"]),
   meetLink: z.string().url().optional(),
   mentorNotes: z.string().max(1000).optional(),
   cancelReason: z.string().max(500).optional(),
@@ -57,7 +57,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
 
-    const { confirmSession, confirmCompletion, cancelSession, rateSession } = createUseCases();
+    const { confirmSession, cancelSession, rateSession } = createUseCases();
     const sessionId = params.id;
     const userId = session.user.id;
 
@@ -66,10 +66,6 @@ export async function PATCH(
     switch (parsed.data.action) {
       case "confirm":
         result = await confirmSession.execute(sessionId, userId, parsed.data.meetLink);
-        break;
-
-      case "confirm_completion":
-        result = await confirmCompletion.execute(sessionId, userId, parsed.data.meetLink);
         break;
 
       case "cancel":

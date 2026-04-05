@@ -107,8 +107,6 @@ describe("InitiateSessionFeePaymentUseCase", () => {
         amount: 50000,
       })
     );
-    uow.systemConfig.getNumber.mockResolvedValue(24);
-
     const result = await useCase.execute("sess_001", "mentee_001");
 
     expect(result.tnAccountNo).toBe("3000");
@@ -175,8 +173,6 @@ describe("InitiateSessionFeePaymentUseCase", () => {
     uow.payments.create.mockResolvedValue(
       buildPaymentRecord({ tnAccountNo: "9999", tnAccountName: "System Default", amount: 50000 })
     );
-    uow.systemConfig.getNumber.mockResolvedValue(24);
-
     const result = await useCase.execute("sess_001", "mentee_001");
     expect(result.tnAccountNo).toBe("9999");
     expect(result.tnAccountName).toBe("System Default");
@@ -240,7 +236,7 @@ describe("InitiateSessionFeePaymentUseCase", () => {
     expect(result.tnAccountNo).toBe("DEFAULT");
   });
 
-  it("should throw error for NaN expiry hours", async () => {
+  it("should reuse existing pending payment regardless of expiresAt (no hard expiry)", async () => {
     const session = buildSessionRecord({
       menteeId: "mentee_001",
       fee: 50000,
@@ -248,24 +244,21 @@ describe("InitiateSessionFeePaymentUseCase", () => {
       mentorId: "mentor_001",
     });
     uow.sessions.findById.mockResolvedValue(session);
-    uow.payments.findPendingByUserId.mockResolvedValue([]);
-    uow.sessions.getMentorProfileFee.mockResolvedValue({
-      hourlyRate: 50000,
-      tnAccountNo: null,
-      tnAccountName: null,
-      tnCampaignKeyword: null,
-      charityAccountId: null,
-      onlyActivatedMentee: false,
-    });
-    uow.charityAccounts.findById.mockResolvedValue(null);
-    uow.charityAccounts.findDefault.mockResolvedValue({
-      accountNo: "9999",
-      name: "Default",
-    } as any);
-    uow.systemConfig.getNumber.mockResolvedValue(NaN);
 
-    await expect(useCase.execute("sess_001", "mentee_001"))
-      .rejects.toThrow("PAYMENT_EXPIRY_HOURS không hợp lệ");
+    // Payment đã "hết hạn" (expiresAt trong quá khứ) nhưng vẫn tái sử dụng
+    const expiredPayment = buildPaymentRecord({
+      sessionId: "sess_001",
+      type: PaymentType.SESSION_FEE,
+      status: PaymentStatus.PENDING,
+      amount: 50000,
+      expiresAt: new Date(Date.now() - 86400000), // 1 ngày trước
+    });
+    uow.payments.findPendingByUserId.mockResolvedValue([expiredPayment]);
+
+    const result = await useCase.execute("sess_001", "mentee_001");
+
+    expect(result.paymentId).toBe("pay_001");
+    expect(uow.payments.create).not.toHaveBeenCalled();
   });
 });
 

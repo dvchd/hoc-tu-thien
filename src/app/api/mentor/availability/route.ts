@@ -4,6 +4,7 @@ import { UserRole } from "@/domain/value-objects/UserRole";
 import { prisma } from "@/infrastructure/database/prisma/client";
 import { z } from "zod";
 import { withAllowedMethods } from "@/lib/api-utils";
+import { createId } from "@paralleldrive/cuid2";
 
 /** Convert "HH:MM" to minutes since midnight */
 function toMinutes(t: string): number {
@@ -98,20 +99,24 @@ export const POST = withAllowedMethods(["POST"], async function POST(req: NextRe
   const profile = await prisma.mentorProfile.findUnique({ where: { userId: session.user.id } });
   if (!profile) return NextResponse.json({ error: "Mentor profile not found" }, { status: 404 });
 
-  // Replace all slots atomically
-  await prisma.availabilitySlot.deleteMany({ where: { mentorProfileId: profile.id } });
-  if (slots.length > 0) {
-    await prisma.availabilitySlot.createMany({
-      data: slots.map((s, i) => ({
-        id: `slot_${Date.now()}_${i}`,
-        mentorProfileId: profile.id,
-        dayOfWeek: s.dayOfWeek,
-        startTime: s.startTime,
-        endTime: s.endTime,
-        isRecurring: true,
-      })),
-    });
-  }
+  // Replace all slots atomically within a transaction
+  await prisma.$transaction([
+    prisma.availabilitySlot.deleteMany({ where: { mentorProfileId: profile.id } }),
+    ...(slots.length > 0
+      ? [
+          prisma.availabilitySlot.createMany({
+            data: slots.map((s) => ({
+              id: createId(),
+              mentorProfileId: profile.id,
+              dayOfWeek: s.dayOfWeek,
+              startTime: s.startTime,
+              endTime: s.endTime,
+              isRecurring: true,
+            })),
+          }),
+        ]
+      : []),
+  ]);
 
   return NextResponse.json({ success: true });
 });

@@ -17,26 +17,43 @@ export default async function MentorProfilePage() {
     redirect("/dashboard");
   }
 
-  const [mentorProfile, allFields, charityAccounts] = await Promise.all([
-    prisma.mentorProfile.findUnique({
-      where: { userId: session.user.id },
-      include: {
-        teachingFields: { include: { teachingField: true } },
-        charityAccount: {
-          select: { id: true, name: true, accountNo: true, bankName: true },
+  let mentorProfile: any = null;
+  let allFields: any[] = [];
+  let charityAccounts: any[] = [];
+  let shouldRedirectToLogin = false;
+
+  try {
+    [mentorProfile, allFields, charityAccounts] = await Promise.all([
+      prisma.mentorProfile.findUnique({
+        where: { userId: session.user.id },
+        include: {
+          teachingFields: { include: { teachingField: true } },
+          charityAccount: {
+            select: { id: true, name: true, accountNo: true, bankName: true },
+          },
         },
-      },
-    }),
-    prisma.teachingField.findMany({
-      where: { isActive: true, isDeleted: false },
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-    }),
-    prisma.charityAccount.findMany({
-      where: { isActive: true, isDeleted: false },
-      select: { id: true, name: true, accountNo: true, bankName: true, campaignKeyword: true, verificationStatus: true },
-      orderBy: { name: "asc" },
-    }),
-  ]);
+      }),
+      prisma.teachingField.findMany({
+        where: { isActive: true, isDeleted: false },
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      }),
+      prisma.charityAccount.findMany({
+        where: { isActive: true, isDeleted: false },
+        select: { id: true, name: true, accountNo: true, bankName: true, campaignKeyword: true, verificationStatus: true },
+        orderBy: { name: "asc" },
+      }),
+    ]);
+  } catch (error) {
+    console.error("[MentorProfilePage] Error loading data:", error);
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("Không tìm thấy người dùng")) {
+      shouldRedirectToLogin = true;
+    }
+  }
+
+  if (shouldRedirectToLogin) {
+    redirect("/login?error=SessionExpired");
+  }
 
   const selectedFieldIds =
     mentorProfile?.teachingFields.map((tf: { teachingFieldId: string }) => tf.teachingFieldId) ?? [];

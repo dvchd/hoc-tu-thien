@@ -17,15 +17,29 @@ export default async function MentorSchedulePage() {
     redirect("/dashboard");
   }
 
-  const mentorProfile = await prisma.mentorProfile.findUnique({
-    where: { userId: session.user.id },
-    select: {
-      id: true,
-      availabilitySlots: {
-        orderBy: { dayOfWeek: "asc" },
+  let mentorProfile: any = null;
+  let shouldRedirectToLogin = false;
+  try {
+    mentorProfile = await prisma.mentorProfile.findUnique({
+      where: { userId: session.user.id },
+      select: {
+        id: true,
+        availabilitySlots: {
+          orderBy: { dayOfWeek: "asc" },
+        },
       },
-    },
-  });
+    });
+  } catch (error) {
+    console.error("[MentorSchedulePage] Error loading profile:", error);
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("Không tìm thấy người dùng")) {
+      shouldRedirectToLogin = true;
+    }
+  }
+
+  if (shouldRedirectToLogin) {
+    redirect("/login?error=SessionExpired");
+  }
 
   return (
     <div className="max-w-3xl space-y-6">
