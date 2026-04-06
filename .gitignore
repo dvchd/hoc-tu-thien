@@ -47,3 +47,7 @@ next-env.d.ts
 test-results/
 playwright-report/
 coverage/
+
+# Temporary / one-off scripts
+*.tmp.json
+fix-lint.sh
