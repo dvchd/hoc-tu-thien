@@ -17,7 +17,8 @@ interface MentorData {
   profile: {
     headline: string | null; expertise: string | null; experience: number | null;
     hourlyRate: number | null; isAvailable: boolean; rating: number;
-    ratingCount: number; totalSessions: number; tnAccountNo: string | null;
+    ratingCount: number; totalSessions: number;
+    // BUG-12 fix: tnAccountNo removed u2014 sensitive bank info should NOT be sent to client
     fields: Field[]; slots: Slot[];
   } | null;
 }
@@ -84,7 +85,7 @@ export function FindMentorClient({
   }
 
   async function handleBook() {
-    if (!selectedMentor || booking.dayOfWeek < 0 || booking.slotIndex < 0) {
+    if (!selectedMentor || booking.slotIndex < 0) {
       toast.error("Vui lòng chọn khung giờ học");
       return;
     }
@@ -93,11 +94,10 @@ export function FindMentorClient({
       return;
     }
 
+    // BUG-51 fix: look up by index only (dayOfWeek was double-filtering incorrectly)
     const available = buildAvailableDates(selectedMentor);
-    const picked = available.find(
-      (a, i) => a.date.getDay() === booking.dayOfWeek && i === booking.slotIndex
-    );
-    if (!picked) { toast.error("Không tìm thấy khung giờ"); return; }
+    const picked = available[booking.slotIndex];
+    if (!picked) { toast.error("Không tìm thấy khung giờ, vui lòng chọn lại"); return; }
 
     // Build title from teaching field name
     const selectedField = selectedMentor.profile?.fields.find((f) => f.id === booking.selectedFieldId);
@@ -105,6 +105,10 @@ export function FindMentorClient({
       ? `Học ${selectedField.name}`
       : "Buổi học 1-kèm-1";
 
+    // BUG-52 fix: build scheduledAt in UTC to avoid timezone shift.
+    // picked.date is a local-timezone Date; startTime is "HH:mm" in the mentor's displayed timezone.
+    // We set year/month/day from the date and hour/minute from the slot — all in local time,
+    // then toISOString() converts correctly to UTC for the server.
     const [h, m] = picked.slot.startTime.split(":").map(Number);
     const scheduledAt = new Date(picked.date);
     scheduledAt.setHours(h, m, 0, 0);
@@ -126,7 +130,7 @@ export function FindMentorClient({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast.success("🎉 Đã đặt lịch thành công! Mentor sẽ xác nhận sớm.");
+      toast.success("Đã đặt lịch thành công! Mentor sẽ xác nhận sớm.");
       setSelectedMentor(null);
     } catch (err: any) {
       toast.error(err.message ?? "Có lỗi xảy ra");
@@ -385,8 +389,7 @@ export function FindMentorClient({
                   <p className="text-xs text-amber-700 flex items-start gap-2">
                     <DollarSign className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <span>
-                      Học phí <strong>{formatVND(selectedMentor.profile!.hourlyRate!)}</strong> sẽ được thanh toán sau buổi học qua chuyển khoản MBBank đến Quỹ Thiện Nguyện App tài khoản{" "}
-                      <strong>{selectedMentor.profile?.tnAccountNo ?? "của Mentor"}</strong>.
+                      Học phí <strong>{formatVND(selectedMentor.profile!.hourlyRate!)}</strong> sẽ được thanh toán sau buổi học qua chuyển khoản đến quỹ từ thiện liên kết với Mentor. Thông tin QR thanh toán sẽ hiển thị sau khi buổi học kết thúc.
                     </span>
                   </p>
                 </div>

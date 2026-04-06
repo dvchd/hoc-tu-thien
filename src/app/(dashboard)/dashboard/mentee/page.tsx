@@ -50,7 +50,8 @@ export default async function MenteeDashboardPage() {
     const results = await Promise.all([
       prisma.user.findMany({
         where: { role: "MENTOR", status: "ACTIVE", isDeleted: false },
-        include: { mentorProfile: { select: { rating: true, ratingCount: true } } },
+        // BUG-01 fix: include headline and expertise for display
+        include: { mentorProfile: { select: { rating: true, ratingCount: true, headline: true, expertise: true } } },
         take: 6,
         orderBy: { createdAt: "desc" },
       }),
@@ -108,7 +109,8 @@ export default async function MenteeDashboardPage() {
     name: m.name || "Mentor",
     image: m.image,
     bio: m.bio || "",
-    expertise: "Mentor",
+    // BUG-01 fix: use real headline/expertise from profile instead of hardcoded "Mentor"
+    expertise: m.mentorProfile?.headline || m.mentorProfile?.expertise || "Mentor",
     averageRating: m.mentorProfile?.rating ?? null,
     ratingCount: m.mentorProfile?.ratingCount ?? 0,
   }));

@@ -47,7 +47,8 @@ export default async function FindMentorPage() {
           rating: m.mentorProfile.rating,
           ratingCount: m.mentorProfile.ratingCount,
           totalSessions: m.mentorProfile.totalSessions,
-          tnAccountNo: m.mentorProfile.tnAccountNo,
+          // BUG-12 fix: do NOT expose tnAccountNo to client bundle (sensitive bank info)
+          // Payment info is fetched separately via /api/payments/session-fee at checkout time
           fields: m.mentorProfile.teachingFields.map((tf: typeof m.mentorProfile.teachingFields[number]) => ({
             id: tf.teachingField.id,
             name: tf.teachingField.name,

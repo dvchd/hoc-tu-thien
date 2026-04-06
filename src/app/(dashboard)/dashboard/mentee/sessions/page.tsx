@@ -30,8 +30,15 @@ export default async function MenteeSessionsPage() {
   if (shouldRedirectToLogin) {
     redirect("/login?error=SessionExpired");
   }
-  const upcoming = sessions.filter((s) => ["PENDING","CONFIRMED"].includes(s.status) && new Date(s.scheduledAt) > new Date());
-  const past = sessions.filter((s) => !upcoming.includes(s));
+  // BUG-07 fix:
+  // - "upcoming" = sessions still needing action or scheduled in future (PENDING, CONFIRMED, IN_PROGRESS)
+  //   Include IN_PROGRESS so mentor/mentee can still act on them.
+  //   Also include CONFIRMED that have already passed the scheduled time
+  //   (they need confirm-completion or no-show action).
+  // - "past" = everything else (COMPLETED, PAYMENT_PENDING, CANCELLED, NO_SHOW)
+  const ACTIVE_STATUSES = ["PENDING", "CONFIRMED", "IN_PROGRESS"];
+  const upcoming = sessions.filter((s) => ACTIVE_STATUSES.includes(s.status));
+  const past = sessions.filter((s) => !ACTIVE_STATUSES.includes(s.status));
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">

@@ -33,6 +33,8 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
   const [meetLinkInput, setMeetLinkInput] = useState(session.meetLink || "");
   const [paymentInfo, setPaymentInfo] = useState<any>(null);
   const [showPayment, setShowPayment] = useState(false);
+  // BUG-64 fix: track rated state locally so star UI hides after submit
+  const [hasRated, setHasRated] = useState(!!session.rating);
   const [rating, setRating] = useState(session.rating ?? 0);
   const [hoverRating, setHoverRating] = useState(0);
   const [showReport, setShowReport] = useState(false);
@@ -40,9 +42,13 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
   const [reportReason, setReportReason] = useState("");
   const [reportDescription, setReportDescription] = useState("");
   const [reportLoading, setReportLoading] = useState(false);
+  // BUG-67/68 fix: cancel confirm dialog state
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   const reportedUserId = viewAs === "mentee" ? session.mentorId : session.menteeId;
 
+  // BUG-62 fix: read data.session.status instead of data.status
   async function confirmCompletion() {
     setLoading(true);
     try {
@@ -53,21 +59,24 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      
+
       if (viewAs === "mentor") setMentorConfirmed(true);
       else setMenteeConfirmed(true);
-      
-      if (data.status) setLocalStatus(data.status);
-      toast.success("Đã xác nhận hoàn thành!");
+
+      // API returns { success, session: result, message } — read session.status
+      const newStatus = data.session?.status;
+      if (newStatus) setLocalStatus(newStatus);
+      toast.success(data.message ?? "u0110u00e3 xu00e1c nhu1eadn hou00e0n thu00e0nh!");
     } catch (err: any) {
-      toast.error(err.message ?? "Có lỗi xảy ra");
+      toast.error(err.message ?? "Cu00f3 lu1ed7i xu1ea3y ra");
     } finally {
       setLoading(false);
     }
   }
 
+  // BUG-63 fix: read data.session.status instead of data.status
   async function markNoShow() {
-    if (!window.confirm("Xác nhận người học không tham gia buổi học này?")) return;
+    if (!window.confirm("Xu00e1c nhu1eadn ngu01b0u1eddi hu1ecdc khu00f4ng tham gia buu1ed5i hu1ecdc nu00e0y?")) return;
     setLoading(true);
     try {
       const res = await fetch(`/api/sessions/${session.id}/no-show`, {
@@ -75,10 +84,12 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setLocalStatus(data.status);
-      toast.success("Đã đánh dấu vắng mặt!");
+      // API returns { success, session: result, message } — read session.status
+      const newStatus = data.session?.status;
+      if (newStatus) setLocalStatus(newStatus);
+      toast.success("u0110u00e3 u0111u00e1nh du1ea5u vu1eafng mu1eb7t!");
     } catch (err: any) {
-      toast.error(err.message ?? "Có lỗi xảy ra");
+      toast.error(err.message ?? "Cu00f3 lu1ed7i xu1ea3y ra");
     } finally {
       setLoading(false);
     }
@@ -94,33 +105,51 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setLocalStatus(data.status);
+      // PATCH /api/sessions/[id] returns the session record directly
+      if (data.status) setLocalStatus(data.status);
+      // BUG-64 fix: mark as rated so star UI hides
+      if (action === "rate") setHasRated(true);
       toast.success(
-        action === "confirm" ? "Đã xác nhận buổi học!" :
-        action === "complete" ? "Đã kết thúc buổi học!" :
-        action === "cancel" ? "Đã huỷ buổi học" :
-        action === "rate" ? "Cảm ơn đánh giá của bạn!" : "Thành công"
+        action === "confirm" ? "u0110u00e3 xu00e1c nhu1eadn buu1ed5i hu1ecdc!" :
+        action === "cancel" ? "u0110u00e3 huu1ef7 buu1ed5i hu1ecdc" :
+        action === "rate" ? "Cu1ea3m u01a1n u0111u00e1nh giu00e1 cu1ee7a bu1ea1n!" : "Thu00e0nh cu00f4ng"
       );
     } catch (err: any) {
-      toast.error(err.message ?? "Có lỗi xảy ra");
+      toast.error(err.message ?? "Cu00f3 lu1ed7i xu1ea3y ra");
     } finally {
       setLoading(false);
     }
   }
 
+  // BUG-60 fix: call correct endpoint /api/payments/session-fee with sessionId in body
   async function initiatePayment() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/sessions/${session.id}/payment`, { method: "POST" });
+      const res = await fetch("/api/payments/session-fee", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: session.id }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setPaymentInfo(data);
       setShowPayment(true);
     } catch (err: any) {
-      toast.error(err.message ?? "Không thể tạo thanh toán");
+      toast.error(err.message ?? "Khu00f4ng thu1ec3 tu1ea1o thanh tou00e1n");
     } finally {
       setLoading(false);
     }
+  }
+
+  // BUG-67/68 fix: cancel with confirm dialog and real reason input
+  function handleCancelClick() {
+    setCancelReason("");
+    setShowCancelConfirm(true);
+  }
+
+  async function confirmCancel() {
+    setShowCancelConfirm(false);
+    await doAction("cancel", { cancelReason: cancelReason.trim() || "u00c9 lu00fd do" });
   }
 
   const statusColor = SessionStatusColors[localStatus as SessionStatus] ?? "bg-stone-100 text-stone-600";
@@ -129,19 +158,19 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
   const isPast = scheduledDate < new Date();
 
   const reportReasons = [
-    { value: "INAPPROPRIATE", label: "Hành vi không phù hợp" },
-    { value: "MISCONDUCT", label: "Vi phạm quy định" },
-    { value: "NO_SHOW_DISPUTE", label: "Tranh chấp vắng mặt" },
-    { value: "OTHER", label: "Khác" },
+    { value: "INAPPROPRIATE", label: "Hu00e0nh vi khu00f4ng phu00f9 hu1ee3p" },
+    { value: "MISCONDUCT", label: "Vi phu1ea1m quy u0111u1ecbnh" },
+    { value: "NO_SHOW_DISPUTE", label: "Tranh chu1ea5p vu1eafng mu1eb7t" },
+    { value: "OTHER", label: "Khu00e1c" },
   ] as const;
 
   async function submitReport() {
     if (!reportReason) {
-      toast.error("Vui lòng chọn lý do báo cáo");
+      toast.error("Vui lu00f2ng chu1ecdn lu00fd do bu00e1o cu00e1o");
       return;
     }
     if (reportDescription.trim().length < 20) {
-      toast.error("Mô tả phải có ít nhất 20 ký tự");
+      toast.error("Mu00f4 tu1ea3 phu1ea3i cu00f3 u00edt nhu1ea5t 20 ku00fd tu1ef1");
       return;
     }
     setReportLoading(true);
@@ -158,11 +187,11 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast.success("Đã gửi báo cáo. Cảm ơn bạn!");
+      toast.success("u0110u00e3 gu1eedi bu00e1o cu00e1o. Cu1ea3m u01a1n bu1ea1n!");
       setReported(true);
       setShowReport(false);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Có lỗi xảy ra";
+      const msg = err instanceof Error ? err.message : "Cu00f3 lu1ed7i xu1ea3y ra";
       toast.error(msg);
     } finally {
       setReportLoading(false);
@@ -182,7 +211,7 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
                 </span>
                 {session.fee === 0 && (
                   <span className="text-xs bg-jade-50 text-jade-700 px-2 py-0.5 rounded-lg font-medium">
-                    Miễn phí
+                    Miu1ec5n phu00ed
                   </span>
                 )}
               </div>
@@ -198,11 +227,11 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
           <div className="flex items-center gap-4 mt-2 text-xs text-stone-400 flex-wrap">
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              {format(scheduledDate, "EEEE, dd/MM/yyyy · HH:mm", { locale: vi })}
+              {format(scheduledDate, "EEEE, dd/MM/yyyy u00b7 HH:mm", { locale: vi })}
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              {session.durationMinutes} phút
+              {session.durationMinutes} phu00fat
             </span>
             {session.fee > 0 && (
               <span className="flex items-center gap-1 text-jade-600 font-medium">
@@ -221,13 +250,13 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
             )}
             {session.notes && (
               <div className="p-3 bg-stone-50 rounded-xl">
-                <p className="text-xs font-medium text-stone-500 mb-1">Ghi chú từ người học:</p>
+                <p className="text-xs font-medium text-stone-500 mb-1">Ghi chu00fa tu1eeb ngu01b0u1eddi hu1ecdc:</p>
                 <p className="text-sm text-stone-600">{session.notes}</p>
               </div>
             )}
             {session.mentorNotes && (
               <div className="p-3 bg-amber-50 rounded-xl">
-                <p className="text-xs font-medium text-amber-600 mb-1">Nhận xét từ Mentor:</p>
+                <p className="text-xs font-medium text-amber-600 mb-1">Nhu1eadn xu00e9t tu1eeb Mentor:</p>
                 <p className="text-sm text-stone-600">{session.mentorNotes}</p>
               </div>
             )}
@@ -240,10 +269,10 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
               </a>
             )}
 
-            {/* Rating (mentee, completed session) */}
-            {viewAs === "mentee" && localStatus === "COMPLETED" && !session.rating && (
+            {/* Rating (mentee, completed session) — BUG-64 fix: use hasRated state */}
+            {viewAs === "mentee" && localStatus === "COMPLETED" && !hasRated && (
               <div className="pt-2">
-                <p className="text-sm font-medium text-stone-600 mb-2">Đánh giá Mentor:</p>
+                <p className="text-sm font-medium text-stone-600 mb-2">u0110u00e1nh giu00e1 Mentor:</p>
                 <div className="flex gap-1 mb-3">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button key={star} type="button"
@@ -260,7 +289,7 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
                   <button onClick={() => doAction("rate", { rating })} disabled={loading}
                     className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white text-sm rounded-xl hover:bg-amber-600 transition-colors">
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Star className="w-4 h-4" />}
-                    Gửi đánh giá
+                    Gu1eedi u0111u00e1nh giu00e1
                   </button>
                 )}
               </div>
@@ -275,14 +304,14 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
             <button onClick={() => doAction("confirm")} disabled={loading}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-jade-600 text-white text-xs rounded-lg hover:bg-jade-700 transition-colors font-medium">
               {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
-              Xác nhận buổi học
+              Xu00e1c nhu1eadn buu1ed5i hu1ecdc
             </button>
           )}
 
           {viewAs === "mentor" && (localStatus === "CONFIRMED" || localStatus === "IN_PROGRESS") && !mentorConfirmed && (
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Google Meet Link"
                 className="text-xs bg-stone-50 border border-stone-200 rounded-xl px-3 py-1.5 flex-1 min-w-[150px] focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100 transition-all"
                 value={meetLinkInput}
@@ -291,12 +320,12 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
               <button onClick={confirmCompletion} disabled={loading}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-jade-600 text-white text-xs rounded-lg hover:bg-jade-700 transition-colors font-medium whitespace-nowrap">
                 {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
-                Xác nhận hoàn thành
+                Xu00e1c nhu1eadn hou00e0n thu00e0nh
               </button>
               {isPast && (
                 <button onClick={markNoShow} disabled={loading}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 text-white text-xs rounded-lg hover:bg-orange-700 transition-colors font-medium whitespace-nowrap">
-                  Vắng mặt
+                  Vu1eafng mu1eb7t
                 </button>
               )}
             </div>
@@ -306,15 +335,15 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
             <button onClick={confirmCompletion} disabled={loading}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-jade-600 text-white text-xs rounded-lg hover:bg-jade-700 transition-colors font-medium">
               {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
-              Xác nhận đã học xong
+              Xu00e1c nhu1eadn u0111u00e3 hu1ecdc xong
             </button>
           )}
 
           {mentorConfirmed && !menteeConfirmed && viewAs === "mentor" && (
-            <span className="text-xs text-jade-600 font-medium italic">Đang chờ Mentee xác nhận...</span>
+            <span className="text-xs text-jade-600 font-medium italic">u0110ang chu1edd Mentee xu00e1c nhu1eadn...</span>
           )}
           {menteeConfirmed && !mentorConfirmed && viewAs === "mentee" && (
-            <span className="text-xs text-jade-600 font-medium italic">Đang chờ Mentor xác nhận...</span>
+            <span className="text-xs text-jade-600 font-medium italic">u0110ang chu1edd Mentor xu00e1c nhu1eadn...</span>
           )}
 
           {/* Mentee payment */}
@@ -322,12 +351,12 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
             <button onClick={initiatePayment} disabled={loading}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 text-white text-xs rounded-lg hover:bg-amber-600 transition-colors font-medium">
               {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <CreditCard className="w-3 h-3" />}
-              Thanh toán học phí
+              Thanh tou00e1n hu1ecdc phu00ed
             </button>
           )}
 
-          {/* Report (confirmed, completed, cancelled) */}
-          {["CONFIRMED", "COMPLETED", "CANCELLED"].includes(localStatus) && (
+          {/* Report (confirmed, completed) — removed CANCELLED as it's less relevant */}
+          {["CONFIRMED", "COMPLETED"].includes(localStatus) && (
             <button
               onClick={() => { setShowReport(true); setReportReason(""); setReportDescription(""); }}
               disabled={reported}
@@ -339,20 +368,67 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
               )}
             >
               <Flag className="w-3 h-3" />
-              {reported ? "Đã báo cáo" : "Báo cáo"}
+              {reported ? "u0110u00e3 bu00e1o cu00e1o" : "Bu00e1o cu00e1o"}
             </button>
           )}
 
-          {/* Cancel (both) */}
+          {/* BUG-67 fix: Cancel with confirm dialog instead of direct action */}
           {["PENDING", "CONFIRMED"].includes(localStatus) && !isPast && (
-            <button onClick={() => doAction("cancel", { cancelReason: "Người dùng huỷ" })} disabled={loading}
+            <button onClick={handleCancelClick} disabled={loading}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-stone-200 text-stone-600 text-xs rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors font-medium">
               <X className="w-3 h-3" />
-              Huỷ buổi học
+              Huu1ef7 buu1ed5i hu1ecdc
             </button>
           )}
         </div>
       </div>
+
+      {/* BUG-67/68 fix: Cancel confirm dialog with reason input */}
+      {showCancelConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={(e) => e.target === e.currentTarget && setShowCancelConfirm(false)}
+        >
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-stone-100 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              <h3 className="font-semibold text-stone-800">Xu00e1c nhu1eadn huu1ef7 buu1ed5i hu1ecdc</h3>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <p className="text-sm text-stone-500">
+                Bu1ea1n cu00f3 chu1eafc chu1eafn muu1ed1n huu1ef7 buu1ed5i hu1ecdc nu00e0y khu00f4ng?
+                {localStatus === "CONFIRMED" && " Viu1ec7c huu1ef7 sau khi u0111u00e3 xu00e1c nhu1eadn cu00f3 thu1ec3 bu1ecb tu00ednh lu00e0 huu1ef7 muu1ed9n."}
+              </p>
+              <div>
+                <label className="text-sm font-medium text-stone-700 mb-1.5 block">
+                  Lu00fd do huu1ef7 <span className="text-stone-400 font-normal">(tuu1ef3 chu1ecdn)</span>
+                </label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Nhu1eadp lu00fd do huu1ef7 buu1ed5i hu1ecdc..."
+                  rows={3}
+                  className="w-full px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100 resize-none"
+                />
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-stone-100 flex gap-3">
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                className="flex-1 px-4 py-2 border border-stone-200 text-stone-600 rounded-xl text-sm font-medium hover:bg-stone-100 transition-colors"
+              >
+                Quay lu1ea1i
+              </button>
+              <button
+                onClick={confirmCancel}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition-colors"
+              >
+                Xu00e1c nhu1eadn huu1ef7
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Report modal */}
       {showReport && (
@@ -364,7 +440,7 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
             <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-red-500" />
-                <h3 className="font-semibold text-stone-800">Báo cáo buổi học</h3>
+                <h3 className="font-semibold text-stone-800">Bu00e1o cu00e1o buu1ed5i hu1ecdc</h3>
               </div>
               <button
                 onClick={() => setShowReport(false)}
@@ -374,17 +450,17 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
               </button>
             </div>
             <div className="px-6 py-5 space-y-4">
-              <p className="text-sm text-stone-500">Báo cáo này sẽ được gửi đến quản trị viên để xem xét.</p>
+              <p className="text-sm text-stone-500">Bu00e1o cu00e1o nu00e0y su1ebd u0111u01b0u1ee3c gu1eedi u0111u1ebfn quu1ea3n tru1ecb viu00ean u0111u1ec3 xem xu00e9t.</p>
 
               {/* Reason select */}
               <div>
-                <label className="text-sm font-medium text-stone-700 mb-1.5 block">Lý do <span className="text-red-500">*</span></label>
+                <label className="text-sm font-medium text-stone-700 mb-1.5 block">Lu00fd do <span className="text-red-500">*</span></label>
                 <select
                   value={reportReason}
                   onChange={(e) => setReportReason(e.target.value)}
                   className="w-full px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100"
                 >
-                  <option value="">-- Chọn lý do --</option>
+                  <option value="">-- Chu1ecdn lu00fd do --</option>
                   {reportReasons.map((r) => (
                     <option key={r.value} value={r.value}>{r.label}</option>
                   ))}
@@ -393,16 +469,16 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
 
               {/* Description */}
               <div>
-                <label className="text-sm font-medium text-stone-700 mb-1.5 block">Mô tả chi tiết <span className="text-red-500">*</span></label>
+                <label className="text-sm font-medium text-stone-700 mb-1.5 block">Mu00f4 tu1ea3 chi tiu1ebft <span className="text-red-500">*</span></label>
                 <textarea
                   value={reportDescription}
                   onChange={(e) => setReportDescription(e.target.value)}
-                  placeholder="Mô tả tình huống... (ít nhất 20 ký tự)"
+                  placeholder="Mu00f4 tu1ea3 tu00ecnh huu1ed1ng... (u00edt nhu1ea5t 20 ku00fd tu1ef1)"
                   rows={4}
                   className="w-full px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-jade-400 focus:ring-2 focus:ring-jade-100 resize-none"
                 />
                 <p className={cn("text-xs mt-1", reportDescription.trim().length > 0 && reportDescription.trim().length < 20 ? "text-red-500" : "text-stone-400")}>
-                  {reportDescription.trim().length}/20 ký tự tối thiểu
+                  {reportDescription.trim().length}/20 ku00fd tu1ef1 tu1ed1i thiu1ec3u
                 </p>
               </div>
             </div>
@@ -411,7 +487,7 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
                 onClick={() => setShowReport(false)}
                 className="px-4 py-2 border border-stone-200 text-stone-600 rounded-xl text-sm font-medium hover:bg-stone-100 transition-colors"
               >
-                Huỷ
+                Huu1ef7
               </button>
               <button
                 onClick={submitReport}
@@ -419,7 +495,7 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
                 className="flex-1 flex items-center justify-center gap-2 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition-all disabled:bg-stone-200 disabled:text-stone-400"
               >
                 {reportLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                {reportLoading ? "Đang gửi..." : "Gửi báo cáo"}
+                {reportLoading ? "u0110ang gu1eedi..." : "Gu1eedi bu00e1o cu00e1o"}
               </button>
             </div>
           </div>
@@ -431,7 +507,7 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="w-full max-w-4xl max-h-[90vh] overflow-auto">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-display text-xl font-bold text-white">Thanh toán học phí</h2>
+              <h2 className="font-display text-xl font-bold text-white">Thanh tou00e1n hu1ecdc phu00ed</h2>
               <button onClick={() => setShowPayment(false)} className="text-white/70 hover:text-white">
                 <X className="w-6 h-6" />
               </button>
@@ -440,7 +516,11 @@ export function SessionCard({ session, viewAs, currentUserId }: Props) {
               paymentInfo={paymentInfo}
               userId={currentUserId}
               sessionId={session.id}
-              onSuccess={() => { setShowPayment(false); setLocalStatus(localStatus); }}
+              onSuccess={() => {
+                setShowPayment(false);
+                // BUG-61 fix: set to COMPLETED after successful payment
+                setLocalStatus(SessionStatus.COMPLETED);
+              }}
             />
           </div>
         </div>

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { createUseCases } from "@/lib/container";
-import { prisma } from "@/infrastructure/database/prisma/client";
 import { withAllowedMethods } from "@/lib/api-utils";
 
 export const POST = withAllowedMethods(["POST"], async function POST(
