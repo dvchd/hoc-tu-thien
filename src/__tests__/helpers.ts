@@ -189,6 +189,7 @@ export function createMockMentorApplicationRepository(): jest.Mocked<IMentorAppl
     findAll: jest.fn(),
     create: jest.fn(),
     updateStatus: jest.fn(),
+    resubmit: jest.fn(),
   };
 }
 

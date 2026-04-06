@@ -426,6 +426,7 @@ describe("Scenario 1 – Mentee Complete Flow", () => {
       status: SessionStatus.CONFIRMED,
       fee: 200000,
       meetLink: "https://meet.google.com/full-flow-test",
+      scheduledAt: new Date(Date.now() - 3600000), // 1h ago
     });
 
     // 6b: Mentor hoàn thành → PAYMENT_PENDING
@@ -1166,6 +1167,7 @@ describe("Scenario 2 – Mentor Complete Flow", () => {
       menteeId: "mentee_full_001",
       status: SessionStatus.CONFIRMED,
       fee: 0,
+      scheduledAt: new Date(Date.now() - 3600000), // 1h ago
     });
 
     const completedSession = {
@@ -2181,6 +2183,7 @@ describe("Scenario 4 – Cross-Role Complete Interaction", () => {
       ...bookedSession,
       status: SessionStatus.CONFIRMED,
       fee: 100000,
+      scheduledAt: new Date(Date.now() - 3600000), // 1h ago
     };
     uow.sessions.findById.mockResolvedValue(confirmedSess);
     uow.sessions.updateStatus.mockResolvedValue({

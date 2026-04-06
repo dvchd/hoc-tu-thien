@@ -279,6 +279,7 @@ describe("CompleteSessionUseCase", () => {
       status: SessionStatus.CONFIRMED,
       mentorId: "mt1",
       fee: 0,
+      scheduledAt: new Date(Date.now() - 3600000), // 1h ago
     });
     const completed = { ...session, status: SessionStatus.COMPLETED };
 
@@ -295,6 +296,7 @@ describe("CompleteSessionUseCase", () => {
       status: SessionStatus.CONFIRMED,
       mentorId: "mt1",
       fee: 200000,
+      scheduledAt: new Date(Date.now() - 3600000), // 1h ago
     });
     const payPending = { ...session, status: SessionStatus.PAYMENT_PENDING };
 

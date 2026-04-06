@@ -34,9 +34,16 @@ export default async function MentorSessionsPage() {
     redirect("/login?error=SessionExpired");
   }
 
-  const pending = sessions.filter((s) => s.status === "PENDING");
-  const upcoming = sessions.filter((s) => s.status === "CONFIRMED" && new Date(s.scheduledAt) > new Date());
-  const past = sessions.filter((s) => ["COMPLETED", "CANCELLED", "PAYMENT_PENDING"].includes(s.status));
+  // BUG-H4 fix: phu00e2n lou1ea1i u0111u00fang:
+  // - pending: chu1edd xu00e1c nhu1eadn (PENDING)
+  // - upcoming: u0111ang diu1ec5n ra hou1eb7c su1eafp diu1ec5n ra, cu1ea7n action
+  //   Bao gu1ed3m CONFIRMED (du00f9 u0111u00e3 qua giu1edd hu1ecdc vu00e0 chu01b0a xong) vu00e0 IN_PROGRESS
+  //   u0111u1ec3 mentor lu1ee5c nu00e0o cu0169ng cu00f3 nu00fat "Xu00e1c nhu1eadn hou00e0n thu00e0nh" vu00e0 "Vu1eafng mu1eb7t"
+  // - past: tu1ea5t cu1ea3 su1ed1 cu00f2n lu1ea1i (lu1ecbch su1eed)
+  const ACTIVE_STATUSES = ["PENDING", "CONFIRMED", "IN_PROGRESS"];
+  const pending  = sessions.filter((s) => s.status === "PENDING");
+  const upcoming = sessions.filter((s) => s.status === "CONFIRMED" || s.status === "IN_PROGRESS");
+  const past     = sessions.filter((s) => !ACTIVE_STATUSES.includes(s.status));
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">

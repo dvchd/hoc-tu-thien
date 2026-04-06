@@ -356,26 +356,28 @@ export function AvailabilityManager({ userId, mentorProfileId, slots: initialSlo
       )}
 
       {/* Save button */}
+      {/* BUG-M3 fix: bu1ecf u0111iu1ec1u kiu1ec7n slots.length===0 khu1ecfi disabled vu00e0 thu00eam confirm khi xou00e1 tu1ea5t cu1ea3 */}
       <div className="mt-5 flex items-center gap-3">
         <button
           type="button"
           onClick={handleSave}
-          disabled={saving || slots.length === 0}
+          disabled={saving}
           className="flex items-center gap-2 px-5 py-2.5 bg-stone-800 text-white text-sm rounded-xl font-medium hover:bg-stone-900 transition-all disabled:bg-stone-200 disabled:text-stone-400"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
-          {saving ? "Đang lưu..." : "Lưu lịch trống"}
+          {saving ? "u0110ang lu01b0u..." : slots.length === 0 ? "Xu00f3a tu1ea5t cu1ea3 lu1ecbch" : "Lu01b0u lu1ecbch tru1ed1ng"}
         </button>
         {slots.length > 0 && (
           <button
             type="button"
             onClick={() => {
+              if (!window.confirm("Bu1ea1n cu00f3 chu1eafc chu1eafn muu1ed1n xou00e1 tu1ea5t cu1ea3 khung giu1edd? Nhu1ea5n Lu01b0u u0111u1ec3 lu01b0u thu00e0nh cu00f4ng.")) return;
               setSlots([]);
-              toast.success("Đã xoá tất cả khung giờ. Nhấn Lưu để xác nhận.");
+              toast.info("u0110u00e3 xou00e1 tu1ea5t cu1ea3 khung giu1edd. Nhu1ea5n Lu01b0u u0111u1ec3 xu00e1c nhu1eadn.");
             }}
             className="text-xs text-stone-400 hover:text-red-500 transition-colors"
           >
-            Xoá tất cả
+            Xou00e1 tu1ea5t cu1ea3
           </button>
         )}
       </div>

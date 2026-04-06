@@ -95,7 +95,7 @@ export default async function MentorDashboardPage() {
       <div className="animate-in animate-in-delay-2">
         <h2 className="font-display text-xl font-semibold text-stone-800 mb-4 flex items-center gap-2">
           <Calendar className="w-5 h-5 text-jade-600" />
-          Buổi học sắp tới ({sessions.length})
+          Buổi học sắp tới
         </h2>
         {sessions.length === 0 ? (
           <div className="bg-white rounded-2xl border border-stone-100 shadow-sm py-12 text-center">
@@ -113,6 +113,14 @@ export default async function MentorDashboardPage() {
                 currentUserId={session.user.id}
               />
             ))}
+            {sessions.length > 5 && (
+              <p className="text-center text-sm text-stone-400 pt-1">
+                Và {sessions.length - 5} buổi học khác —{" "}
+                <a href="/dashboard/mentor/sessions" className="text-jade-600 hover:underline font-medium">
+                  Xem tất cả
+                </a>
+              </p>
+            )}
           </div>
         )}
       </div>

@@ -42,6 +42,13 @@ export interface FindMentorApplicationsOptions {
 
 // ─── IMentorApplicationRepository ─────────────────────────────────────────────
 
+export interface UpdateMentorApplicationContentInput {
+  motivation: string;
+  experience: string;
+  linkedinUrl?: string;
+  contactInfo?: string;
+}
+
 export interface IMentorApplicationRepository {
   findById(id: string): Promise<MentorApplicationRecord | null>;
   findByUserId(userId: string): Promise<MentorApplicationRecord | null>;
@@ -56,4 +63,6 @@ export interface IMentorApplicationRepository {
     reviewedBy: string,
     reviewNote?: string
   ): Promise<MentorApplicationRecord>;
+  /** Cu1eadp nhu1eadt nu1ed9i dung u0111u01a1n vu00e0 reset status vu1ec1 PENDING (du00f9ng khi nu1ed9p lu1ea1i sau khi bu1ecb tu1eeb chu1ed1i) */
+  resubmit(id: string, input: UpdateMentorApplicationContentInput): Promise<MentorApplicationRecord>;
 }

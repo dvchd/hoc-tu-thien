@@ -252,7 +252,14 @@ export class CompleteSessionUseCase {
       }
 
       if (session.status !== SessionStatus.CONFIRMED && session.status !== SessionStatus.IN_PROGRESS) {
-        throw new Error("Buổi học không trong trạng thái có thể kết thúc");
+        throw new Error("Buu1ed5i hu1ecdc khu00f4ng trong tru1ea1ng thu00e1i cu00f3 thu1ec3 ku1ebft thu00fac");
+      }
+
+      // BUG-C3 fix: chỉ cho phép kết thúc sau khi buổi học đã bắt đầu.
+      // IN_PROGRESS sessions have already started — no time check needed.
+      // CONFIRMED sessions: block if scheduledAt is still in the future.
+      if (session.status === SessionStatus.CONFIRMED && new Date() < new Date(session.scheduledAt)) {
+        throw new Error("Buổi học chưa đến giờ. Không thể kết thúc trước khi buổi học bắt đầu.");
       }
 
       const newStatus = session.fee > 0 ? SessionStatus.PAYMENT_PENDING : SessionStatus.COMPLETED;

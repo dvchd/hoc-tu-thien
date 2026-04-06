@@ -116,4 +116,27 @@ export class PrismaMentorApplicationRepository implements IMentorApplicationRepo
     });
     return this.toRecord(updated);
   }
+
+  /** Cu1eadp nhu1eadt nu1ed9i dung u0111u01a1n vu00e0 reset status vu1ec1 PENDING (du00f9ng khi nu1ed9p lu1ea1i sau khi bu1ecb tu1eeb chu1ed1i) */
+  async resubmit(
+    id: string,
+    input: { motivation: string; experience: string; linkedinUrl?: string; contactInfo?: string }
+  ): Promise<MentorApplicationRecord> {
+    const updated = await this.prisma.mentorApplication.update({
+      where: { id },
+      data: {
+        status: "PENDING",
+        motivation: input.motivation,
+        experience: input.experience,
+        linkedinUrl: input.linkedinUrl ?? null,
+        contactInfo: input.contactInfo ?? null,
+        reviewedBy: null,
+        reviewedAt: null,
+        reviewNote: null,
+        version: { increment: 1 },
+      },
+      include: { user: { select: { id: true, name: true, email: true, image: true } } },
+    });
+    return this.toRecord(updated);
+  }
 }

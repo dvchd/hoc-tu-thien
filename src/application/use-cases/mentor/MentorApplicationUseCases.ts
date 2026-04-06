@@ -1,4 +1,4 @@
-const { createId } = require("@paralleldrive/cuid2");
+import { createId } from "@paralleldrive/cuid2";
 import { IUnitOfWork } from "../../interfaces/IUnitOfWork";
 import { UserStatus } from "../../../domain/value-objects/UserStatus";
 import { UserRole } from "../../../domain/value-objects/UserRole";
@@ -51,7 +51,25 @@ export class SubmitMentorApplicationUseCase {
         if (existing.status === "APPROVED") {
           throw new Error("Đơn đăng ký của bạn đã được phê duyệt trước đó.");
         }
-        // REJECTED / WITHDRAWN: allow re-submission (fall through to create new)
+        // REJECTED / WITHDRAWN: resubmit existing record instead of creating a new one
+        if (existing.status === "REJECTED" || existing.status === "WITHDRAWN") {
+          const contactInfoStr = input.contactInfo ? JSON.stringify(input.contactInfo) : null;
+          const resubmitted = await uow.mentorApplications.resubmit(existing.id, {
+            motivation: input.motivation,
+            experience: input.experience,
+            linkedinUrl: input.linkedinUrl,
+            contactInfo: contactInfoStr ?? undefined,
+          });
+
+          await uow.users.createAuditLog({
+            userId: input.userId,
+            action: "MENTOR_APPLICATION_RESUBMITTED",
+            newValues: { applicationId: resubmitted.id, motivation: input.motivation.slice(0, 100) },
+            performedBy: input.userId,
+          });
+
+          return resubmitted;
+        }
       }
 
       const contactInfoStr = input.contactInfo

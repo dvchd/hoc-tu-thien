@@ -226,7 +226,10 @@ describe("Scenario 2 – Full Session Lifecycle", () => {
       endAt: new Date(),
     };
 
-    uow.sessions.findById.mockResolvedValue(confirmedSession as any);
+    uow.sessions.findById.mockResolvedValue({
+      ...confirmedSession,
+      scheduledAt: new Date(Date.now() - 3600000), // 1h ago
+    } as any);
     uow.sessions.updateStatus.mockResolvedValue(payPendingSession as any);
 
     const completeSession = new CompleteSessionUseCase(uow);
@@ -257,6 +260,7 @@ describe("Scenario 2 – Full Session Lifecycle", () => {
       fee: 0,
       status: SessionStatus.CONFIRMED,
       mentorId: mentor.id,
+      scheduledAt: new Date(Date.now() - 3600000), // 1h ago
     });
     const completedSession = { ...freeSession, status: SessionStatus.COMPLETED };
 

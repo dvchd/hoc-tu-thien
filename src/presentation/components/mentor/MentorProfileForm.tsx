@@ -30,11 +30,16 @@ interface Props {
 export function MentorProfileForm({ userId, userName, userImage, profile, allFields, selectedFieldIds, charityAccounts }: Props) {
   const [form, setForm] = useState({
     headline: profile?.headline ?? "",
-    expertise: profile?.expertise ?? "",
+    // BUG-C5 fix: profile từ Prisma dùng field `bio`, không phải `expertise`.
+    // GetMentorPublicProfileUseCase map bio -> expertise cho view layer,
+    // nhưng ở đây page truyền trực tiếp Prisma object nên phải đọc `bio`.
+    expertise: profile?.bio ?? profile?.expertise ?? "",
     experience: profile?.experience?.toString() ?? "",
     hourlyRate: profile?.hourlyRate?.toString() ?? "0",
     isAvailable: profile?.isAvailable ?? true,
     charityAccountId: profile?.charityAccountId ?? "",
+    // BUG-H3 fix: thêm onlyActivatedMentee vào form state
+    onlyActivatedMentee: profile?.onlyActivatedMentee ?? false,
   });
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set(selectedFieldIds));
   const [saving, setSaving] = useState(false);
@@ -60,6 +65,8 @@ export function MentorProfileForm({ userId, userName, userImage, profile, allFie
           experience: parseInt(form.experience) || 0,
           hourlyRate: parseInt(form.hourlyRate) || 0,
           isAvailable: form.isAvailable,
+          // BUG-H3 fix: gửi onlyActivatedMentee lên server
+          onlyActivatedMentee: form.onlyActivatedMentee,
           charityAccountId: form.charityAccountId || null,
           fieldIds: Array.from(selectedFields),
         }),
@@ -103,6 +110,24 @@ export function MentorProfileForm({ userId, userName, userImage, profile, allFie
             <input id="isAvailable" type="checkbox" checked={form.isAvailable} onChange={(e) => setForm({ ...form, isAvailable: e.target.checked })} className="w-4 h-4 rounded accent-jade-600" />
             <label htmlFor="isAvailable" className="text-sm font-medium text-stone-700 cursor-pointer">Đang nhận Mentee mới</label>
           </div>
+          {/* BUG-H3 fix: thu00eam toggle onlyActivatedMentee */}
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-stone-50">
+            <input
+              id="onlyActivatedMentee"
+              type="checkbox"
+              checked={form.onlyActivatedMentee}
+              onChange={(e) => setForm({ ...form, onlyActivatedMentee: e.target.checked })}
+              className="w-4 h-4 rounded accent-jade-600"
+            />
+            <div>
+              <label htmlFor="onlyActivatedMentee" className="text-sm font-medium text-stone-700 cursor-pointer">
+                Chỉ nhận Mentee đã kích hoạt
+              </label>
+              <p className="text-xs text-stone-400 mt-0.5">
+                Bật để chỉ cho phép Mentee có tài khoản đã kích hoạt đặt lịch với bạn.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -126,6 +151,16 @@ export function MentorProfileForm({ userId, userName, userImage, profile, allFie
           </div>
         ) : (
           <div className="space-y-3">
+            {/* BUG-L3 fix: thêm nút Bỏ chọn để mentor có thể bỏ chọn tài khoản */}
+            {form.charityAccountId && (
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, charityAccountId: "" })}
+                className="text-xs text-stone-400 hover:text-rose-500 transition-colors underline underline-offset-2"
+              >
+                Bỏ chọn tài khoản
+              </button>
+            )}
             {charityAccounts.map((account) => {
               const isSelected = form.charityAccountId === account.id;
               const isVerified = account.verificationStatus === "VERIFIED";
