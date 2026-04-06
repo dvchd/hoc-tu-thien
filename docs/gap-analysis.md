@@ -95,9 +95,10 @@ Phần còn lại (~15%) bao gồm background jobs, một số UI polish và tí
 
 ### 3.2 P2 - Important
 
-#### GAP-P: Late Cancellation Display on Profile (BR36)
-- [ ] UI: hiển thị số lần hủy muộn (`lateCancellationCount`) trên public profile mentor
-- [ ] UI: hiển thị `noShowCount` trên profile mentee (trong settings)
+#### GAP-P: Late Cancellation Display on Profile (BR36) ✅ ĐÃ HOÀN THÀNH (06/04/2026)
+- [x] UI: hiển thị số lần hủy muộn (`lateCancellationCount`) trên public profile mentor
+- [x] UI: hiển thị `noShowCount` trên profile mentee (trong settings)
+- [x] UI: hiển thị `lateCancellationCount` trong settings cho cả Mentor và Mentee
 
 ---
 
@@ -110,16 +111,16 @@ Phần còn lại (~15%) bao gồm background jobs, một số UI polish và tí
 
 ---
 
-## 4. Thống kê Gaps (cập nhật 29/03/2026)
+## 4. Thống kê Gaps (cập nhật 06/04/2026)
 
 | Priority | Số lượng gaps còn lại | Trạng thái |
 |----------|----------------------|-----------|
-| P1 Critical | 2 gaps (H, K) | H: chỉ còn optional background job; K: Teaching slot đơn lẻ |
-| P2 Important | 1 gap (P) | UI display only |
-| P3 Tech Debt | 4 items | Nice to have |
-| **Tổng** | **~6 items** | **~2-3 ngày dev** |
+| P1 Critical | 1 gap (K) | K: Teaching slot đơn lẻ (nice to have) |
+| P2 Important | 0 gaps | GAP-P đã hoàn thành (06/04/2026) |
+| P3 Tech Debt | 3 items | Nice to have |
+| **Tổng** | **~4 items** | **~1 ngày dev** |
 
-**So với phiên bản trước (v0.1):** Từ 16 gaps → còn 6 items nhỏ. GAP-G đã được fix (30/03/2026). GAP-H xác nhận thiết kế hiện tại đã đúng theo BR32.
+**Cập nhật 06/04/2026:** GAP-P đã hoàn thành — `lateCancellationCount` hiển thị trên public profile Mentor, `noShowCount` và `lateCancellationCount` hiển thị trong Settings của Mentee/Mentor. Test coverage: 589 tests pass.
 
 ---
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Star, Clock, User, BookOpen, GraduationCap, Calendar, Linkedin, Video, Loader2, X, DollarSign, CheckCircle2 } from "lucide-react";
+import { Star, Clock, User, BookOpen, GraduationCap, Calendar, Linkedin, Video, Loader2, X, DollarSign, CheckCircle2, AlertTriangle } from "lucide-react";
 import { formatVND } from "@/lib/utils";
 import { format, addDays } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -222,14 +222,22 @@ export function MentorPublicProfile({ mentor }: MentorPublicProfileProps) {
                     </div>
                   )}
                   <div className="flex items-center gap-3 text-stone-600">
-                    <Calendar size={18} className="text-stone-400" />
-                    <span className="text-sm">
-                      {mentor.availabilitySlots.length > 0
-                        ? `${mentor.availabilitySlots.length} khung giờ trống mỗi tuần`
-                        : "Chưa cập nhật lịch trống"}
-                    </span>
-                  </div>
-                </div>
+                     <Calendar size={18} className="text-stone-400" />
+                     <span className="text-sm">
+                       {mentor.availabilitySlots.length > 0
+                         ? `${mentor.availabilitySlots.length} khung giờ trống mỗi tuần`
+                         : "Chưa cập nhật lịch trống"}
+                     </span>
+                   </div>
+                  {mentor.user.lateCancellationCount > 0 && (
+                    <div className="flex items-center gap-3 text-amber-600">
+                      <AlertTriangle size={18} className="text-amber-400" />
+                      <span className="text-sm">
+                        {mentor.user.lateCancellationCount} lần hủy muộn
+                      </span>
+                    </div>
+                  )}
+                 </div>
               </div>
 
               {mentor.profile.charityAccount && (

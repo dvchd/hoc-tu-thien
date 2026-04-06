@@ -38,7 +38,7 @@
 - 💳 **Thanh toán qua Thiện Nguyện App** — xác minh giao dịch chuyển khoản tự động qua API `thiennguyen.app`
 - 📹 **Tích hợp Google Meet** — tự động tạo link họp khi buổi học được xác nhận
 - 🏆 **Bảng xếp hạng** — hiển thị Mentor nổi bật theo số buổi dạy và đánh giá
-- 🧪 **~247 test cases** — Unit, Integration và E2E tests
+- 🧪 **~589 test cases** — Unit, Integration và E2E tests
 
 ---
 
@@ -65,6 +65,10 @@
 ### Dành cho Admin
 - Quản lý toàn bộ người dùng (xem, đổi vai trò, xóa mềm)
 - Quản lý lĩnh vực giảng dạy (thêm, sửa, xóa, sắp xếp)
+- Quản lý tài khoản thiện nguyện (tạo, sửa, đặt mặc định)
+- Quản lý cấu hình hệ thống (số tiền kích hoạt, ngưỡng hủy muộn...)
+- Phê duyệt đơn đăng ký Mentor
+- Xem và xử lý báo cáo vi phạm
 - Xem thống kê tổng quan hệ thống
 
 ---
@@ -325,6 +329,14 @@ CANCELLED   CANCELLED
 | `DELETE` | `/api/admin/users/[id]` | Xóa mềm user | ADMIN |
 | `GET/POST` | `/api/admin/fields` | Danh sách / Tạo lĩnh vực | ADMIN |
 | `PATCH/DELETE` | `/api/admin/fields/[id]` | Sửa / Xóa lĩnh vực | ADMIN |
+| `GET` | `/api/admin/applications` | Danh sách đơn đăng ký Mentor | ADMIN |
+| `PATCH` | `/api/admin/applications/[id]` | Phê duyệt / Từ chối đơn | ADMIN |
+| `GET/POST` | `/api/admin/charity-accounts` | Danh sách / Tạo tài khoản thiện nguyện | ADMIN |
+| `PATCH/DELETE` | `/api/admin/charity-accounts/[id]` | Sửa / Xóa tài khoản thiện nguyện | ADMIN |
+| `GET/PATCH` | `/api/admin/config` | Xem/cập nhật cấu hình hệ thống | ADMIN |
+| `GET` | `/api/admin/reports` | Danh sách báo cáo vi phạm | ADMIN |
+| `PATCH` | `/api/admin/reports/[id]` | Xử lý báo cáo | ADMIN |
+| `GET` | `/api/admin/sessions` | Danh sách tất cả buổi học | ADMIN |
 
 ### Mentor
 | Method | Endpoint | Mô tả | Quyền |
@@ -332,13 +344,21 @@ CANCELLED   CANCELLED
 | `GET/PUT` | `/api/mentor/profile` | Xem/cập nhật hồ sơ Mentor | MENTOR |
 | `GET/POST` | `/api/mentor/availability` | Xem/cập nhật lịch rảnh | MENTOR |
 | `POST` | `/api/mentor/apply` | Gửi đơn xin trở thành Mentor | MENTEE |
+| `GET` | `/api/mentor/[id]/public-profile` | Hồ sơ công khai của Mentor | Công khai |
+| `GET` | `/api/mentor/stats` | Thống kê giảng dạy của Mentor | MENTOR |
+
+### Mentee
+| Method | Endpoint | Mô tả | Quyền |
+|--------|----------|-------|-------|
+| `GET` | `/api/mentee/stats` | Thống kê học tập của Mentee | MENTEE |
 
 ### Sessions
 | Method | Endpoint | Mô tả | Quyền |
 |--------|----------|-------|-------|
 | `GET/POST` | `/api/sessions` | Danh sách / Tạo buổi học | Đã đăng nhập |
 | `GET/PATCH` | `/api/sessions/[id]` | Chi tiết / Cập nhật buổi học | Đã đăng nhập |
-| `POST` | `/api/sessions/[id]/payment` | Khởi tạo thanh toán học phí | MENTEE |
+| `POST` | `/api/sessions/[id]/confirm-completion` | Xác nhận hoàn thành buổi học | Mentor/Mentee |
+| `POST` | `/api/sessions/[id]/no-show` | Đánh dấu vắng mặt | MENTOR |
 
 ### Payments
 | Method | Endpoint | Mô tả | Quyền |
@@ -346,12 +366,16 @@ CANCELLED   CANCELLED
 | `POST` | `/api/payments/session-fee` | Khởi tạo thanh toán học phí | MENTEE |
 | `POST` | `/api/payments/verify` | Xác minh giao dịch | Đã đăng nhập |
 
+### Reports
+| Method | Endpoint | Mô tả | Quyền |
+|--------|----------|-------|-------|
+| `POST` | `/api/reports` | Gửi báo cáo vi phạm | Đã đăng nhập |
+
 ### Khác
 | Method | Endpoint | Mô tả |
 |--------|----------|-------|
 | `GET` | `/api/leaderboard` | Bảng xếp hạng Mentor |
 | `GET` | `/api/teaching-fields` | Danh sách lĩnh vực giảng dạy |
-
 ---
 
 ## 🚀 Cài đặt & Chạy dự án
@@ -498,7 +522,7 @@ DEMO_MENTEE_EMAIL=mentee@demo.com
 
 ## 🧪 Kiểm thử
 
-Dự án có ~**247 test cases** được tổ chức theo 3 tầng:
+Dự án có ~**589 test cases** được tổ chức theo 3 tầng:
 
 ### Chạy tests
 
@@ -563,7 +587,7 @@ src/__tests__/
 └── e2e/
     └── UserJourney.test.ts                    (9 tests)
                                           ──────────
-                                     Total: ~247 tests
+                                     Total: ~589 tests
 ```
 
 ---

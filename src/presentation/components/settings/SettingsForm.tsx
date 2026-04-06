@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { UserRole, UserRoleLabels } from "@/domain/value-objects/UserRole";
 import { UserStatus, UserStatusLabels } from "@/domain/value-objects/UserStatus";
-import { Save, User, Mail, Phone, FileText, ShieldCheck } from "lucide-react";
+import { Save, User, Mail, Phone, FileText, ShieldCheck, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SettingsUser {
@@ -16,6 +16,8 @@ interface SettingsUser {
   status: UserStatus;
   bio?: string | null;
   phone?: string | null;
+  noShowCount?: number | null;
+  lateCancellationCount?: number | null;
 }
 
 export function SettingsForm({ user }: { user: SettingsUser }) {
@@ -212,10 +214,38 @@ export function SettingsForm({ user }: { user: SettingsUser }) {
             <span className="text-stone-500">Vai trò</span>
             <span className="font-medium text-stone-700">{UserRoleLabels[user.role]}</span>
           </div>
-          <div className="flex justify-between items-center py-2">
+          <div className="flex justify-between items-center py-2 border-b border-stone-50">
             <span className="text-stone-500">Trạng thái</span>
             <span className="font-medium text-stone-700">{UserStatusLabels[user.status]}</span>
           </div>
+          {(user.role === UserRole.MENTEE || user.role === UserRole.MENTOR) && (
+            <div className="flex justify-between items-center py-2 border-b border-stone-50">
+              <span className="text-stone-500 flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                Số lần hủy muộn
+              </span>
+              <span className={cn(
+                "font-medium",
+                (user.lateCancellationCount ?? 0) > 0 ? "text-amber-600" : "text-stone-700"
+              )}>
+                {user.lateCancellationCount ?? 0}
+              </span>
+            </div>
+          )}
+          {user.role === UserRole.MENTEE && (
+            <div className="flex justify-between items-center py-2">
+              <span className="text-stone-500 flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                Số lần vắng mặt không báo
+              </span>
+              <span className={cn(
+                "font-medium",
+                (user.noShowCount ?? 0) > 0 ? "text-red-600" : "text-stone-700"
+              )}>
+                {user.noShowCount ?? 0}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>

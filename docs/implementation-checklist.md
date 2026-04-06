@@ -243,9 +243,10 @@
 
 ### 3.4 UI Components Sửa đổi
 
-- [ ] **[GAP-P]** Sửa `src/presentation/components/settings/SettingsForm.tsx`
-  - [ ] Hiển thị `lateCancellationCount`
-  - [ ] Hiển thị `noShowCount` (nếu là mentee)
+- [x] **[GAP-P]** Sửa `src/presentation/components/settings/SettingsForm.tsx`
+  - [x] Hiển thị `lateCancellationCount`
+  - [x] Hiển thị `noShowCount` (nếu là mentee)
+  - [x] Hiển thị `lateCancellationCount` trên `MentorPublicProfile.tsx`
 
 ### 3.5 Pages Mới
 
@@ -277,7 +278,7 @@
 - [x] Tạo `src/__tests__/unit/infrastructure/repositories/PrismaSystemConfigRepository.test.ts`
 - [x] Tạo `src/__tests__/unit/infrastructure/repositories/PrismaReportRepository.test.ts`
 - [ ] Tạo `src/__tests__/unit/application/use-cases/MentorProfileUseCases.test.ts` (GetMentorPublicProfileUseCase riêng)
-- [ ] Tạo `src/__tests__/unit/application/use-cases/ReportUseCases.test.ts` (riêng biệt)
+- [x] Tạo `src/__tests__/unit/application/use-cases/ReportUseCases.test.ts` (riêng biệt) — 25 tests
 
 ### 4.2 Integration Tests
 
@@ -326,18 +327,18 @@
 
 ---
 
-## Summary (cập nhật 29/03/2026)
+## Summary (cập nhật 06/04/2026)
 
 | Wave | Tổng tasks | Đã done | Còn lại |
 |------|-----------|---------|---------|
 | Wave 1: Foundation | 32 tasks | 30 | 2 |
 | Wave 2: Core Business | 35 tasks | 33 | 2 |
-| Wave 3: Presentation | 32 tasks | 26 | 6 |
-| Wave 4: Testing | 20 tasks | 14 | 6 |
+| Wave 3: Presentation | 32 tasks | 28 | 4 |
+| Wave 4: Testing | 20 tasks | 16 | 4 |
 | Wave 5: Polish | 8 tasks | 3 | 5 |
-| **Tổng** | **127 tasks** | **~106** | **~21** |
+| **Tổng** | **127 tasks** | **~110** | **~17** |
 
-**Tiến độ: ~83% hoàn thành**
+**Tiến độ: ~87% hoàn thành** (tăng từ 83%)
 
 ---
 
